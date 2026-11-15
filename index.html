@@ -35,6 +35,10 @@
       #office {
         display: block;
       }
+      /* Author display rules otherwise override the hidden attribute. */
+      [hidden] {
+        display: none !important;
+      }
       #waking {
         margin: 48px 0;
         text-align: center;
