@@ -1,4 +1,4 @@
-# Copilot instructions — sls-office
+# Copilot instructions: sls-office
 
 The canonical engineering guide for this repo is **[`CLAUDE.md`](../CLAUDE.md)**, with a
 vendor-neutral mirror in **[`AGENTS.md`](../AGENTS.md)** and the domain glossary in

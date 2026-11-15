@@ -1,0 +1,53 @@
+{
+  "v": 2,
+  "at": "2026-11-16T09:00:00Z",
+  "host": {
+    "name": "sls-host",
+    "cpu": 45,
+    "mem": 40,
+    "findings": {
+      "ok": 12,
+      "warn": 1,
+      "crit": 0
+    }
+  },
+  "vms": [
+    {
+      "id": "sls-data",
+      "role": "data",
+      "name": "sls-data",
+      "up": true,
+      "cpu": 140,
+      "mem": 50,
+      "workloads": []
+    },
+    {
+      "id": "sls-compute",
+      "role": "compute",
+      "name": "sls-compute",
+      "up": true,
+      "cpu": 45,
+      "mem": 50,
+      "workloads": []
+    },
+    {
+      "id": "sls-deploy",
+      "role": "deploy",
+      "name": "sls-deploy",
+      "up": true,
+      "cpu": 60,
+      "mem": 50,
+      "workloads": []
+    },
+    {
+      "id": "sls-ci",
+      "role": "ci",
+      "name": "sls-ci",
+      "up": true,
+      "cpu": 55,
+      "mem": 50,
+      "workloads": []
+    }
+  ],
+  "events": []
+}

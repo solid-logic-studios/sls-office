@@ -1,4 +1,4 @@
-# ADR 0001 — TypeScript, Vite and pnpm, trunk-based
+# ADR 0001: TypeScript, Vite and pnpm, trunk-based
 
 - **Status:** Accepted
 - **Date:** 16 November 2026

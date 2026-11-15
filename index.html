@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en-AU">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SLS Office</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #14161f;
+        --fg: #e8ecf3;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: ui-monospace, Menlo, Consolas, monospace;
+      }
+      main {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 16px;
+      }
+      h1 {
+        margin: 0 0 12px;
+        font-size: 1.1rem;
+      }
+      #stage {
+        width: 100%;
+      }
+      #office {
+        display: block;
+      }
+      /* Author display rules otherwise override the hidden attribute. */
+      [hidden] {
+        display: none !important;
+      }
+      #waking {
+        margin: 48px 0;
+        text-align: center;
+        font-size: 1.25rem;
+      }
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>SLS Office</h1>
+      <div id="stage">
+        <p id="waking" role="status"></p>
+        <canvas id="office" hidden aria-hidden="true"></canvas>
+      </div>
+      <ul id="roster" class="visually-hidden" aria-live="polite" aria-label="Lab status"></ul>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
