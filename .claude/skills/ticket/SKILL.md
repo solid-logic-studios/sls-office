@@ -21,9 +21,9 @@ These override the detection in Step 0; re-check them only if they look stale.
 - **Repo / base:** `solid-logic-studios/sls-office`, base branch `main` (trunk-based, no `develop`).
 - **Release hygiene:** `CHANGELOG.md` `[Unreleased]` bullet in the same PR for user-facing changes.
   No per-PR version bumps; version + tag happen at release only.
-- **Verify bar (matches CI):** `pnpm install --frozen-lockfile && pnpm format:check`. When
-  `typecheck`, `test` or `build` scripts are added to `package.json`, they join this bar and CI.
-- **No test framework yet:** don't add one inside a ticket unless the ticket asks for it.
+- **Verify bar (matches CI):**
+  `pnpm install --frozen-lockfile && pnpm format:check && pnpm typecheck && pnpm test && pnpm build`.
+- **Test framework:** Vitest.
 - **ADRs:** `docs/adr/` is in use; a new cross-cutting rule (for example splitting into pnpm
   workspaces) needs one.
 - **Gotchas:** pnpm only (never commit `package-lock.json`); `.claude/` is Prettier-ignored on
