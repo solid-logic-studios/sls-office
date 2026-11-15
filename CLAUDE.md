@@ -8,7 +8,7 @@ working in this repository. [`AGENTS.md`](AGENTS.md) mirrors the principles for 
 
 SLS Office renders the Solid Logic Studios lab as an animated, themed pixel-art dashboard. It is
 built from three parts: an **engine** (rendering and animation), **themes** (swappable visual
-skins) and a **simulator** (drives the scene with synthetic lab activity).
+skins) and a **simulator** (drives the Office with synthetic lab activity).
 
 The tracer bullet has landed: a versioned **Snapshot contract**, a minimal page that draws one
 plain character per VM, and a static image published to GHCR. The engine, themes and simulator
@@ -37,8 +37,8 @@ pnpm format:check       # Prettier check (CI gate)
 - **`src/contract/`** is the Snapshot contract. `snapshot.ts` holds the TypeScript types, the
   single source of truth. The JSON Schema is generated from them (never committed) and published
   as a release asset.
-- **`src/source/`** holds `SnapshotSource` adapters (live HTTP polling, fixture).
-- **`src/page/`** is the tracer-bullet page. It is replaced by the engine in #2.
+- **`src/source/`** holds `SnapshotSource` adapters (live HTTP, in-memory fixture for tests) and the `isSnapshot` guard; polling lives in `src/page/poller.ts`.
+- **`src/page/`** is the tracer-bullet page. It will be replaced by the engine in #2.
 - **`fixtures/`** holds sample Snapshots used by tests and for trying the image.
 - **Image:** busybox `httpd` serving `dist/` plus a mounted `snapshot.json` (see ADR 0002).
 - **Engine** will own the render loop, sprites and animation; it knows nothing about lab specifics.

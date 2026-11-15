@@ -15,6 +15,11 @@ export const MOOD_LABELS: Record<Mood, string> = {
   stressed: 'stressed',
 };
 
+/** The CPU line shown for a VM: a rounded percentage, or `cpu n/a` when it is down. */
+export function describeCpu(vm: Pick<Vm, 'up' | 'cpu'>): string {
+  return vm.up ? `cpu ${Math.round(vm.cpu)}%` : 'cpu n/a';
+}
+
 export function moodOf(vm: Pick<Vm, 'up' | 'cpu'>): Mood {
   if (!vm.up) return 'absent';
   if (vm.cpu < BREAK_BELOW_CPU) return 'break';

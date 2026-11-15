@@ -1,6 +1,6 @@
 import type { Snapshot } from './contract/snapshot.ts';
 import { isStale } from './page/freshness.ts';
-import { MOOD_LABELS, moodOf } from './page/mood.ts';
+import { MOOD_LABELS, describeCpu, moodOf } from './page/mood.ts';
 import { Poller } from './page/poller.ts';
 import { Renderer } from './page/renderer.ts';
 import { HttpSnapshotSource } from './source/http-snapshot-source.ts';
@@ -31,7 +31,7 @@ function show(snapshot: Snapshot | null): void {
     return;
   }
   renderer.render(snapshot.vms);
-  updateRoster(snapshot.vms.map((vm) => `${vm.name}: ${MOOD_LABELS[moodOf(vm)]}, cpu ${Math.round(vm.cpu)}%`));
+  updateRoster(snapshot.vms.map((vm) => `${vm.name}: ${MOOD_LABELS[moodOf(vm)]}, ${describeCpu(vm)}`));
 }
 
 /** Rebuild the live region only when its text changes, so screen readers are not re-read the roster every poll. */

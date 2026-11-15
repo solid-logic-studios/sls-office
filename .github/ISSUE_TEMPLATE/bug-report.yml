@@ -23,6 +23,6 @@ body:
     id: env
     attributes:
       label: Environment
-      description: OS, runtime version, browser, commit/version — whatever is relevant.
+      description: OS, runtime version, browser, commit or version, whatever is relevant.
     validations:
       required: false

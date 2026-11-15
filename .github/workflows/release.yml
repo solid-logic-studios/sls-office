@@ -40,10 +40,10 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           images: ghcr.io/solid-logic-studios/sls-office
+          flavor: latest=false
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=sha
       - uses: docker/build-push-action@v7
         with:
           context: .
@@ -58,8 +58,8 @@ jobs:
         run: |
           version="${GITHUB_REF_NAME#v}"
           awk -v v="$version" '
-            $0 ~ "^## \\[" v "\\]" { found = 1; next }
-            found && /^## \[/ { exit }
+            index($0, "## [" v "]") == 1 { found = 1; next }
+            found && (/^## \[/ || /^\[[^]]+\]: /) { exit }
             found { print }
           ' CHANGELOG.md > release-notes.md
           if [ -s release-notes.md ] && grep -q '[^[:space:]]' release-notes.md; then

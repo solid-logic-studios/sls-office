@@ -15,7 +15,7 @@ versioned and testable from either repo.
 Contract source:
 
 - **TypeScript types as the single source, JSON Schema generated and published per release.**
-  Idiomatic types in the browser bundle, no runtime validator shipped to the page.
+  Idiomatic types in the browser bundle, no schema validator shipped to the page, only a shallow guard (`isSnapshot`).
 - **Hand-written JSON Schema.** Language-neutral, but it drifts from the types and doubles the
   maintenance.
 - **zod or typebox as a runtime source.** One definition, but it puts a validator in the browser
@@ -41,15 +41,16 @@ Image:
 - The image is busybox `httpd` running as uid 65534 on port 8080, serving the Vite build from a
   root-owned `/srv/office`, with a read-only root filesystem and a `HEALTHCHECK`. The build does
   not contain `snapshot.json`; the host mounts it read-only at `/srv/office/snapshot.json`.
-- Image: `ghcr.io/solid-logic-studios/sls-office`, tagged `main`, `sha-<commit>` and the version
-  (`X.Y.Z`, `X.Y`) on release.
+- Image: `ghcr.io/solid-logic-studios/sls-office`, tagged `main`, `sha-<short>` and `sha-<long>` from
+  each push to `main`, and `X.Y.Z` and `X.Y` from each `vX.Y.Z` release tag (no `latest`). The release
+  builds version tags from the tagged commit, and that commit is in the OCI `revision` label.
 - Whether the GHCR package is public or needs a pull credential is deferred to
   solid-logic-studios/infrastructure#222's ADR-0018.
 
 ## Consequences
 
 - Changing the contract means editing one TypeScript file; the schema and the release asset follow.
-- The browser does not validate Snapshots at runtime, so the page must tolerate a bad file (it
-  shows the waking state) rather than trust it.
+- The browser runs only the shallow guard. A file that fails it shows the waking state; deeper
+  errors (such as an out-of-range `cpu`) are drawn as given.
 - The image has no shell tooling beyond busybox and no TLS; the edge in front of it handles that.
 - Until ADR-0018 lands, the package is private by default and hosts need a pull credential.

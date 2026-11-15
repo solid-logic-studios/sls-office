@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BREAK_BELOW_CPU, MOOD_LABELS, STRESSED_ABOVE_CPU, moodOf } from '../src/page/mood.ts';
+import { BREAK_BELOW_CPU, STRESSED_ABOVE_CPU, describeCpu, moodOf } from '../src/page/mood.ts';
 
 describe('moodOf', () => {
   it.each([
@@ -15,8 +15,14 @@ describe('moodOf', () => {
   ] as const)('%j is %s', (vm, mood) => {
     expect(moodOf(vm)).toBe(mood);
   });
+});
 
-  it('has a label for every mood', () => {
-    expect(Object.keys(MOOD_LABELS).sort()).toEqual(['absent', 'break', 'stressed', 'working']);
+describe('describeCpu', () => {
+  it.each([
+    [{ up: true, cpu: 45.4 }, 'cpu 45%'],
+    [{ up: true, cpu: 99.5 }, 'cpu 100%'],
+    [{ up: false, cpu: 50 }, 'cpu n/a'],
+  ] as const)('%j is %s', (vm, text) => {
+    expect(describeCpu(vm)).toBe(text);
   });
 });

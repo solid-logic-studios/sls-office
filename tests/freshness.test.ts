@@ -22,4 +22,7 @@ describe('isStale', () => {
   it('treats a slightly future-dated snapshot as fresh', () => {
     expect(isStale({ at: '2026-11-16T09:01:05Z' }, now)).toBe(false);
   });
+  it('treats a far future-dated snapshot as stale', () => {
+    expect(isStale({ at: '2026-11-16T09:03:00Z' }, now)).toBe(true);
+  });
 });

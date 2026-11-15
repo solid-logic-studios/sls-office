@@ -1,5 +1,5 @@
 import type { Vm } from '../contract/snapshot.ts';
-import { MOOD_LABELS, moodOf, type Mood } from './mood.ts';
+import { MOOD_LABELS, describeCpu, moodOf, type Mood } from './mood.ts';
 
 /** Canvas width (CSS px) at or above which characters sit four across; below it, two across. */
 export const WIDE_LAYOUT_MIN_WIDTH = 560;
@@ -11,6 +11,7 @@ const ART_WIDTH = 16;
 const ART_HEIGHT = 18;
 const MAX_SCALE = 8;
 const CELL_PADDING = 12;
+const CELL_INSET = 4;
 const TEXT_LINE_HEIGHT = 18;
 const TEXT_LINES = 3;
 const FONT = '14px ui-monospace, Menlo, Consolas, monospace';
@@ -105,8 +106,8 @@ export function scaleFor(cellWidth: number): number {
 /** Draws one pixel character per VM on a single canvas that fills its container. */
 export class Renderer {
   private readonly context: CanvasRenderingContext2D;
-  private readonly observer: ResizeObserver;
   private vms: readonly Vm[] = [];
+  private drawnWidth = 0;
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -116,8 +117,9 @@ export class Renderer {
     if (context === null) throw new Error('Canvas 2D is not available');
     this.context = context;
     this.canvas.style.imageRendering = 'pixelated';
-    this.observer = new ResizeObserver(() => this.draw());
-    this.observer.observe(container);
+    new ResizeObserver(() => {
+      if (this.container.clientWidth !== this.drawnWidth) this.draw();
+    }).observe(container);
   }
 
   render(vms: readonly Vm[]): void {
@@ -125,13 +127,10 @@ export class Renderer {
     this.draw();
   }
 
-  dispose(): void {
-    this.observer.disconnect();
-  }
-
   private draw(): void {
     const width = Math.floor(this.container.clientWidth);
     if (width === 0) return;
+    this.drawnWidth = this.container.clientWidth;
     const columns = columnsFor(width);
     const cellWidth = width / columns;
     const scale = scaleFor(cellWidth);
@@ -162,9 +161,8 @@ export class Renderer {
   private drawCell(vm: Vm, left: number, top: number, cellWidth: number, cellHeight: number, scale: number): void {
     const ctx = this.context;
     const mood = moodOf(vm);
-    const inset = 4;
     ctx.fillStyle = COLOURS.cell;
-    ctx.fillRect(left + inset, top + inset, cellWidth - inset * 2, cellHeight - inset * 2);
+    ctx.fillRect(left + CELL_INSET, top + CELL_INSET, cellWidth - CELL_INSET * 2, cellHeight - CELL_INSET * 2);
 
     const artLeft = Math.round(left + (cellWidth - ART_WIDTH * scale) / 2);
     const artTop = Math.round(top + CELL_PADDING);
@@ -180,6 +178,6 @@ export class Renderer {
     ctx.fillStyle = MOOD_COLOURS[mood];
     ctx.fillText(MOOD_LABELS[mood], centre, textTop + TEXT_LINE_HEIGHT);
     ctx.fillStyle = COLOURS.textMuted;
-    ctx.fillText(vm.up ? `cpu ${Math.round(vm.cpu)}%` : 'cpu n/a', centre, textTop + TEXT_LINE_HEIGHT * 2);
+    ctx.fillText(describeCpu(vm), centre, textTop + TEXT_LINE_HEIGHT * 2);
   }
 }

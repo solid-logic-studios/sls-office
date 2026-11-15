@@ -7,7 +7,7 @@ code, docs, and conversation stay aligned. The canonical engineering guide is [`
 
 Sharpen each entry as the matching module lands.
 
-**Office**: the whole dashboard, the lab rendered as an animated pixel-art scene.
+**Office**: the whole dashboard, the lab rendered as an animated pixel-art dashboard.
 _Avoid_: app, game, view.
 
 **Engine**: the rendering and animation core (render loop, sprites, timing). Theme- and
@@ -20,7 +20,7 @@ _Avoid_: skin, style, template.
 **Simulator**: the source of synthetic lab activity that drives the Office when no live data is wired up.
 _Avoid_: mock, fake, demo mode.
 
-**Snapshot**: the versioned JSON the collector writes and the Engine's only input.
+**Snapshot**: the versioned JSON the collector writes the page's (later the Engine's) only input.
 _Avoid_: state, payload, status feed.
 
 **SnapshotSource**: where the page gets Snapshots (live HTTP, fixture; Simulator later).
@@ -34,7 +34,7 @@ _Avoid_: desk, room, slot.
 spawn).
 _Avoid_: animation, cutscene, effect.
 
-**Mood**: a character's state derived from CPU, memory and health: break, working, stressed,
+**Mood**: a character's state derived from up/down, CPU, memory and workload health: break, working, stressed,
 swamped, fainted, absent. The tracer bullet uses only absent, break, working and stressed.
 _Avoid_: status, state, emotion.
 

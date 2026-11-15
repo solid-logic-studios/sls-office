@@ -16,8 +16,16 @@ describe('snapshot schema generated from the contract types', () => {
     expect(isSnapshot(fixture)).toBe(true);
   });
 
-  it('rejects the invalid fixture', () => {
-    expect(validate(loadFixture('snapshot.invalid.json'))).toBe(false);
+  // snapshot.invalid.json has two defects: `v` is 2 (only 1 is known) and the sls-data VM has cpu 140.
+  it('rejects the invalid fixture; the guard rejects it too, on `v`', () => {
+    const invalid = loadFixture('snapshot.invalid.json');
+    expect(validate(invalid)).toBe(false);
+    expect(isSnapshot(invalid)).toBe(false);
+  });
+
+  it.each(['host', 'events'] as const)('guard rejects a body missing %s', (field) => {
+    const { [field]: _omitted, ...rest } = loadFixture('snapshot.all-working.json');
+    expect(isSnapshot(rest)).toBe(false);
   });
 
   it('rejects out-of-range percentages and non-integer finding counts', () => {

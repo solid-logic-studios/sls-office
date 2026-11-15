@@ -1,7 +1,6 @@
 # sls-office
 
 [![CI](https://github.com/solid-logic-studios/sls-office/actions/workflows/ci.yml/badge.svg)](https://github.com/solid-logic-studios/sls-office/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/tag/solid-logic-studios/sls-office?label=release)](https://github.com/solid-logic-studios/sls-office/tags)
 ![Node 24](https://img.shields.io/badge/node-24-339933)
 ![pnpm](https://img.shields.io/badge/pnpm-managed-f69220)
 
@@ -42,26 +41,32 @@ are percentages from 0 to 100. The schema is strict, and `v` bumps on any breaki
 ## Image
 
 `ghcr.io/solid-logic-studios/sls-office` is a busybox `httpd` serving the static build as an
-unprivileged user on port 8080, with a `HEALTHCHECK`. It works with a read-only root filesystem.
+unprivileged user on port 8080, with a `HEALTHCHECK`. It needs no writes, so it is meant to run with a read-only root filesystem.
 `snapshot.json` is not baked in: mount it at `/srv/office/snapshot.json`.
 
 ```bash
+cp fixtures/snapshot.sample.json /tmp/snapshot.json
 docker run --rm --read-only -p 8080:8080 \
-  -v "$PWD/fixtures/snapshot.sample.json:/srv/office/snapshot.json:ro" \
+  -v "/tmp/snapshot.json:/srv/office/snapshot.json:ro" \
   ghcr.io/solid-logic-studios/sls-office:main
 ```
 
-The sample's `at` will be stale, so the page shows "Waking the office…" until `at` is recent.
-Refresh it with this one-liner (it rewrites the file in place, so the running container sees it):
+The copy's `at` is stale, so the page shows "Waking the office…" until `at` is recent. In another
+terminal, refresh the copy every 30 seconds (it is rewritten in place, so the running container
+sees it, and the tracked fixture is never touched):
 
 ```bash
-node -e 'const f="fixtures/snapshot.sample.json",s=JSON.parse(require("fs").readFileSync(f,"utf8"));s.at=new Date().toISOString();require("fs").writeFileSync(f,JSON.stringify(s,null,2))'
+while true; do
+  node -e 'const fs=require("fs"),f="/tmp/snapshot.json",s=JSON.parse(fs.readFileSync(f,"utf8"));s.at=new Date().toISOString();fs.writeFileSync(f,JSON.stringify(s,null,2)+"\n")'
+  sleep 30
+done
 ```
 
-Edit the mounted file in place (do not replace it, as a bind mount follows the original file) and the moods change without a reload.
+Edit the copy in place (do not replace it, as a bind mount follows the original file) and the moods
+change without a reload. The page goes back to "Waking the office…" 60 seconds after the last refresh.
 
-Tags published: `main` and `sha-<commit>` from every push to `main`, and `X.Y.Z`, `X.Y` and
-`sha-<commit>` from each `vX.Y.Z` release tag.
+Tags published: `main`, `sha-<short>` and `sha-<long>` from each push to `main`, and `X.Y.Z` and
+`X.Y` from each `vX.Y.Z` release tag (no `latest`).
 
 **GHCR visibility:** this repo is private, so the package is private by default and the Compute
 host needs a pull credential unless the package is made public. That decision belongs to
