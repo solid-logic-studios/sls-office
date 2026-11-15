@@ -1,7 +1,7 @@
 {
   "name": "sls-office",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "description": "SLS Office: the lab as an animated, themed pixel-art dashboard (engine, themes, simulator)",
   "packageManager": "pnpm@12.4.2",
