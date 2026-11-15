@@ -1,0 +1,10 @@
+# <type>(<scope>): <subject>   ← ≤50 chars, imperative mood, no trailing period
+#
+# Body (wrap at 72): what changed and why, not how. Leave a blank line above.
+#
+# Footer: "Closes #12", "BREAKING CHANGE: ...", or co-author trailers.
+#
+# type:  feat | fix | docs | style | refactor | perf | test | build | ci | chore
+# scope: a module/area of the codebase (optional)
+#
+# Enable once with:  git config commit.template .gitmessage
