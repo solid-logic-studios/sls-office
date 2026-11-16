@@ -29,7 +29,7 @@ function frames() {
 }
 
 describe('Loop', () => {
-  it('passes the time since the last frame, capped at 0.05 s', () => {
+  it('passes the time since the last frame, capped at 0.25 s', () => {
     const clock = frames();
     const dts: number[] = [];
     const loop = new Loop(clock.request, clock.cancel, (dt) => dts.push(dt));
@@ -40,6 +40,17 @@ describe('Loop', () => {
     expect(dts[0]).toBe(0);
     expect(dts[1]).toBeCloseTo(0.016);
     expect(dts[2]).toBe(MAX_FRAME_SECONDS);
+    expect(MAX_FRAME_SECONDS).toBe(0.25);
+  });
+
+  it('plays a slow display in real time, down to 4 frames a second', () => {
+    const clock = frames();
+    const dts: number[] = [];
+    const loop = new Loop(clock.request, clock.cancel, (dt) => dts.push(dt));
+    loop.start();
+    clock.fire(0);
+    clock.fire(200);
+    expect(dts[1]).toBeCloseTo(0.2);
   });
 
   it('still calls the frame while paused, with no time passing', () => {
@@ -75,5 +86,19 @@ describe('Loop', () => {
     loop.start();
     clock.fire(0);
     expect(clock.waiting).toBe(false);
+  });
+
+  it('keeps delivering frames after one throws, and lets the error out', () => {
+    const clock = frames();
+    let calls = 0;
+    const loop = new Loop(clock.request, clock.cancel, () => {
+      calls += 1;
+      if (calls === 1) throw new Error('bad frame');
+    });
+    loop.start();
+    expect(() => clock.fire(0)).toThrow('bad frame');
+    expect(clock.waiting).toBe(true);
+    clock.fire(16);
+    expect(calls).toBe(2);
   });
 });

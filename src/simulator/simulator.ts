@@ -6,6 +6,7 @@ import {
   type LabEvent,
   type Snapshot,
 } from '../contract/snapshot.ts';
+import { assertNever } from '../assert-never.ts';
 import type { SnapshotSource } from '../source/snapshot-source.ts';
 import { CiPod } from './ci-pod.ts';
 import type { PresetId, SimCommand, VmControl } from './commands.ts';
@@ -14,7 +15,7 @@ import { LabModel, MAX_CI_PODS } from './lab-model.ts';
 import { PRESET_LOADS } from './presets.ts';
 import type { SiteInstance } from './site-instance.ts';
 import { type Cancel, Timeline } from './timeline.ts';
-import { assertNever, pick } from './util.ts';
+import { pick } from './util.ts';
 
 export type { PresetId, SimCommand, VmControl } from './commands.ts';
 export { PRESET_IDS, PRESET_NAMES } from './presets.ts';
@@ -92,7 +93,7 @@ export class Simulator implements SnapshotSource {
         return;
       }
       default:
-        return assertNever(command);
+        return assertNever(command, 'command');
     }
   }
 
@@ -200,7 +201,7 @@ export class Simulator implements SnapshotSource {
         this.dispatch({ kind: 'backup' });
         return;
       default:
-        return assertNever(preset);
+        return assertNever(preset, 'preset');
     }
   }
 

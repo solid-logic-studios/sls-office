@@ -1,3 +1,4 @@
+import { assertNever } from '../../assert-never.ts';
 import type { DeployEvent } from '../../contract/snapshot.ts';
 import type { Place } from '../../contract/theme.ts';
 import type { Character } from '../characters/character.ts';
@@ -12,9 +13,9 @@ export const HEALTH_CHECK_SECONDS = 2.2;
 export const VERDICT_TIMEOUT_SECONDS = 30;
 
 /** Where the courier parks, the newcomer stands and the checker stands, relative to the seat. */
-const COURIER_OFFSET = 20;
+export const COURIER_OFFSET = 20;
 const NEWCOMER_OFFSET = 9;
-const CHECKER_OFFSET = -6;
+export const CHECKER_OFFSET = -6;
 const MARK_LIFT = 30;
 const LINE_GAP_SECONDS = 0.8;
 
@@ -107,8 +108,8 @@ export class DeployScene extends Scene<DeployCrew> {
         return;
       case 'healthy':
         checker?.sayCue('healthy', true);
-        if (newcomer !== null) this.mark('tick', newcomer);
         if (newcomer === null) return;
+        this.mark('tick', newcomer);
         target.sayCue('old-one-out', true);
         this.world.cast.handover(target, newcomer);
         target.walkOut();
@@ -128,10 +129,8 @@ export class DeployScene extends Scene<DeployCrew> {
         yield* this.pause(LINE_GAP_SECONDS);
         target.sayCue('still-serving', true);
         return;
-      default: {
-        const unreachable: never = this.verdict;
-        throw new Error(`Unknown verdict ${String(unreachable)}`);
-      }
+      default:
+        return assertNever(this.verdict, 'verdict');
     }
   }
 

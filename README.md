@@ -5,8 +5,8 @@
 ![pnpm](https://img.shields.io/badge/pnpm-managed-f69220)
 
 SLS Office renders the Solid Logic Studios lab as an animated, themed pixel-art dashboard. It is
-built from an engine, themes and a simulator: every VM, container and CI pod is a character at
-work, and deploys, backups and outages play out as scenes. It ships as a small static image.
+built from an engine, themes and a simulator: the lab's VMs, containers and CI pods are characters
+at work, and deploys, backups and outages play out as scenes. It ships as a small static image.
 
 ## Run locally
 

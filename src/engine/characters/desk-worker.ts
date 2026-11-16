@@ -1,3 +1,4 @@
+import { assertNever } from '../../assert-never.ts';
 import { Character, type CharacterInit } from './character.ts';
 import type { World } from '../world.ts';
 
@@ -76,10 +77,8 @@ export class DeskWorker extends Character {
         this.breakAt = this.world.now + this.world.random.range(5, 12);
         this.work();
         return;
-      default: {
-        const unreachable: never = this.state;
-        throw new Error(`Unknown desk state ${String(unreachable)}`);
-      }
+      default:
+        return assertNever(this.state, 'desk state');
     }
   }
 
@@ -90,24 +89,12 @@ export class DeskWorker extends Character {
     this.typeByMood();
   }
 
-  protected override onHold(): void {
+  protected override onInterrupted(): void {
     this.backFromBreak();
   }
 
   protected override onRelease(): void {
     this.state = 'desk';
-  }
-
-  protected override onShow(): void {
-    this.backFromBreak();
-  }
-
-  protected override onHide(): void {
-    this.backFromBreak();
-  }
-
-  protected override onRecover(): void {
-    this.backFromBreak();
   }
 
   private work(): void {
@@ -138,10 +125,8 @@ export class DeskWorker extends Character {
       case 'fainted':
       case 'absent':
         return;
-      default: {
-        const unreachable: never = this.mood;
-        throw new Error(`Unknown mood ${String(unreachable)}`);
-      }
+      default:
+        return assertNever(this.mood, 'mood');
     }
   }
 

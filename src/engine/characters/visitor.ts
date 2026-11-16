@@ -1,3 +1,4 @@
+import { assertNever } from '../../assert-never.ts';
 import type { World } from '../world.ts';
 import { Character, type CharacterInit } from './character.ts';
 import type { DeskWorker } from './desk-worker.ts';
@@ -40,11 +41,6 @@ export class Visitor extends Character {
     }
   }
 
-  /** Visitors are not part of the chatter. */
-  override chatter(): string | undefined {
-    return undefined;
-  }
-
   protected behave(): void {
     if (!this.target.present) {
       this.vanish();
@@ -72,10 +68,8 @@ export class Visitor extends Character {
       case 'visiting':
         if (now >= trip.until) this.walkOut();
         return;
-      default: {
-        const unreachable: never = trip;
-        throw new Error(`Unknown trip ${String(unreachable)}`);
-      }
+      default:
+        return assertNever(trip, 'trip');
     }
   }
 

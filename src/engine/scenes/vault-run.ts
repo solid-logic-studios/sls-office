@@ -1,3 +1,4 @@
+import { assertNever } from '../../assert-never.ts';
 import type { BackupEvent } from '../../contract/snapshot.ts';
 import type { Spot } from '../../contract/theme.ts';
 import type { Character } from '../characters/character.ts';
@@ -79,10 +80,8 @@ export class VaultRun extends Scene<VaultCrew> {
         break;
       case null:
         break;
-      default: {
-        const unreachable: never = this.outcome;
-        throw new Error(`Unknown outcome ${String(unreachable)}`);
-      }
+      default:
+        return assertNever(this.outcome, 'outcome');
     }
     yield* this.pause(LINGER_SECONDS);
     this.world.setPieces.vaultOpen = false;

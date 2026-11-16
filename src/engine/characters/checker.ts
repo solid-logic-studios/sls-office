@@ -1,3 +1,4 @@
+import { assertNever } from '../../assert-never.ts';
 import type { Place } from '../../contract/theme.ts';
 import { Character } from './character.ts';
 
@@ -34,10 +35,8 @@ export class Checker extends Character {
       case 'next':
         this.nextStop();
         return;
-      default: {
-        const unreachable: never = this.round;
-        throw new Error(`Unknown round ${String(unreachable)}`);
-      }
+      default:
+        return assertNever(this.round, 'round');
     }
   }
 

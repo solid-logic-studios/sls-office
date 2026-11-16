@@ -1,6 +1,7 @@
 import type { SimCommand, VmControl } from '../simulator/commands.ts';
 import { PRESET_IDS, PRESET_NAMES } from '../simulator/presets.ts';
 import type { Simulator } from '../simulator/simulator.ts';
+import { formatHour, localHour } from './clock.ts';
 
 export interface ControlRoomOptions {
   /** `null` means follow the local clock. */
@@ -74,17 +75,6 @@ function group(title: string, ...children: HTMLElement[]): HTMLElement {
   return element;
 }
 
-function formatHour(hour: number): string {
-  const whole = Math.floor(hour);
-  const minutes = Math.floor((hour - whole) * 60);
-  return `${String(whole).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-}
-
-function localHour(): number {
-  const now = new Date();
-  return now.getHours() + now.getMinutes() / 60;
-}
-
 /** One VM card: an up checkbox plus CPU and MEM target sliders. */
 class VmCard {
   readonly element = make('div', 'vm');
@@ -95,7 +85,7 @@ class VmCard {
   private readonly memOut = make('span');
 
   constructor(
-    private readonly control: VmControl,
+    control: VmControl,
     private readonly dispatch: (command: SimCommand) => void,
   ) {
     const { id } = control;
@@ -167,13 +157,15 @@ class TimeOfDay {
 
   /** Keeps the read-out current while following the local clock. */
   refresh(): void {
-    if (this.local.checked) this.label.textContent = `${formatHour(localHour())} (local)`;
+    if (this.local.checked) this.label.textContent = `${formatHour(localHour(new Date()))} (local)`;
   }
 
   private apply(): void {
     const following = this.local.checked;
     this.hour.disabled = following;
-    this.label.textContent = following ? `${formatHour(localHour())} (local)` : formatHour(Number(this.hour.value));
+    this.label.textContent = following
+      ? `${formatHour(localHour(new Date()))} (local)`
+      : formatHour(Number(this.hour.value));
     this.onHour(following ? null : Number(this.hour.value));
   }
 }

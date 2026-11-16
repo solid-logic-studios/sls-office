@@ -2,12 +2,13 @@ import type { Snapshot } from './contract/snapshot.ts';
 import type { Theme } from './contract/theme.ts';
 import { Engine } from './engine/engine.ts';
 import { Loop } from './engine/loop.ts';
+import { localHour } from './page/clock.ts';
 import { mountControlRoom } from './page/control-room.ts';
 import { isStale } from './page/freshness.ts';
 import { renderLegend } from './page/legend.ts';
 import { OfficeLog } from './page/office-log.ts';
 import { Poller } from './page/poller.ts';
-import { Stage } from './page/stage.ts';
+import { StageCanvas } from './page/stage-canvas.ts';
 import { StatusStrip } from './page/status-strip.ts';
 import { mountThemeSwitcher } from './page/theme-switcher.ts';
 import { TooltipView } from './page/tooltip-view.ts';
@@ -30,10 +31,6 @@ function element<T extends HTMLElement>(id: string, type: new () => T): T {
   return found;
 }
 
-function localHour(now: Date): number {
-  return now.getHours() + now.getMinutes() / 60;
-}
-
 const query = new URLSearchParams(window.location.search);
 const simulated = query.has('sim');
 const firstTheme = THEMES.find((theme) => theme.id === query.get('theme')) ?? officeTheme;
@@ -45,7 +42,7 @@ const legend = element('legend', HTMLUListElement);
 const pause = element('pause', HTMLButtonElement);
 
 const engine = new Engine(firstTheme, { random: Math.random });
-const stage = new Stage(element('scroll', HTMLDivElement), canvas, engine.layout);
+const stage = new StageCanvas(element('scroll', HTMLDivElement), canvas, engine.layout);
 const tooltip = new TooltipView(element('tip', HTMLDivElement), element('stage', HTMLElement));
 const strip = new StatusStrip(element('strip', HTMLDivElement));
 const log = new OfficeLog(element('log', HTMLOListElement));
@@ -116,6 +113,7 @@ function show(snapshot: Snapshot | null): void {
   waking.hidden = awake;
   canvas.hidden = !awake;
   if (snapshot === null || !awake) {
+    strip.clear();
     updateRoster([]);
     tooltip.hide();
     return;

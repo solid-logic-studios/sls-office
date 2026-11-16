@@ -11,7 +11,3 @@ export function percent(value: number): number {
 export function pick<T>(items: readonly T[], random: () => number): T | undefined {
   return items[Math.floor(random() * items.length)];
 }
-
-export function assertNever(value: never): never {
-  throw new Error(`Unhandled case: ${JSON.stringify(value)}`);
-}

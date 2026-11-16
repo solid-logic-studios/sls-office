@@ -54,6 +54,23 @@ describe('Vault run', () => {
     expect(find(KEEPER)?.status).toBe('WORKING');
   });
 
+  it('stands still at the vault and the stores, and types again once back at its desk', () => {
+    const { lab, engine, find } = setUp();
+    const { vault } = boxesTheme.layout;
+    run(engine, 0.1);
+    expect(find(KEEPER)?.pose).toBe('type');
+    engine.accept(lab.snapshot([backup('started')]));
+    expect(run(engine, 30, () => find(KEEPER)?.x === vault.x)).toBe(true);
+    expect(find(KEEPER)?.pose).toBe('stand');
+    run(engine, 3);
+    expect(find(KEEPER)?.pose).toBe('stand');
+
+    engine.accept(lab.snapshot([backup('finished')]));
+    expect(run(engine, 15, () => find(KEEPER)?.x === KEEPER_POST?.seat.x)).toBe(true);
+    run(engine, 0.2);
+    expect(find(KEEPER)?.pose).toBe('type');
+  });
+
   it('says so when the backup fails', () => {
     const { lab, engine, events } = setUp();
     engine.accept(lab.snapshot([backup('started')]));
@@ -104,6 +121,25 @@ describe('Pod run', () => {
     // The same document again does not replay anything.
     engine.accept(lab.snapshot());
     expect(said(events, WRANGLER)).toEqual(['PODS UP']);
+  });
+
+  it('lets a new pod take the bench of one leaving in the same Snapshot', () => {
+    const { lab, engine, find } = setUp();
+    const benches = boxesTheme.layout.homes.pod;
+    lab.vm('ci').workloads.push(pod('pod-1'), pod('pod-2'), pod('pod-3'));
+    engine.accept(lab.snapshot());
+    run(engine, 5);
+    expect(find('pod-1')?.x).toBe(benches[0]?.seat.x);
+
+    lab.remove('pod-1');
+    lab.vm('ci').workloads.push(pod('pod-4'));
+    engine.accept(lab.snapshot());
+    // It is on stage at once, coming in from the spawn point as a pod run plays.
+    expect(find('pod-4')).toMatchObject({ x: boxesTheme.layout.podSpawn.x, visible: true });
+    run(engine, 5);
+    expect(find('pod-1')).toBeUndefined();
+    expect(find('pod-4')).toMatchObject({ x: benches[0]?.seat.x, pose: 'type' });
+    expect(find('pod-2')?.x).toBe(benches[1]?.seat.x);
   });
 
   it('ticks, puffs and is gone when its job is done', () => {

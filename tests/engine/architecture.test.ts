@@ -15,14 +15,39 @@ function sources(folder: string): string[] {
   });
 }
 
-function imports(file: string): string[] {
-  const text = readFileSync(file, 'utf8');
-  return [...text.matchAll(/^\s*(?:import|export)\b[^'"]*?from\s+['"]([^'"]+)['"]/gm)].flatMap((match) =>
-    match[1] === undefined ? [] : [match[1]],
+/** Every module specifier in a source text: `import ... from`, `export ... from`, a bare `import` and `import()`. */
+function specifiersIn(source: string): string[] {
+  const code = source.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+  const forms = [
+    /\b(?:import|export)\b[^'"`;]*?\bfrom\s*['"]([^'"]+)['"]/g,
+    /\bimport\s*['"]([^'"]+)['"]/g,
+    /\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
+  ];
+  return forms.flatMap((form) =>
+    [...code.matchAll(form)].flatMap((match) => (match[1] === undefined ? [] : [match[1]])),
   );
 }
 
+function imports(file: string): string[] {
+  return specifiersIn(readFileSync(file, 'utf8'));
+}
+
 describe('Engine architecture', () => {
+  it('finds every form of import', () => {
+    const sample = [
+      "import { a } from '../page/a.ts';",
+      "import type {\n  B,\n  C,\n} from '../themes/b.ts';",
+      "export { d } from '../simulator/d.ts';",
+      "import '../page/side-effect.ts';",
+      "const lazy = await import('../themes/lazy.ts');",
+      "// import '../page/commented-out.ts';",
+      "export const notAnImport = 'x';",
+    ].join('\n');
+    expect(specifiersIn(sample).sort()).toEqual(
+      ['../page/a.ts', '../themes/b.ts', '../simulator/d.ts', '../page/side-effect.ts', '../themes/lazy.ts'].sort(),
+    );
+  });
+
   const files = sources(engine);
 
   it('finds the engine sources', () => {

@@ -34,12 +34,16 @@ export class Cast {
 
   constructor(private readonly world: World) {
     this.homes = new Homes(world.theme.layout.homes);
-    for (const founder of world.theme.founders) this.addFounder(founder);
     this.unsubscribe = [
       world.bus.subscribe('oom', (event) => this.forWorkload(event.subject)?.faint()),
       world.bus.subscribe('visitor', (event) => this.byId(event.targetId)?.visited()),
       world.bus.subscribe('check-in', (event) => this.byId(event.toId)?.checkedIn()),
     ];
+  }
+
+  /** Puts the Theme's founders at their desks. The Stage calls this once it is fully built. */
+  seatFounders(): void {
+    for (const founder of this.world.theme.founders) this.addFounder(founder);
   }
 
   /* -------------------------------------------------------------- queries */
@@ -86,18 +90,24 @@ export class Cast {
 
   /* ---------------------------------------------------------- reconciling */
 
+  /** Refreshes the characters that stay, retires the ones whose subject is gone, then casts the new subjects. */
   reconcile(vms: readonly Vm[], announce: boolean): void {
-    const seen = new Set<string>();
+    const keys = new Set<string>();
+    const arrivals: LabSubject[] = [];
     for (const vm of vms) {
-      this.place({ kind: 'vm', vm }, announce, seen);
-      if (vm.up) for (const workload of vm.workloads) this.place({ kind: 'workload', vm, workload }, announce, seen);
-      else this.keepAway(vm, announce, seen);
+      this.refresh({ kind: 'vm', vm }, announce, keys, arrivals);
+      if (!vm.up) {
+        this.keepAway(vm, announce, keys);
+        continue;
+      }
+      for (const workload of vm.workloads) this.refresh({ kind: 'workload', vm, workload }, announce, keys, arrivals);
     }
     for (const [key, character] of this.bySubject) {
-      if (seen.has(key)) continue;
+      if (keys.has(key)) continue;
       this.bySubject.delete(key);
       character.retire();
     }
+    for (const subject of arrivals) this.place(subject, announce);
   }
 
   /** A deploy's newcomer for a workload: the next generation, standing at `at`, with no home yet. */
@@ -200,15 +210,20 @@ export class Cast {
     character.settleIn(false);
   }
 
-  private place(subject: LabSubject, announce: boolean, seen: Set<string>): void {
+  /** Notes that a subject is in this Snapshot. Its character, if it has one, takes the new numbers. */
+  private refresh(subject: LabSubject, announce: boolean, keys: Set<string>, arrivals: LabSubject[]): void {
     const key = subjectKey(subject);
-    seen.add(key);
+    keys.add(key);
     const existing = this.bySubject.get(key);
-    if (existing !== undefined) {
-      existing.subject = subject;
-      existing.refreshMood(announce);
+    if (existing === undefined) {
+      arrivals.push(subject);
       return;
     }
+    existing.subject = subject;
+    existing.refreshMood(announce);
+  }
+
+  private place(subject: LabSubject, announce: boolean): void {
     const id = subject.kind === 'vm' ? subject.vm.id : subject.workload.id;
     const generation = subject.kind === 'workload' ? (this.generations.get(id) ?? 0) : 0;
     const casting = this.world.theme.cast(subject, generation);
@@ -226,17 +241,17 @@ export class Cast {
       start: spotOf(home),
     });
     this.homes.occupy(home, character);
-    this.bySubject.set(key, character);
+    this.bySubject.set(subjectKey(subject), character);
     this.everyone.push(character);
     character.settleIn(announce);
   }
 
   /** A down VM no longer reports its workloads: keep their characters, absent, with the VM's new state. */
-  private keepAway(vm: Vm, announce: boolean, seen: Set<string>): void {
+  private keepAway(vm: Vm, announce: boolean, keys: Set<string>): void {
     for (const [key, character] of this.bySubject) {
       const subject = character.subject;
       if (subject?.kind !== 'workload' || subject.vm.id !== vm.id) continue;
-      seen.add(key);
+      keys.add(key);
       character.subject = { ...subject, vm };
       character.refreshMood(announce);
     }

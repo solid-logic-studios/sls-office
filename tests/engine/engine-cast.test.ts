@@ -47,17 +47,17 @@ describe('Engine cast and homes', () => {
     expect(parts(engine).worker).toBe(12);
   });
 
-  it('casts a workload that arrives later, at the desk a leaver freed', () => {
+  it('casts a workload that arrives with a leaver, at the desk the leaver frees', () => {
     const lab = new Lab();
     const engine = new Engine(boxesTheme);
     engine.accept(lab.snapshot());
     lab.remove('scrd-client-develop');
     lab.vm('compute').workloads.push(site('late-site-develop'));
     engine.accept(lab.snapshot());
-    // No desk yet: the leaver still holds it until it has gone.
-    expect(byId(engine, 'late-site-develop')).toBeUndefined();
+    // The leaver is going, so its desk is free for the newcomer straight away.
+    expect(byId(engine, 'late-site-develop')?.x).toBe(boxesTheme.layout.homes.worker[1]?.seat.x);
     run(engine, 0.2);
-    engine.accept(lab.snapshot());
+    expect(byId(engine, 'scrd-client-develop')).toBeUndefined();
     expect(byId(engine, 'late-site-develop')?.x).toBe(boxesTheme.layout.homes.worker[1]?.seat.x);
   });
 

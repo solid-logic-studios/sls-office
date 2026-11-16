@@ -1,3 +1,4 @@
+import { assertNever } from '../../assert-never.ts';
 import type { Casting } from '../../contract/theme.ts';
 import type { World } from '../world.ts';
 import { Attendant } from './attendant.ts';
@@ -22,9 +23,7 @@ export function createCharacter(world: World, part: Casting['part'], init: Chara
       return new Checker(world, init);
     case 'pod':
       return new Pod(world, init);
-    default: {
-      const unreachable: never = part;
-      throw new Error(`Unknown part ${String(unreachable)}`);
-    }
+    default:
+      return assertNever(part, 'part');
   }
 }

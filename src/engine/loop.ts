@@ -1,5 +1,8 @@
-/** A frame never advances time by more than this, so a tab coming back from the background does not jump. */
-export const MAX_FRAME_SECONDS = 0.05;
+/**
+ * A frame never advances time by more than this. A slow or throttled display still plays in real time
+ * down to 4 frames a second, and a tab coming back from the background does not jump.
+ */
+export const MAX_FRAME_SECONDS = 0.25;
 
 /** The render loop. `requestFrame` and `cancelFrame` are injected so a test can drive it by hand. */
 export class Loop {
@@ -30,8 +33,12 @@ export class Loop {
     const elapsed = this.lastMs === null ? 0 : (timeMs - this.lastMs) / 1000;
     this.lastMs = timeMs;
     const dt = Math.min(MAX_FRAME_SECONDS, Math.max(0, elapsed));
-    this.frame(this.paused ? 0 : dt);
-    // `frame` may have stopped the loop.
-    if (this.handle !== null) this.handle = this.requestFrame(this.tick);
+    try {
+      this.frame(this.paused ? 0 : dt);
+    } finally {
+      // Ask for the next frame even if this one threw, so one bad frame does not stop the Office.
+      // `frame` may also have stopped the loop.
+      if (this.handle !== null) this.handle = this.requestFrame(this.tick);
+    }
   };
 }

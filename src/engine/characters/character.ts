@@ -1,3 +1,4 @@
+import { assertNever } from '../../assert-never.ts';
 import type { Painter } from '../../contract/painter.ts';
 import type { Cue, Look, Mood, Part, Place, SceneStatus, Spot, Subject, Tip } from '../../contract/theme.ts';
 import { MoodMachine, vitalsOf, type Vitals } from '../mood.ts';
@@ -204,7 +205,7 @@ export abstract class Character implements StageNode {
 
   hold(): void {
     this.held = true;
-    this.onHold();
+    this.onInterrupted();
   }
 
   release(): void {
@@ -221,6 +222,9 @@ export abstract class Character implements StageNode {
     this.walker.goTo(spot, speed);
     this.seatY = null;
     this.facingOverride = null;
+    // Whatever it was doing at its desk stops with the walk; the desk logic sets it again on arrival.
+    this.activity = 'stand';
+    this.frantic = false;
   }
 
   goHome(speed = this.speed): void {
@@ -335,17 +339,10 @@ export abstract class Character implements StageNode {
   /** Run each frame while a scene holds the character: by default it waits for the scene. */
   protected whileHeld(): void {}
 
-  protected onHold(): void {}
+  /** Something has taken the character away from what it was doing: a scene, an absence or a faint. */
+  protected onInterrupted(): void {}
 
   protected onRelease(): void {}
-
-  /** Back in view after being absent, already at home. */
-  protected onShow(): void {}
-
-  protected onHide(): void {}
-
-  /** Back on its feet after fainting. */
-  protected onRecover(): void {}
 
   /** How it arrives mid-show: a puff at home. */
   protected announceArrival(): void {
@@ -372,7 +369,7 @@ export abstract class Character implements StageNode {
     this.walker.stop();
     this.shown = false;
     if (this.walkingOut) this.gone = true;
-    this.onHide();
+    this.onInterrupted();
   }
 
   private show(announce: boolean): void {
@@ -380,13 +377,13 @@ export abstract class Character implements StageNode {
     const spot = this.homeSpot;
     if (spot !== null) this.teleport(spot);
     this.sitAtHome();
-    this.onShow();
+    this.onInterrupted();
     if (announce) this.appear();
   }
 
   private recover(): void {
     this.sayCue('recovered', true);
-    this.onRecover();
+    this.onInterrupted();
   }
 
   private emitMoodEffects(dt: number): void {
@@ -406,10 +403,8 @@ export abstract class Character implements StageNode {
       case 'walk':
       case 'faint':
         return;
-      default: {
-        const unreachable: never = this.pose;
-        throw new Error(`Unknown pose ${String(unreachable)}`);
-      }
+      default:
+        return assertNever(this.pose, 'pose');
     }
   }
 }

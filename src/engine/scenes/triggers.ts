@@ -46,8 +46,9 @@ export class SceneTriggers {
       this.play(new DeployScene(this.world, subject));
       return;
     }
-    // An unanswered scene takes the verdict, even one that finished without it, so it is not replayed.
-    const waiting = this.deploys.find((scene) => scene.subject === subject && !scene.decided);
+    // The latest unanswered scene takes the verdict, so a new deploy is not starved by an older one whose
+    // verdict was lost. A scene that finished without one still takes it, so it is not replayed.
+    const waiting = this.deploys.findLast((scene) => scene.subject === subject && !scene.decided);
     if (waiting !== undefined) waiting.decide(event.phase);
     else this.play(new DeployScene(this.world, subject, event.phase));
     this.deploys = this.deploys.filter((scene) => !(scene.finished && scene.decided));

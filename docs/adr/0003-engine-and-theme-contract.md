@@ -42,8 +42,9 @@ Canvas text:
   `Painter` in `src/contract/painter.ts`. These TypeScript types are the single source: the Engine
   and every Theme import them, and nothing else defines the shape.
 - **Dependencies point one way.** A Theme imports only from `src/contract/`. The Engine imports only
-  from `src/contract/` and itself. A test fails if a file under `src/engine/` imports from
-  `src/themes/`, `src/page/` or `src/simulator/`. Only `src/main.ts` knows which Themes exist.
+  from `src/contract/`, itself and the one shared helper `src/assert-never.ts`. A test fails if a
+  file under `src/engine/` imports from `src/themes/`, `src/page/` or `src/simulator/`. Only
+  `src/main.ts` knows which Themes exist.
 - **A Theme supplies no behaviour.** It gives a `layout` (floors, a lift, rooms, homes for each
   part, break spots, stores, the vault), a `cast` function (who plays each VM or workload, and what
   they look like), the founders, the `lines`, the `decor` and the hover `hotspots`. Its drawing
@@ -69,24 +70,27 @@ Canvas text:
   in different Snapshots, so a scene plays up to the health check and waits, with a time limit. A
   verdict with no `started` plays the whole scene.
 - **The Simulator is another `SnapshotSource`**, switched on with `?sim`. It produces Snapshots of
-  the same shape, validated against the generated schema in its tests, and every control-room action
-  is a command. The Engine cannot tell it from the live source.
+  the same shape, validated against the generated schema in its tests. Every control-room action on
+  the lab is a `SimCommand`; the time-of-day slider only moves the sky and goes to the page. The
+  Engine cannot tell the Simulator from the live source.
 - **Canvas text uses the built-in pixel font**, capitals only. The stage draws at whole device
-  pixels per art pixel and never below 1.5 CSS pixels per art pixel, so text stays legible on a
-  phone and the stage pans instead of shrinking.
+  pixels per art pixel. At the default zoom it never goes below 1.5 CSS pixels per art pixel, so
+  text stays legible on a phone and the stage pans instead of shrinking. The zoom-out button can
+  go below that when the viewer asks for the whole Office at once.
 - **Nobody walks through a wall.** A floor declares the span characters may walk, and the Theme
   paints a doorway wherever that span crosses a wall.
 
 ## Consequences
 
-- A new Theme is one module under `src/themes/` plus one line in `src/main.ts`. If it needs an
-  Engine change, the contract is missing something: change the contract, not the Engine for one
-  Theme.
+- A new Theme is one module under `src/themes/`, plus an import and an entry in `THEMES` in
+  `src/main.ts`. If it needs an Engine change, the contract is missing something: change the
+  contract, not the Engine for one Theme.
 - The Theme interface is wider than the map's four-field sketch (it adds founders, the visitor,
   hotspots, the legend and furniture art). Each addition is something the prototype showed that is
   Office-specific and so cannot live in the Engine.
-- Themes cannot add a new behaviour, a new prop or a new kind of particle. Those are Engine changes
-  that every Theme then shares.
+- Themes cannot add a new behaviour, a new carried item (the parcel and strongbox trolleys) or a
+  new kind of particle. Those are Engine changes that every Theme then shares. A Theme can add its
+  own set dressing, including depth-sorted `props`.
 - Which service is the greeter or the checker is decided per Theme, so the mapping from lab names
   to parts is repeated in each Theme. Extract it when the second real Theme (#3) needs it.
 - The live Snapshot has no workloads or events until solid-logic-studios/infrastructure#224 and

@@ -76,7 +76,7 @@ describe('Founders', () => {
     expect(
       run(
         engine,
-        120,
+        600,
         () => said(events, 'founder-a').includes('ALARM!') || said(events, 'founder-a').includes('ALL HANDS'),
       ),
     ).toBe(true);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ServiceWorkload, SiteInstanceWorkload, Vm, VmRole, Workload } from '../../src/contract/snapshot.ts';
-import type { Cue, Mood, Occupant, PersonLook, Place, Rect, StageView } from '../../src/contract/theme.ts';
+import type { Cue, LabSubject, Mood, Occupant, PersonLook, Place, Rect, StageView } from '../../src/contract/theme.ts';
 import { PLAQUE, LAN_BOARD, REPLACE_NOTE } from '../../src/themes/office/boards.ts';
 import { DOORWAYS, DOOR_HEIGHT } from '../../src/themes/office/doorways.ts';
 import { officeTheme } from '../../src/themes/office/index.ts';
@@ -55,6 +55,24 @@ function occupant(mood: Mood, workload: Workload = site(), atSeat = true): Occup
 
 const allPlaces = (): Place[] => Object.values(officeTheme.layout.homes).flat();
 
+/** The blurb of one subject of every casting rule: each VM role, site instances, the platform services and a pod. */
+function castBlurbs(): string[] {
+  const compute = vm('compute');
+  const onCompute = (workload: Workload): LabSubject => ({ kind: 'workload', vm: compute, workload });
+  const subjects: LabSubject[] = [
+    ...(['data', 'compute', 'deploy', 'ci'] as const).map((role): LabSubject => ({ kind: 'vm', vm: vm(role) })),
+    onCompute(site({ client: 'scrd', env: 'production' })),
+    onCompute(site({ client: 'scrd', env: 'develop' })),
+    onCompute(site({ client: 'acme-co', env: 'production' })),
+    onCompute(site({ client: 'acme-co', env: 'develop' })),
+    onCompute(service('platform', 'traefik')),
+    onCompute(service('platform', 'cloudflared-1')),
+    onCompute(service('platform', 'gatus')),
+    onCompute({ kind: 'ci-pod', id: 'pod-1', cpu: 90, mem: 40 }),
+  ];
+  return subjects.flatMap((subject) => officeTheme.cast(subject, 0)?.blurb ?? []);
+}
+
 /** The recorded calls from running every decor layer and every place's art. */
 function paintEverything(view: StageView): RecordingPainter {
   const painter = new RecordingPainter();
@@ -103,7 +121,9 @@ describe('officeTheme words', () => {
       officeTheme.legend,
       Object.values(officeTheme.layout.rooms).map((r) => r.blurb),
       tips,
+      castBlurbs(),
     ]);
+    expect(castBlurbs().length).toBeGreaterThan(8);
     expect(hasDash(said)).toBe(false);
     for (const view of [NOON, NIGHT]) {
       expect(paintEverything(view).texts.filter(hasDash)).toEqual([]);

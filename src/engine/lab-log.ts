@@ -1,3 +1,4 @@
+import { assertNever } from '../assert-never.ts';
 import type { BackupEvent, DeployEvent } from '../contract/snapshot.ts';
 import type { EventBus } from './event-bus.ts';
 
@@ -50,10 +51,8 @@ function deployLine(event: DeployEvent): string {
       return `Deploy healthy: ${event.subject} is on the new container`;
     case 'rolled-back':
       return `Deploy rolled back: ${event.subject} failed its health check, the old container keeps serving`;
-    default: {
-      const unreachable: never = event.phase;
-      throw new Error(`Unknown deploy phase ${String(unreachable)}`);
-    }
+    default:
+      return assertNever(event.phase, 'deploy phase');
   }
 }
 
@@ -65,9 +64,7 @@ function backupLine(event: BackupEvent): string {
       return 'Backup run finished: the set is safe off-site';
     case 'failed':
       return 'Backup failed';
-    default: {
-      const unreachable: never = event.phase;
-      throw new Error(`Unknown backup phase ${String(unreachable)}`);
-    }
+    default:
+      return assertNever(event.phase, 'backup phase');
   }
 }

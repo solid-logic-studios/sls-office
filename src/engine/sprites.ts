@@ -1,3 +1,4 @@
+import { assertNever } from '../assert-never.ts';
 import type { Painter } from '../contract/painter.ts';
 import type { BoxLook, Look, PersonLook } from '../contract/theme.ts';
 
@@ -56,10 +57,8 @@ export function drawLook(painter: Painter, look: Look, state: SpriteState): void
     case 'box':
       drawBox(painter, look, state, x, y);
       return;
-    default: {
-      const unreachable: never = look;
-      throw new Error(`Unknown look ${String(unreachable)}`);
-    }
+    default:
+      return assertNever(look, 'look');
   }
 }
 
@@ -69,10 +68,8 @@ export function boundsOf(look: Look): Bounds {
       return PERSON_BOUNDS;
     case 'box':
       return { half: Math.ceil(look.w / 2) + 1, height: look.h + 2 };
-    default: {
-      const unreachable: never = look;
-      throw new Error(`Unknown look ${String(unreachable)}`);
-    }
+    default:
+      return assertNever(look, 'look');
   }
 }
 
@@ -214,10 +211,8 @@ function drawHair(rect: Rect, look: PersonLook, x: number, headY: number): void 
       rect(hair, x - 4, headY + 2, 1, 2);
       rect(hair, x + 3, headY + 2, 1, 2);
       return;
-    default: {
-      const unreachable: never = look.hairStyle;
-      throw new Error(`Unknown hair style ${String(unreachable)}`);
-    }
+    default:
+      return assertNever(look.hairStyle, 'hair style');
   }
 }
 
@@ -239,10 +234,8 @@ function drawTrolley(rect: Rect, trolley: Trolley, x: number, y: number, facing:
       rect('#e2b84a', tx - 1, y - 8, 3, 3);
       rect('#8a6a1c', tx, y - 7, 1, 1);
       return;
-    default: {
-      const unreachable: never = trolley;
-      throw new Error(`Unknown trolley ${String(unreachable)}`);
-    }
+    default:
+      return assertNever(trolley, 'trolley');
   }
 }
 

@@ -66,6 +66,7 @@ export class Stage implements World {
       ...this.cast.homes.all().map((place) => new PlaceNode(place, this.cast.homes)),
       ...theme.decor.props.map((prop) => new PropNode(prop)),
     ];
+    this.cast.seatFounders();
   }
 
   get now(): number {

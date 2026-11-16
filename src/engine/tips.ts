@@ -1,3 +1,4 @@
+import { assertNever } from '../assert-never.ts';
 import type { LabSubject, Mood, Rect, Severity, Subject } from '../contract/theme.ts';
 
 export function severityOf(mood: Mood): Severity {
@@ -11,10 +12,8 @@ export function severityOf(mood: Mood): Severity {
     case 'break':
     case 'working':
       return 'ok';
-    default: {
-      const unreachable: never = mood;
-      throw new Error(`Unknown mood ${String(unreachable)}`);
-    }
+    default:
+      return assertNever(mood, 'mood');
   }
 }
 
@@ -28,10 +27,8 @@ export function loadOf(subject: Subject | null): { cpu: number; mem: number } | 
       return { cpu: subject.workload.cpu, mem: subject.workload.mem };
     case 'founder':
       return null;
-    default: {
-      const unreachable: never = subject;
-      throw new Error(`Unknown subject ${String(unreachable)}`);
-    }
+    default:
+      return assertNever(subject, 'subject');
   }
 }
 

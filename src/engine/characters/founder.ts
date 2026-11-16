@@ -1,3 +1,4 @@
+import { assertNever } from '../../assert-never.ts';
 import type { Founder as FounderData } from '../../contract/theme.ts';
 import type { World } from '../world.ts';
 import { Character, type CharacterInit } from './character.ts';
@@ -77,10 +78,8 @@ export class Founder extends Character {
         this.sitAtHome();
         this.errand = { kind: 'desk', until: now + random.range(8, 16) };
         return;
-      default: {
-        const unreachable: never = errand;
-        throw new Error(`Unknown errand ${String(unreachable)}`);
-      }
+      default:
+        return assertNever(errand, 'errand');
     }
   }
 

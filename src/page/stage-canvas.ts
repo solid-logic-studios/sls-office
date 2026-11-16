@@ -40,7 +40,7 @@ export interface ArtSize {
 }
 
 /** Owns the canvas size: fits the art to the container, zooms, and reports where the pointer is in art pixels. */
-export class Stage {
+export class StageCanvas {
   private zoom = 0;
   private scale = MIN_DEVICE_SCALE;
   private lastWidth = -1;

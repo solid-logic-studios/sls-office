@@ -1,3 +1,4 @@
+import { assertNever } from '../assert-never.ts';
 import type { Painter } from '../contract/painter.ts';
 import type { EventBus } from './event-bus.ts';
 import type { Random } from './random.ts';
@@ -178,9 +179,7 @@ function drawParticle(painter: Painter, particle: Particle): void {
         painter.rect(CROSS_COLOUR, x + 4 - i, y + i, 1, 1);
       }
       return;
-    default: {
-      const unreachable: never = particle;
-      throw new Error(`Unknown particle ${String(unreachable)}`);
-    }
+    default:
+      return assertNever(particle, 'particle');
   }
 }

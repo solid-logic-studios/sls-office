@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MIN_LEGIBLE_CSS_SCALE, stageScale } from '../../src/page/stage.ts';
+import { MIN_LEGIBLE_CSS_SCALE, stageScale } from '../../src/page/stage-canvas.ts';
 
 const ART_WIDTH = 660;
 

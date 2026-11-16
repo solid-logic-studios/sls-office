@@ -110,8 +110,38 @@ describe('boxes theme words', () => {
     }
   });
 
-  it('uses no em-dashes', () => {
-    expect(JSON.stringify(boxesTheme.lines)).not.toContain('—');
+  it('uses no em-dash or en-dash in any text it can say or draw', () => {
+    const subjects: LabSubject[] = [
+      ...(['data', 'compute', 'deploy', 'ci'] as const).map((role): LabSubject => ({ kind: 'vm', vm: vm(role) })),
+      workloadSubject(SITE),
+      workloadSubject(service('platform', 'traefik')),
+      workloadSubject(service('platform', 'cloudflared-1')),
+      workloadSubject(service('platform', 'gatus')),
+      workloadSubject({ kind: 'ci-pod', id: 'pod-1', cpu: 1, mem: 1 }),
+    ];
+    const blurbs = subjects.flatMap((subject) => boxesTheme.cast(subject, 0)?.blurb ?? []);
+    expect(blurbs.length).toBeGreaterThan(5);
+
+    const painter = new RecordingPainter();
+    for (const draw of [...boxesTheme.decor.back, ...boxesTheme.decor.front]) draw(painter, STAGE);
+    for (const prop of boxesTheme.decor.props) prop.draw(painter, STAGE);
+    const occupant: PlaceView['occupant'] = { subject: { kind: 'vm', vm: vm('data') }, mood: 'working', atSeat: true };
+    for (const place of Object.values(boxesTheme.layout.homes).flat()) {
+      place.art(painter, { place, occupant: null, stage: STAGE });
+      place.art(painter, { place, occupant, stage: STAGE });
+    }
+
+    const said = JSON.stringify([
+      boxesTheme.name,
+      boxesTheme.lines,
+      boxesTheme.founders,
+      boxesTheme.visitor,
+      boxesTheme.legend,
+      Object.values(boxesTheme.layout.rooms).map((room) => room.blurb),
+      blurbs,
+      painter.texts,
+    ]);
+    expect(said).not.toMatch(/[—–]/);
   });
 });
 

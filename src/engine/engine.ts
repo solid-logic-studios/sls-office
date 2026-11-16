@@ -13,7 +13,7 @@ export interface EngineOptions {
   random?: RandomSource;
 }
 
-/** A read-only look at one character, for tests and the roster. */
+/** A read-only look at one character, as `Engine.characters()` reports it. The tests read the cast through it. */
 export interface CharacterView {
   id: string;
   part: Part;

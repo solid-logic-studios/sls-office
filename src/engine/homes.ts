@@ -7,9 +7,9 @@ export class Homes {
 
   constructor(private readonly places: Layout['homes']) {}
 
-  /** The first free place for a part, in the Theme's order. */
+  /** The first free place for a part, in the Theme's order. A place held by a leaver counts as free. */
   free(part: Part): Place | null {
-    return this.places[part].find((place) => !this.occupants.has(place)) ?? null;
+    return this.places[part].find((place) => !this.isTaken(place)) ?? null;
   }
 
   occupy(place: Place, character: Character): void {
@@ -22,6 +22,11 @@ export class Homes {
 
   occupantOf(place: Place): Character | null {
     return this.occupants.get(place) ?? null;
+  }
+
+  private isTaken(place: Place): boolean {
+    const occupant = this.occupants.get(place);
+    return occupant !== undefined && !occupant.retiring && !occupant.gone;
   }
 
   /** A part's places that have somebody, in order. */

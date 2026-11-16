@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Engine } from '../../src/engine/engine.ts';
 import type { EngineEvent } from '../../src/engine/events.ts';
+import { CHECKER_OFFSET, COURIER_OFFSET } from '../../src/engine/scenes/deploy.ts';
 import { boxesTheme } from '../../src/themes/boxes/index.ts';
 import { Lab, deploy, logged, record, run, said } from '../support/lab.ts';
 
@@ -38,10 +39,11 @@ describe('Deploy scene', () => {
     expect(run(engine, 15, () => find(NEWCOMER) !== undefined)).toBe(true);
     expect(find(NEWCOMER)).toMatchObject({ part: 'worker', status: 'NEW', visible: true });
     expect(said(events, NEWCOMER)).toEqual(['NEW BOX']);
-    expect(find(COURIER)?.x).toBe((DESK?.seat.x ?? 0) + 20);
+    expect(find(COURIER)?.x).toBe((DESK?.seat.x ?? 0) + COURIER_OFFSET);
 
     // The checker walks over and runs the health check; with no verdict yet it waits.
-    const checking = () => said(events, CHECKER).includes('CHECKING') && find(CHECKER)?.x === (DESK?.seat.x ?? 0) - 6;
+    const checking = () =>
+      said(events, CHECKER).includes('CHECKING') && find(CHECKER)?.x === (DESK?.seat.x ?? 0) + CHECKER_OFFSET;
     expect(run(engine, 15, checking)).toBe(true);
     run(engine, 5);
     expect(said(events, CHECKER)).not.toContain('HEALTHY');
@@ -84,6 +86,19 @@ describe('Deploy scene', () => {
     run(engine, 15);
     expect(find(TARGET)).toBeUndefined();
     expect(find(NEWCOMER)?.x).toBe(DESK?.seat.x);
+  });
+
+  it('gives the verdict to the latest deploy of a subject, not an older one whose verdict was lost', () => {
+    const { lab, engine, events, find } = rig();
+    engine.accept(lab.snapshot([deploy('started', TARGET)]));
+    engine.accept(lab.snapshot([deploy('started', TARGET)]));
+    engine.accept(lab.snapshot([deploy('healthy', TARGET)]));
+    // The first scene has no verdict and gives up after 30 s; the second then plays with its verdict known.
+    expect(run(engine, 60, () => said(events, CHECKER).includes('HEALTHY'))).toBe(true);
+    run(engine, 15);
+    expect(find(TARGET)).toBeUndefined();
+    expect(find(`${TARGET}#2`)).toMatchObject({ x: DESK?.seat.x, status: 'WORKING' });
+    expect(said(events, COURIER)).toEqual(['DELIVERY', 'DELIVERY']);
   });
 
   it('plays the whole deploy for a verdict whose start was missed', () => {
