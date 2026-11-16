@@ -6,7 +6,7 @@ import type { LabEvent, Workload } from '../contract/snapshot.ts';
  * - `LabEvent`s come from the Snapshot, or are derived by the differ (a VM's `up` flag flipping).
  *   A `deploy` or `oom` subject is a workload id; a `vm-down` or `vm-up` subject is a VM id.
  * - `workload-added` and `workload-removed` are derived by the differ from two Snapshots.
- * - `speech`, `paper`, `visitor` and `log` are messages between parts of the Engine: characters and
+ * - `speech`, `paper`, `visitor`, `check-in` and `log` are messages between parts of the Engine: characters and
  *   scenes publish them, and the bubble, effects and log systems subscribe. Nothing calls another
  *   character directly.
  */
@@ -20,6 +20,8 @@ export type EngineEvent =
   | { kind: 'paper'; fromId: string; toId: string }
   /** A visitor has reached the worker it came to see. */
   | { kind: 'visitor'; targetId: string }
+  /** A founder has asked a worker how it is going. */
+  | { kind: 'check-in'; fromId: string; toId: string }
   /** One line for the Office log. */
   | { kind: 'log'; text: string };
 
