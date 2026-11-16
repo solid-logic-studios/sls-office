@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 16 November 2026
+
 ### Added
 
 - The Engine and the Theme contract (ADR 0003): moods, walking, speech bubbles, tooltips and scenes for a deploy (healthy and rolled back), a CI burst, an OOM kill, a VM outage and the backup vault run.
@@ -31,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Minimal VM moods page with a "Waking the office…" state when the snapshot is missing or stale.
 - Static image `ghcr.io/solid-logic-studios/sls-office` built by CI.
 
-[Unreleased]: https://github.com/solid-logic-studios/sls-office/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/solid-logic-studios/sls-office/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/solid-logic-studios/sls-office/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/solid-logic-studios/sls-office/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/solid-logic-studios/sls-office/releases/tag/v0.1.0
