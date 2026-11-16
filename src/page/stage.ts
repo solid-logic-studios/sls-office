@@ -1,14 +1,19 @@
 import { CanvasPainter } from './canvas-painter.ts';
 
-/** Capitals are 7 art pixels tall, so this keeps them at least 14 CSS pixels tall on a phone. */
-export const MIN_LEGIBLE_CSS_SCALE = 2;
+/**
+ * CSS pixels per art pixel the stage never goes below. Capitals are 7 art pixels tall, so they stay
+ * at least 10.5 CSS pixels tall on a phone: about the capital height of 15 px body text.
+ */
+export const MIN_LEGIBLE_CSS_SCALE = 1.5;
 const MIN_DEVICE_SCALE = 1;
 const MAX_DEVICE_SCALE = 12;
+/** Browsers report ratios such as 2.0000000298, which must not round a whole scale up or down a step. */
+const ROUNDING_SLACK = 1e-6;
 
 /**
- * Device pixels per art pixel: the largest whole CSS scale that fits the width (never below
- * `MIN_LEGIBLE_CSS_SCALE`, so a narrow screen pans instead of shrinking the text), plus `zoom`
- * steps, times the device pixel ratio.
+ * Whole device pixels per art pixel, so the pixel art stays crisp at any device pixel ratio: the
+ * largest scale that fits the width, but never below the legible floor (a narrow screen pans
+ * instead of shrinking the text), plus `zoom` steps.
  */
 export function stageScale(
   availableCssWidth: number,
@@ -16,9 +21,9 @@ export function stageScale(
   devicePixelRatio: number,
   zoom: number,
 ): number {
-  const fitting = Math.max(MIN_LEGIBLE_CSS_SCALE, Math.floor(availableCssWidth / artWidth));
-  const device = Math.round((fitting + zoom) * devicePixelRatio);
-  return Math.min(MAX_DEVICE_SCALE, Math.max(MIN_DEVICE_SCALE, device));
+  const fitting = Math.floor((availableCssWidth * devicePixelRatio) / artWidth + ROUNDING_SLACK);
+  const legible = Math.ceil(MIN_LEGIBLE_CSS_SCALE * devicePixelRatio - ROUNDING_SLACK);
+  return Math.min(MAX_DEVICE_SCALE, Math.max(MIN_DEVICE_SCALE, Math.max(fitting, legible) + zoom));
 }
 
 export interface StagePoint {
