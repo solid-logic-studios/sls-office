@@ -9,8 +9,11 @@ export type Verdict = Exclude<DeployEvent['phase'], 'started'>;
 
 /** The health check always shows for at least this long. */
 export const HEALTH_CHECK_SECONDS = 2.2;
-/** With no verdict by then, the newcomer gives up. */
-export const VERDICT_TIMEOUT_SECONDS = 30;
+/**
+ * With no verdict by then, the newcomer gives up. The lab's verdict can trail `started` by minutes: the
+ * deploy step's health gate allows 180 s, plus the collector's interval, so this sits just above that.
+ */
+export const VERDICT_TIMEOUT_SECONDS = 200;
 
 /** Where the courier parks, the newcomer stands and the checker stands, relative to the seat. */
 export const COURIER_OFFSET = 20;

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Engine } from '../../src/engine/engine.ts';
 import type { EngineEvent } from '../../src/engine/events.ts';
-import { CHECKER_OFFSET, COURIER_OFFSET } from '../../src/engine/scenes/deploy.ts';
+import { CHECKER_OFFSET, COURIER_OFFSET, VERDICT_TIMEOUT_SECONDS } from '../../src/engine/scenes/deploy.ts';
 import { boxesTheme } from '../../src/themes/boxes/index.ts';
 import { Lab, deploy, logged, record, run, said } from '../support/lab.ts';
 
@@ -93,8 +93,8 @@ describe('Deploy scene', () => {
     engine.accept(lab.snapshot([deploy('started', TARGET)]));
     engine.accept(lab.snapshot([deploy('started', TARGET)]));
     engine.accept(lab.snapshot([deploy('healthy', TARGET)]));
-    // The first scene has no verdict and gives up after 30 s; the second then plays with its verdict known.
-    expect(run(engine, 60, () => said(events, CHECKER).includes('HEALTHY'))).toBe(true);
+    // The first scene has no verdict and gives up after the timeout; the second then plays with its verdict known.
+    expect(run(engine, VERDICT_TIMEOUT_SECONDS + 30, () => said(events, CHECKER).includes('HEALTHY'))).toBe(true);
     run(engine, 15);
     expect(find(TARGET)).toBeUndefined();
     expect(find(`${TARGET}#2`)).toMatchObject({ x: DESK?.seat.x, status: 'WORKING' });
@@ -158,12 +158,37 @@ describe('Deploy scene', () => {
     expect(find(COURIER)).toMatchObject({ x: COURIER_POST?.seat.x, status: 'WORKING' });
   });
 
-  it('gives up after 30 s with no verdict: the newcomer vanishes and nobody changes desks', () => {
+  it('plays a rolled-back verdict that arrives 180 s after started, once', () => {
+    const { lab, engine, events, find } = rig();
+    engine.accept(lab.snapshot([deploy('started', TARGET)]));
+    run(engine, 180);
+    expect(find(NEWCOMER)).toBeDefined();
+    engine.accept(lab.snapshot([deploy('rolled-back', TARGET)]));
+    expect(run(engine, 6, () => said(events, TARGET).includes('SERVING'))).toBe(true);
+    run(engine, 15);
+    expect(said(events, CHECKER).filter((line) => line === 'UNHEALTHY')).toHaveLength(1);
+    expect(said(events, COURIER)).toEqual(['DELIVERY']);
+    expect(find(NEWCOMER)).toBeUndefined();
+  });
+
+  it('plays a healthy verdict that arrives 60 s after started, once', () => {
+    const { lab, engine, events, find } = rig();
+    engine.accept(lab.snapshot([deploy('started', TARGET)]));
+    run(engine, 60);
+    engine.accept(lab.snapshot([deploy('healthy', TARGET)]));
+    expect(run(engine, 6, () => said(events, CHECKER).includes('HEALTHY'))).toBe(true);
+    run(engine, 15);
+    expect(said(events, CHECKER).filter((line) => line === 'HEALTHY')).toHaveLength(1);
+    expect(find(TARGET)).toBeUndefined();
+    expect(find(NEWCOMER)?.x).toBe(DESK?.seat.x);
+  });
+
+  it('gives up when no verdict ever comes: the newcomer vanishes and nobody changes desks', () => {
     const { lab, engine, events, find } = rig();
     engine.accept(lab.snapshot([deploy('started', TARGET)]));
     run(engine, 15, () => find(NEWCOMER) !== undefined);
-    // The checker takes about 8 s to walk over; the 30 s start once it has said its line.
-    run(engine, 36);
+    // The checker takes about 8 s to walk over; the timeout starts once it has said its line.
+    run(engine, VERDICT_TIMEOUT_SECONDS + 6);
     expect(find(NEWCOMER)).toBeDefined();
     run(engine, 3);
     expect(find(NEWCOMER)).toBeUndefined();
