@@ -48,7 +48,7 @@ unprivileged user on port 8080, with a `HEALTHCHECK`. It needs no writes, so it 
 cp fixtures/snapshot.sample.json /tmp/snapshot.json
 docker run --rm --read-only -p 8080:8080 \
   -v "/tmp/snapshot.json:/srv/office/snapshot.json:ro" \
-  ghcr.io/solid-logic-studios/sls-office:main
+  ghcr.io/solid-logic-studios/sls-office:0.1.1
 ```
 
 The copy's `at` is stale, so the page shows "Waking the office…" until `at` is recent. In another
@@ -65,12 +65,15 @@ done
 Edit the copy in place (do not replace it, as a bind mount follows the original file) and the moods
 change without a reload. The page goes back to "Waking the office…" 60 seconds after the last refresh.
 
-Tags published: `main`, `sha-<short>` and `sha-<long>` from each push to `main`, and `X.Y.Z` and
-`X.Y` from each `vX.Y.Z` release tag (no `latest`).
+Tags published: `X.Y.Z` and `X.Y` from each `vX.Y.Z` release tag only (no `latest`). CI builds
+the image on every PR and push to `main` but never pushes it.
 
-**GHCR visibility:** this repo is private, so the package is private by default and the Compute
-host needs a pull credential unless the package is made public. That decision belongs to
-solid-logic-studios/infrastructure#222's ADR-0018, which is not yet written.
+**GHCR visibility: public** (solid-logic-studios/infrastructure ADR-0018), so the Compute host
+pulls with no credential. Public cannot be undone, and anyone can pull every published version, so
+the image must never hold anything internal, secret or third-party: no lab data (the snapshot is
+mounted at run time), no fixtures, no source maps. Releases are pushed with `provenance: false`
+and `sbom: false`, because those attestations carry the GitHub event payload (commit messages,
+emails, repository metadata). This repository stays private.
 
 ## Contributing
 
