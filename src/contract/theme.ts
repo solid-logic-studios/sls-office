@@ -255,6 +255,12 @@ export interface LineBank {
 
 export type DecorFn = (painter: Painter, stage: StageView) => void;
 
+/** Set dressing that is depth-sorted with the places and characters by its base line (a couch, a pillar). */
+export interface Prop {
+  baseY: number;
+  draw: DecorFn;
+}
+
 export interface Tip {
   title: string;
   detail: string;
@@ -291,8 +297,11 @@ export interface Theme {
   /** A passing visitor to a worker. `seed` is 0 to 1. */
   visitor: { look(seed: number): Look; title: string; blurb: string };
   lines: LineBank;
-  /** `back` is painted before the places and characters, `front` after them and before the bubbles. */
-  decor: { back: readonly DecorFn[]; front: readonly DecorFn[] };
+  /**
+   * `back` is painted first, then the places, characters and `props` sorted by base line, then
+   * `front`, then the bubbles.
+   */
+  decor: { back: readonly DecorFn[]; props: readonly Prop[]; front: readonly DecorFn[] };
   hotspots: readonly Hotspot[];
   legend: readonly LegendEntry[];
 }

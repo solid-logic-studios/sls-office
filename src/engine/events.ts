@@ -24,4 +24,9 @@ export type EngineEvent =
   | { kind: 'log'; text: string };
 
 export type EngineEventKind = EngineEvent['kind'];
-export type EngineEventOf<K extends EngineEventKind> = Extract<EngineEvent, { kind: K }>;
+
+/** Distributes over the union, so a member whose `kind` is itself a union (`oom | vm-down | vm-up`) narrows too. */
+type Narrow<E, K> = E extends { kind: infer EventKind } ? (K extends EventKind ? E & { kind: K } : never) : never;
+
+/** The event published under one `kind`. */
+export type EngineEventOf<K extends EngineEventKind> = Narrow<EngineEvent, K>;
