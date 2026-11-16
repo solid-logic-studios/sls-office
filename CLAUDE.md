@@ -10,13 +10,13 @@ SLS Office renders the Solid Logic Studios lab as an animated, themed pixel-art 
 built from three parts: an **engine** (rendering and animation), **themes** (swappable visual
 skins) and a **simulator** (drives the Office with synthetic lab activity).
 
-The tracer bullet has landed: a versioned **Snapshot contract**, a minimal page that draws one
-plain character per VM, and a static image published to GHCR. The engine, themes and simulator
-follow (see issue #2).
+It has two contracts: the versioned **Snapshot contract** (what the lab collector writes) and the
+**Theme contract** (what a theme gives the engine). The page ships as a static image on GHCR.
 
 - **Stack:** TypeScript (strict) + Vite + Vitest, canvas rendering, no framework (see
-  [ADR 0001](docs/adr/0001-typescript-vite-pnpm.md) and
-  [ADR 0002](docs/adr/0002-snapshot-contract-and-static-image.md))
+  [ADR 0001](docs/adr/0001-typescript-vite-pnpm.md),
+  [ADR 0002](docs/adr/0002-snapshot-contract-and-static-image.md) and
+  [ADR 0003](docs/adr/0003-engine-and-theme-contract.md))
 - **Runtime / package manager:** Node 24 ([`.nvmrc`](.nvmrc)) / pnpm (pinned via `packageManager`)
 
 ## Commands
@@ -34,17 +34,25 @@ pnpm format:check       # Prettier check (CI gate)
 
 ## Architecture
 
-- **`src/contract/`** is the Snapshot contract. `snapshot.ts` holds the TypeScript types, the
-  single source of truth. The JSON Schema is generated from them (never committed) and published
-  as a release asset.
-- **`src/source/`** holds `SnapshotSource` adapters (live HTTP, in-memory fixture for tests) and the `isSnapshot` guard; polling lives in `src/page/poller.ts`.
-- **`src/page/`** is the tracer-bullet page. It will be replaced by the engine in #2.
+- **`src/contract/`** holds the two contracts. `snapshot.ts` is the Snapshot contract: its types are
+  the single source of truth, and the JSON Schema is generated from them (never committed) and
+  published as a release asset. `theme.ts` is the Theme contract and `painter.ts` the drawing
+  surface both sides use.
+- **`src/engine/`** is the Engine: the render loop, moods, walking, characters, scenes, bubbles,
+  effects, the sprite renderer and tooltips. It imports only from `src/contract/` and itself, draws
+  only through the `Painter`, and knows nothing about any Theme (a test enforces the imports).
+- **`src/themes/`** holds the Themes: `office/` (the prototype's world) and `boxes/` (a plain test
+  theme that proves the contract). A Theme is data and pure drawing functions; it imports only from
+  `src/contract/`, so a new Theme never needs an Engine change.
+- **`src/simulator/`** is the Simulator, a synthetic lab behind `SnapshotSource`. `?sim` switches the
+  page to it and shows the control room.
+- **`src/source/`** holds the other `SnapshotSource` adapters (live HTTP, in-memory fixture for
+  tests) and the `isSnapshot` guard.
+- **`src/page/`** adapts the Engine to the browser: the canvas `Painter`, stage sizing, the poller,
+  and the DOM views (tooltip, status strip, log, legend, theme switcher, control room).
+  `src/main.ts` is the composition root and the only file that knows which Themes exist.
 - **`fixtures/`** holds sample Snapshots used by tests and for trying the image.
 - **Image:** busybox `httpd` serving `dist/` plus a mounted `snapshot.json` (see ADR 0002).
-- **Engine** will own the render loop, sprites and animation; it knows nothing about lab specifics.
-- **Themes** are data the engine consumes (palettes, sprite sheets, layout), so a new theme should
-  never need an engine change.
-- **Simulator** will produce lab state as another `SnapshotSource`, standing in for live data.
 
 ## Key Conventions
 

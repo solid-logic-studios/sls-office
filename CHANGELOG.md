@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The Engine and the Theme contract (ADR 0003): moods, walking, speech bubbles, tooltips and scenes for a deploy (healthy and rolled back), a CI burst, an OOM kill, a VM outage and the backup vault run.
+- The Office theme, ported from the prototype, and a plain `boxes` test theme, with a theme picker (`?theme=`).
+- The Simulator and its control room, reached with `?sim`.
+
+### Changed
+
+- The page draws the Office in place of one plain character per VM. Canvas text uses a built-in pixel font and stays legible at phone width, Site instance names show in full on hover, and characters use doorways.
+
 ## [0.1.1] - 16 November 2026
 
 ### Changed

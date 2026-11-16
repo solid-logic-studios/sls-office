@@ -5,8 +5,8 @@
 ![pnpm](https://img.shields.io/badge/pnpm-managed-f69220)
 
 SLS Office renders the Solid Logic Studios lab as an animated, themed pixel-art dashboard. It is
-built from an engine, themes and a simulator. The tracer bullet is in: a versioned Snapshot
-contract and a minimal page that draws one plain character per VM, shipped as a small static image.
+built from an engine, themes and a simulator: every VM, container and CI pod is a character at
+work, and deploys, backups and outages play out as scenes. It ships as a small static image.
 
 ## Run locally
 
@@ -17,6 +17,18 @@ pnpm dev
 
 The page polls `snapshot.json` next to `index.html` every 5 seconds and shows "Waking the office…"
 while it is missing or older than 60 seconds.
+
+Add `?sim` to the address to drive the Office from the Simulator instead. A control room appears
+under the stage with presets, load sliders and triggers for each scene (deploy, rollback, CI burst,
+backup, OOM, VM down). `?theme=boxes` picks the plain test theme; the theme picker in the header
+does the same.
+
+## Themes
+
+A Theme supplies the layout, the looks, the lines and the set dressing; the engine owns all the
+behaviour. The contract is `src/contract/theme.ts`, and
+[ADR 0003](docs/adr/0003-engine-and-theme-contract.md) records the rules. `src/themes/office/` is
+the Office; `src/themes/boxes/` is the smallest working Theme.
 
 ## Scripts
 
