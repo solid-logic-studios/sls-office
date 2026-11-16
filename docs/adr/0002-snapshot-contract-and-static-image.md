@@ -52,7 +52,10 @@ Image:
 ## Consequences
 
 - Changing the contract means editing one TypeScript file; the schema and the release asset follow.
-- The browser runs only the shallow guard. A file that fails it shows the waking state; deeper
-  errors (such as an out-of-range `cpu`) are drawn as given.
+- The browser runs only the guard, with no schema validator. A file that fails it shows the waking
+  state; deeper errors (such as an out-of-range `cpu`) are drawn as given. **Amended (issue #2):**
+  the guard now checks the structure of every field the Engine and Themes read (host, findings,
+  workloads and events), because a missing field there would otherwise stop the page drawing. It
+  still checks no ranges and no extra properties; the schema does.
 - The image has no shell tooling beyond busybox and no TLS; the edge in front of it handles that.
 - Anything in the image or its metadata is public: it holds only the static page and its art.

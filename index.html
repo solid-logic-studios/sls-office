@@ -5,10 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SLS Office</title>
     <style>
+      /* A pixel-framed stage on top, then the control room (when shown), the legend and the office log. */
       :root {
-        color-scheme: dark;
-        --bg: #14161f;
-        --fg: #e8ecf3;
+        color-scheme: light;
+        --bg: #dbe4e8;
+        --panel: #f4f8f9;
+        --inset: #e4ecef;
+        --ink: #1b2632;
+        --muted: #566676;
+        --line: #1b2632;
+        --shadow: #9fb0ba;
+        --accent: #1f6f76;
+        --accent-ink: #ffffff;
+        --ok: #2a8344;
+        --warn: #a56d00;
+        --crit: #c2352c;
+        --font-display: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+        --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          color-scheme: dark;
+          --bg: #11171e;
+          --panel: #1b2530;
+          --inset: #131b24;
+          --ink: #e4edf2;
+          --muted: #93a4b3;
+          --line: #586b7d;
+          --shadow: #06090c;
+          --accent: #58c2bd;
+          --accent-ink: #0c1418;
+          --ok: #5fcf7a;
+          --warn: #f0b840;
+          --crit: #ff6b5e;
+        }
       }
       * {
         box-sizing: border-box;
@@ -17,32 +47,12 @@
         margin: 0;
         min-height: 100vh;
         background: var(--bg);
-        color: var(--fg);
-        font-family: ui-monospace, Menlo, Consolas, monospace;
-      }
-      main {
-        max-width: 1100px;
-        margin: 0 auto;
-        padding: 16px;
-      }
-      h1 {
-        margin: 0 0 12px;
-        font-size: 1.1rem;
-      }
-      #stage {
-        width: 100%;
-      }
-      #office {
-        display: block;
+        color: var(--ink);
+        font: 15px/1.5 var(--font-body);
       }
       /* Author display rules otherwise override the hidden attribute. */
       [hidden] {
         display: none !important;
-      }
-      #waking {
-        margin: 48px 0;
-        text-align: center;
-        font-size: 1.25rem;
       }
       .visually-hidden {
         position: absolute;
@@ -54,17 +64,452 @@
         clip-path: inset(50%);
         white-space: nowrap;
       }
+      .wrap {
+        /* Wide enough for the 660 px Office stage at two CSS pixels per art pixel, inside its frame. */
+        max-width: 1368px;
+        margin: 0 auto;
+        padding-block: 18px 28px;
+        padding-left: max(16px, env(safe-area-inset-left, 0px));
+        padding-right: max(16px, env(safe-area-inset-right, 0px));
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .px {
+        background: var(--panel);
+        border: 2px solid var(--line);
+        box-shadow: 4px 4px 0 var(--shadow);
+      }
+
+      /* Header */
+      .top {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 24px;
+        align-items: flex-end;
+        justify-content: space-between;
+      }
+      .brand {
+        min-width: 0;
+      }
+      h1 {
+        margin: 0;
+        font: 700 24px/1.1 var(--font-display);
+        letter-spacing: 0.5px;
+        text-wrap: balance;
+      }
+      .sub {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 15px;
+      }
+      .strip {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        font: 400 13px/1 var(--font-display);
+        text-transform: uppercase;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 9px;
+        background: var(--panel);
+        border: 2px solid var(--line);
+        font-variant-numeric: tabular-nums;
+      }
+      .pill i {
+        width: 9px;
+        height: 9px;
+        display: block;
+        background: currentColor;
+      }
+      .pill b {
+        font-weight: 700;
+        color: var(--ink);
+      }
+      .pill.ok {
+        color: var(--ok);
+      }
+      .pill.warn {
+        color: var(--warn);
+      }
+      .pill.crit {
+        color: var(--crit);
+      }
+      .pill span {
+        color: var(--ink);
+      }
+      .pill.clock {
+        color: var(--ink);
+      }
+      .theme {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--muted);
+      }
+
+      /* Stage */
+      .stage {
+        position: relative;
+        padding: 6px;
+        min-width: 0;
+      }
+      #waking {
+        margin: 48px 0;
+        text-align: center;
+        font-size: 1.25rem;
+      }
+      .scroll {
+        overflow-x: auto;
+        overflow-y: hidden;
+        max-width: 100%;
+        background: #0b1030;
+      }
+      .scroll:has(canvas[hidden]) {
+        display: none;
+      }
+      canvas {
+        display: block;
+        margin: 0 auto;
+        image-rendering: pixelated;
+        touch-action: pan-x pan-y;
+        cursor: crosshair;
+      }
+      .under {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: flex-start;
+        justify-content: space-between;
+      }
+      .hint {
+        margin: 0;
+        min-width: 0;
+        color: var(--muted);
+        font-size: 15px;
+      }
+      .zoom {
+        flex: none;
+        display: flex;
+        gap: 6px;
+      }
+
+      /* Buttons and the theme picker */
+      button,
+      select {
+        font: 400 13px/1 var(--font-display);
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        color: var(--ink);
+        background: var(--panel);
+        border: 2px solid var(--line);
+        box-shadow: 2px 2px 0 var(--shadow);
+        padding: 8px 9px;
+        cursor: pointer;
+        border-radius: 0;
+      }
+      button:hover {
+        background: var(--inset);
+      }
+      button:active {
+        transform: translate(2px, 2px);
+        box-shadow: none;
+      }
+      button:focus-visible,
+      select:focus-visible,
+      input:focus-visible,
+      summary:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      button.go {
+        background: var(--accent);
+        color: var(--accent-ink);
+      }
+      button.go:hover {
+        filter: brightness(1.1);
+      }
+      button.bad {
+        color: var(--crit);
+      }
+      .zoom button {
+        padding: 6px 12px;
+      }
+
+      /* Tooltip */
+      .tip {
+        position: absolute;
+        z-index: 5;
+        pointer-events: none;
+        width: 240px;
+        max-width: calc(100% - 12px);
+        background: var(--panel);
+        color: var(--ink);
+        border: 2px solid var(--line);
+        box-shadow: 3px 3px 0 var(--shadow);
+        padding: 8px 9px;
+        font-size: 13px;
+        line-height: 1.35;
+      }
+      .tip h3 {
+        margin: 0 0 2px;
+        font: 700 13px/1.3 var(--font-display);
+        overflow-wrap: anywhere;
+      }
+      .tip p {
+        margin: 0 0 6px;
+        color: var(--muted);
+        overflow-wrap: anywhere;
+      }
+      .tip .row {
+        display: grid;
+        grid-template-columns: 40px 1fr 44px;
+        gap: 6px;
+        align-items: center;
+        font: 400 12px/1 var(--font-display);
+        margin-top: 4px;
+        font-variant-numeric: tabular-nums;
+      }
+      .tip .bar {
+        height: 8px;
+        background: var(--inset);
+        border: 1px solid var(--line);
+      }
+      .tip .bar i {
+        display: block;
+        height: 100%;
+        background: var(--ok);
+      }
+      .tip .st {
+        margin-top: 7px;
+        font: 400 12px/1.3 var(--font-display);
+        text-transform: uppercase;
+      }
+      .tip .st.ok {
+        color: var(--ok);
+      }
+      .tip .st.warn {
+        color: var(--warn);
+      }
+      .tip .st.crit {
+        color: var(--crit);
+      }
+
+      /* Control room (the simulator mounts its content in #control-room) */
+      .console {
+        padding: 0;
+      }
+      .console summary {
+        cursor: pointer;
+        padding: 11px 12px;
+        font: 700 14px/1 var(--font-display);
+        text-transform: uppercase;
+        list-style-position: inside;
+      }
+      .console .in {
+        padding: 2px 12px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .grp {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+        min-width: 0;
+      }
+      .lab {
+        font: 400 12px/1 var(--font-display);
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--muted);
+      }
+      .btns {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+      }
+      .vms {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 10px;
+      }
+      .vm {
+        background: var(--inset);
+        border: 2px solid var(--line);
+        padding: 8px 9px;
+        display: grid;
+        grid-template-columns: 40px 1fr 44px;
+        gap: 5px 8px;
+        align-items: center;
+        font: 400 12px/1 var(--font-display);
+        font-variant-numeric: tabular-nums;
+        min-width: 0;
+      }
+      .vm .nm {
+        grid-column: 1 / 3;
+        font-weight: 700;
+        font-size: 13px;
+      }
+      .vm label.up {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+        justify-content: flex-end;
+        cursor: pointer;
+      }
+      input[type='range'] {
+        width: 100%;
+        min-width: 0;
+        accent-color: var(--accent);
+        margin: 0;
+      }
+      input[type='checkbox'] {
+        accent-color: var(--accent);
+        margin: 0;
+      }
+      .time {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 14px;
+        align-items: center;
+        font: 400 13px/1 var(--font-display);
+      }
+      .time input[type='range'] {
+        flex: 1 1 180px;
+        max-width: 360px;
+      }
+      .time label {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        cursor: pointer;
+      }
+
+      /* Legend and log */
+      .lower {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+        gap: 14px;
+      }
+      .card {
+        padding: 11px 12px;
+        min-width: 0;
+      }
+      .card h2 {
+        margin: 0 0 8px;
+        font: 700 14px/1 var(--font-display);
+        text-transform: uppercase;
+      }
+      .leg {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+        gap: 5px 12px;
+        font-size: 15px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .leg li {
+        display: flex;
+        gap: 7px;
+        align-items: center;
+        min-width: 0;
+      }
+      .sw {
+        flex: none;
+        width: 12px;
+        height: 12px;
+        border: 2px solid var(--line);
+      }
+      #log {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        font-size: 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+      #log li {
+        display: flex;
+        gap: 8px;
+        min-width: 0;
+      }
+      #log time {
+        flex: none;
+        color: var(--muted);
+        font: 400 13px/1.7 var(--font-display);
+        font-variant-numeric: tabular-nums;
+      }
+      #log span {
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
     </style>
   </head>
   <body>
-    <main>
-      <h1>SLS Office</h1>
-      <div id="stage">
+    <div class="wrap">
+      <header class="top">
+        <div class="brand">
+          <h1>SLS Office</h1>
+          <p class="sub">The Solid Logic Studios lab as an office: its VMs, containers and pods at work.</p>
+        </div>
+        <div class="strip" id="strip" role="status">
+          <span class="pill ok"><i></i><b data-count="ok">0</b><span>ok</span></span>
+          <span class="pill warn"><i></i><b data-count="warn">0</b><span>warning</span></span>
+          <span class="pill crit"><i></i><b data-count="crit">0</b><span>critical</span></span>
+          <span class="pill clock" id="clock" data-clock aria-live="off">--:--</span>
+          <button id="pause" type="button">Pause</button>
+          <label class="theme" for="theme"
+            >Theme
+            <select id="theme"></select
+          ></label>
+        </div>
+      </header>
+
+      <section class="stage px" id="stage">
         <p id="waking" role="status"></p>
-        <canvas id="office" hidden aria-hidden="true"></canvas>
+        <div class="scroll" id="scroll">
+          <canvas
+            id="office"
+            role="img"
+            aria-label="Animated pixel-art view of the lab, where each VM and workload is a character"
+            hidden
+          ></canvas>
+        </div>
+        <div class="tip" id="tip" hidden></div>
+      </section>
+      <div class="under">
+        <p class="hint">
+          Hover or tap anyone, or anything on the walls, to see what it is. On a small screen, drag sideways to pan and
+          use the zoom buttons.
+        </p>
+        <div class="zoom">
+          <button id="zoom-out" type="button" aria-label="Zoom out">-</button>
+          <button id="zoom-in" type="button" aria-label="Zoom in">+</button>
+        </div>
       </div>
+
+      <div id="control-room" hidden></div>
+
+      <section class="lower">
+        <div class="card px">
+          <h2>Who's who</h2>
+          <ul id="legend" class="leg"></ul>
+        </div>
+        <div class="card px">
+          <h2>Office log</h2>
+          <ol id="log"></ol>
+        </div>
+      </section>
+
       <ul id="roster" class="visually-hidden" aria-live="polite" aria-label="Lab status"></ul>
-    </main>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

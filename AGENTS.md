@@ -20,8 +20,18 @@ Apply in this order of precedence:
 
 ## Golden Paths
 
-Only the tracer bullet exists so far. As the engine, themes and simulator land, record the common
-recipes here (for example "add a theme"), plus any change that must touch several places at once.
+The common recipes, plus any change that must touch several places at once.
+
+- **Add a Theme:** add a module under `src/themes/<id>/` that exports a `Theme`
+  (`src/contract/theme.ts`), importing only from `src/contract/`, then add it to `THEMES` in
+  `src/main.ts`. Copy `src/themes/boxes/` for the smallest working one. If it needs an Engine
+  change, the contract is missing something: see
+  [ADR 0003](docs/adr/0003-engine-and-theme-contract.md).
+
+- **Change the Theme contract:** edit `src/contract/theme.ts`, then every Theme under
+  `src/themes/`, and amend ADR 0003 if a rule changes.
+
+- **Try a scene:** `pnpm dev`, then open the page with `?sim` and use the control room.
 
 - **Change the Snapshot contract:** edit the types in `src/contract/snapshot.ts` (the single
   source), update the fixtures, and follow the `v` bump rule in

@@ -1,12 +1,29 @@
 import type { Snapshot } from './contract/snapshot.ts';
+import type { Theme } from './contract/theme.ts';
+import { Engine } from './engine/engine.ts';
+import { Loop } from './engine/loop.ts';
+import { localHour } from './page/clock.ts';
+import { mountControlRoom } from './page/control-room.ts';
 import { isStale } from './page/freshness.ts';
-import { MOOD_LABELS, describeCpu, moodOf } from './page/mood.ts';
+import { renderLegend } from './page/legend.ts';
+import { OfficeLog } from './page/office-log.ts';
 import { Poller } from './page/poller.ts';
-import { Renderer } from './page/renderer.ts';
+import { StageCanvas } from './page/stage-canvas.ts';
+import { StatusStrip } from './page/status-strip.ts';
+import { mountThemeSwitcher } from './page/theme-switcher.ts';
+import { TooltipView } from './page/tooltip-view.ts';
+import { Simulator } from './simulator/simulator.ts';
 import { HttpSnapshotSource } from './source/http-snapshot-source.ts';
+import { boxesTheme } from './themes/boxes/index.ts';
+import { officeTheme } from './themes/office/index.ts';
 
-const POLL_INTERVAL_MS = 5_000;
+/** The composition root: it picks the Theme and the SnapshotSource and joins the Engine to the page. */
+
+const LIVE_POLL_MS = 5_000;
+/** The Simulator steps by the time between polls, so it is polled often to keep scenes prompt. */
+const SIM_POLL_MS = 1_000;
 const WAKING_TEXT = 'Waking the office…';
+const THEMES: readonly Theme[] = [officeTheme, boxesTheme];
 
 function element<T extends HTMLElement>(id: string, type: new () => T): T {
   const found = document.getElementById(id);
@@ -14,25 +31,67 @@ function element<T extends HTMLElement>(id: string, type: new () => T): T {
   return found;
 }
 
-const stage = element('stage', HTMLDivElement);
+const query = new URLSearchParams(window.location.search);
+const simulated = query.has('sim');
+const firstTheme = THEMES.find((theme) => theme.id === query.get('theme')) ?? officeTheme;
+
 const canvas = element('office', HTMLCanvasElement);
 const waking = element('waking', HTMLParagraphElement);
 const roster = element('roster', HTMLUListElement);
+const legend = element('legend', HTMLUListElement);
+const pause = element('pause', HTMLButtonElement);
 
-const renderer = new Renderer(canvas, stage);
+const engine = new Engine(firstTheme, { random: Math.random });
+const stage = new StageCanvas(element('scroll', HTMLDivElement), canvas, engine.layout);
+const tooltip = new TooltipView(element('tip', HTMLDivElement), element('stage', HTMLElement));
+const strip = new StatusStrip(element('strip', HTMLDivElement));
+const log = new OfficeLog(element('log', HTMLOListElement));
+
+/** Set by the control room's time-of-day slider; `null` follows the local clock. */
+let hourOverride: number | null = null;
+const hour = (): number => hourOverride ?? localHour(new Date());
+let awake = false;
+
 waking.textContent = WAKING_TEXT;
+renderLegend(legend, firstTheme.legend);
+engine.bus.subscribe('log', (event) => log.add(event.text, new Date()));
 
-function show(snapshot: Snapshot | null): void {
-  const awake = snapshot !== null && !isStale(snapshot, new Date());
-  waking.hidden = awake;
-  canvas.hidden = !awake;
-  if (!awake) {
-    roster.replaceChildren();
-    return;
-  }
-  renderer.render(snapshot.vms);
-  updateRoster(snapshot.vms.map((vm) => `${vm.name}: ${MOOD_LABELS[moodOf(vm)]}, ${describeCpu(vm)}`));
+const loop = new Loop(
+  (callback) => window.requestAnimationFrame(callback),
+  (handle) => window.cancelAnimationFrame(handle),
+  (dt) => {
+    if (!awake) return;
+    engine.setHour(hour());
+    engine.update(dt);
+    const painter = stage.painter;
+    painter.clear(engine.layout.width, engine.layout.height);
+    engine.draw(painter);
+  },
+);
+
+function setPaused(paused: boolean): void {
+  loop.paused = paused;
+  pause.textContent = paused ? 'Play' : 'Pause';
 }
+
+pause.addEventListener('click', () => setPaused(!loop.paused));
+element('zoom-in', HTMLButtonElement).addEventListener('click', () => stage.zoomIn());
+element('zoom-out', HTMLButtonElement).addEventListener('click', () => stage.zoomOut());
+
+stage.onPoint((point) => {
+  const tip = point === null ? null : engine.tipAt(point.x, point.y);
+  if (point === null || tip === null) tooltip.hide();
+  else tooltip.show(tip, point);
+});
+
+mountThemeSwitcher(element('theme', HTMLSelectElement), THEMES, firstTheme.id, (id) => {
+  const theme = THEMES.find((candidate) => candidate.id === id);
+  if (theme === undefined) return;
+  engine.setTheme(theme);
+  stage.resize(theme.layout.width, theme.layout.height);
+  renderLegend(legend, theme.legend);
+  tooltip.hide();
+});
 
 /** Rebuild the live region only when its text changes, so screen readers are not re-read the roster every poll. */
 function updateRoster(lines: readonly string[]): void {
@@ -47,5 +106,38 @@ function updateRoster(lines: readonly string[]): void {
   );
 }
 
-const source = new HttpSnapshotSource(new URL('snapshot.json', document.baseURI));
-new Poller(source, POLL_INTERVAL_MS, show).start();
+let refreshControls = (): void => {};
+
+function show(snapshot: Snapshot | null): void {
+  awake = snapshot !== null && !isStale(snapshot, new Date());
+  waking.hidden = awake;
+  canvas.hidden = !awake;
+  if (snapshot === null || !awake) {
+    strip.clear();
+    updateRoster([]);
+    tooltip.hide();
+    return;
+  }
+  engine.accept(snapshot);
+  strip.update(engine.findings, hour());
+  updateRoster(engine.roster());
+  refreshControls();
+}
+
+function snapshotSource(): HttpSnapshotSource | Simulator {
+  if (!simulated) return new HttpSnapshotSource(new URL('snapshot.json', document.baseURI));
+  const simulator = new Simulator();
+  const container = element('control-room', HTMLDivElement);
+  container.hidden = false;
+  const controls = mountControlRoom(container, simulator, {
+    onHour: (value) => {
+      hourOverride = value;
+    },
+  });
+  refreshControls = () => controls.refresh();
+  return simulator;
+}
+
+new Poller(snapshotSource(), simulated ? SIM_POLL_MS : LIVE_POLL_MS, show).start();
+if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) setPaused(true);
+loop.start();
