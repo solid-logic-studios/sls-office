@@ -41,11 +41,13 @@ Image:
 - The image is busybox `httpd` running as uid 65534 on port 8080, serving the Vite build from a
   root-owned `/srv/office`, with a read-only root filesystem and a `HEALTHCHECK`. The build does
   not contain `snapshot.json`; the host mounts it read-only at `/srv/office/snapshot.json`.
-- Image: `ghcr.io/solid-logic-studios/sls-office`, tagged `main`, `sha-<short>` and `sha-<long>` from
-  each push to `main`, and `X.Y.Z` and `X.Y` from each `vX.Y.Z` release tag (no `latest`). The release
-  builds version tags from the tagged commit, and that commit is in the OCI `revision` label.
-- Whether the GHCR package is public or needs a pull credential is deferred to
-  solid-logic-studios/infrastructure#222's ADR-0018.
+- Image: `ghcr.io/solid-logic-studios/sls-office`, tagged `X.Y.Z` and `X.Y` from each `vX.Y.Z`
+  release tag only (no `latest`). The release builds version tags from the tagged commit, and that
+  commit is in the OCI `revision` label. **Amended (v0.1.1):** CI no longer pushes `main` and
+  `sha-*` images; it builds without pushing.
+- **Amended (v0.1.1):** the GHCR package is public (solid-logic-studios/infrastructure ADR-0018), so
+  hosts pull with no credential. Public is one-way, so only reviewed releases are published, with
+  no provenance or SBOM attestation (their GitHub event payload would be public too).
 
 ## Consequences
 
@@ -53,4 +55,4 @@ Image:
 - The browser runs only the shallow guard. A file that fails it shows the waking state; deeper
   errors (such as an out-of-range `cpu`) are drawn as given.
 - The image has no shell tooling beyond busybox and no TLS; the edge in front of it handles that.
-- Until ADR-0018 lands, the package is private by default and hosts need a pull credential.
+- Anything in the image or its metadata is public: it holds only the static page and its art.

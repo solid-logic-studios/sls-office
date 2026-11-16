@@ -48,6 +48,10 @@ jobs:
         with:
           context: .
           push: true
+          # The package is public (infrastructure ADR-0018): no provenance or SBOM attestation,
+          # whose GitHub event payload (commit messages, emails, repo metadata) would be public too.
+          provenance: false
+          sbom: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
