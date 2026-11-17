@@ -3,6 +3,7 @@ import type { Theme } from './contract/theme.ts';
 import { Engine } from './engine/engine.ts';
 import { Loop } from './engine/loop.ts';
 import { WebAudioOutput } from './page/audio/web-audio-output.ts';
+import { initialMuted, saveMuted, type MuteStorage } from './page/audio/mute-preference.ts';
 import { Soundboard } from './page/audio/soundboard.ts';
 import { localHour } from './page/clock.ts';
 import { mountControlRoom } from './page/control-room.ts';
@@ -10,6 +11,7 @@ import { isStale } from './page/freshness.ts';
 import { renderLegend } from './page/legend.ts';
 import { OfficeLog } from './page/office-log.ts';
 import { Poller } from './page/poller.ts';
+import { mountSpeakerButton } from './page/speaker-button.ts';
 import { pollWhileVisible } from './page/visibility.ts';
 import { StageCanvas } from './page/stage-canvas.ts';
 import { StatusStrip } from './page/status-strip.ts';
@@ -62,6 +64,32 @@ engine.bus.subscribe('log', (event) => log.add(event.text, new Date()));
 const audio = new WebAudioOutput();
 audio.unlockOnGesture(document);
 const soundboard = new Soundboard(engine, audio);
+
+/** Even reading `localStorage` can throw (blocked site data), so it is fetched inside a try. */
+function browserStorage(): MuteStorage | null {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+const storage = browserStorage();
+soundboard.muted = initialMuted(query, storage);
+mountSpeakerButton(element('sound', HTMLButtonElement), {
+  get muted() {
+    return soundboard.muted;
+  },
+  set muted(value: boolean) {
+    soundboard.muted = value;
+  },
+  get blocked() {
+    return audio.blocked;
+  },
+  unlock: () => audio.unlock(),
+  onChange: (listener) => audio.onChange(listener),
+  onToggle: (muted) => saveMuted(query, storage, muted),
+});
 
 const loop = new Loop(
   (callback) => window.requestAnimationFrame(callback),

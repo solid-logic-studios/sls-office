@@ -20,6 +20,9 @@ export class Soundboard {
   /** `null` until the first Snapshot, so an already open finding on page load is not an edge. */
   private lastCrit: number | null = null;
 
+  /** While muted nothing plays, and an Alarm that fires meanwhile is lost, not queued. */
+  muted = false;
+
   constructor(
     private readonly source: SoundSource,
     private readonly output: SoundOutput,
@@ -47,7 +50,7 @@ export class Soundboard {
     this.lastCrit = crit;
     const due = this.alarmPending || critRose;
     this.alarmPending = false;
-    if (!due) return;
+    if (!due || this.muted) return;
     const alarm = this.source.theme.soundscape?.alarm;
     if (alarm !== undefined) this.output.play(alarm, { volume: 1, pan: 0 });
   }

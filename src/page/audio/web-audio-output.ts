@@ -18,25 +18,36 @@ export class WebAudioOutput implements SoundOutput {
   private readonly context: AudioContext | null = typeof AudioContext === 'undefined' ? null : new AudioContext();
   private noise: AudioBuffer | null = null;
 
+  /** True when there is Web Audio but the browser is holding it back until a gesture. */
+  get blocked(): boolean {
+    return this.context !== null && this.context.state !== 'running';
+  }
+
+  /** Calls `listener` whenever the context changes state (for example, from suspended to running). */
+  onChange(listener: () => void): void {
+    this.context?.addEventListener('statechange', listener);
+  }
+
+  /** Asks the browser to start audio. Only works inside a gesture it accepts; a refusal is ignored. */
+  unlock(): void {
+    this.context?.resume().catch(() => {
+      // Still blocked; the next gesture tries again.
+    });
+  }
+
   /**
    * Resumes audio on the first gesture the browser accepts. A touch `pointerdown` or an Escape key press
    * does not count as one in Chromium, so the listeners stay until the context is actually running.
    */
   unlockOnGesture(target: Document): void {
     const events = ['click', 'pointerup', 'keydown'] as const;
-    const unlock = (): void => {
-      const { context } = this;
-      if (context === null) return;
-      context
-        .resume()
-        .then(() => {
-          if (context.state === 'running') for (const event of events) target.removeEventListener(event, unlock);
-        })
-        .catch(() => {
-          // Still blocked; the next gesture tries again.
-        });
+    const unlock = (): void => this.unlock();
+    const settle = (): void => {
+      if (this.blocked) return;
+      for (const event of events) target.removeEventListener(event, unlock);
     };
     for (const event of events) target.addEventListener(event, unlock);
+    this.onChange(settle);
   }
 
   play(sound: SynthSound, { volume, pan }: { volume: number; pan: number }): void {
