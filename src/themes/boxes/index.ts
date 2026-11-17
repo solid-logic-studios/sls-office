@@ -306,7 +306,15 @@ const LEGEND: readonly LegendEntry[] = CAST_PARTS.map((part) => ({
  * and three short quiet effect beeps (high for an arrival, low for a departure, middle for a deploy).
  */
 const SOUNDSCAPE: Soundscape = {
-  voices: { default: { id: 'boxes-default', pitch: 1, rate: 1, lang: 'en' } },
+  voices: {
+    default: {
+      id: 'boxes-default',
+      pitch: 1,
+      rate: 1,
+      lang: 'en',
+      piper: { model: 'en_US-libritts-high', speaker: 0 },
+    },
+  },
   effects: {
     workloadAdded: {
       notes: [{ wave: 'square', startHz: 550, endHz: 550, attack: 0.01, sustain: 0.06, decay: 0.04, volume: 0.12 }],

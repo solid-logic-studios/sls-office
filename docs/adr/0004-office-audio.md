@@ -111,3 +111,27 @@ Sound effects and music:
   hotspot keeps its current meaning and only a tap on empty stage speaks.
 - `speechSynthesis` fallback sounds different on every device, which is accepted for dev and for
   anything outside the vocabulary.
+
+## Amendment (Phase 3, 17 November 2026)
+
+Piper is wired in, as the decisions above say. Where these specifics differ from the stage details above, they
+supersede them.
+
+- **Piper 2023.11.14-2** (MIT) runs in the `voices` Dockerfile stage on the build host only; the binary is
+  never shipped. Piper is pinned by version and SHA-256 (its release URL is in the Dockerfile), and each voice
+  model by Hugging Face revision URL and SHA-256, with its licence, dataset, training and attribution, all in
+  `voices/models.json`. The Dockerfile's per-architecture hashes must match it (a test checks).
+- **The stage is Node plus the Piper binary, not Python, and the clips land in `/srv/office/voices` from the
+  `voices` stage, not in `dist/`.** Announcement vocabulary rendering lands with #33.
+- **A voice must be trained from scratch.** The first pick, `en_GB-vctk-medium`, is fine-tuned from lessac, whose
+  Blizzard 2013 licence forbids commercial use including voice synthesis products, so it was dropped. The licence
+  rule now covers the weights too: public domain or CC BY, and trained from scratch or fine-tuned only from a model
+  that itself passes (`training` in `models.json`, checked by a test). The model in use is `en_US-libritts-high`
+  (LibriTTS, CC BY 4.0, trained from scratch, 904 speakers).
+- **A clip is keyed by Voice id and spoken text**, a 64-bit hash written as 16 hex characters. The spoken
+  text is the line lower-cased. The per-character pitch and rate nudge is not part of the key.
+- **The Voice's pitch steers only `speechSynthesis`.** Piper cannot shift pitch, so the model (and speaker) is
+  the pitch, and a clip is rendered at the model's own pace scaled by the Voice's rate (`length_scale` is the
+  model's `inference.length_scale` divided by `rate`). The per-character pitch nudge, the line's pitch minus
+  its Voice's, becomes the clip's `playbackRate` (pitch-preserving off), kept within 0.85 to 1.15.
+- **Clips are Ogg Opus** at 24 kbit/s, which is plenty for speech and keeps the image small.

@@ -1,0 +1,24 @@
+{
+  "piper": {
+    "version": "2023.11.14-2",
+    "licence": "MIT",
+    "source": "https://github.com/rhasspy/piper",
+    "sha256": {
+      "x86_64": "a50cb45f355b7af1f6d758c1b360717877ba0a398cc8cbe6d2a7a3a26e225992",
+      "aarch64": "fea0fd2d87c54dbc7078d0f878289f404bd4d6eea6e7444a77835d1537ab88eb"
+    }
+  },
+  "models": {
+    "en_US-libritts-high": {
+      "onnx": "https://huggingface.co/rhasspy/piper-voices/resolve/e9ab671f2a0e50a701b34361136ba3e6a3a9eb0c/en/en_US/libritts/high/en_US-libritts-high.onnx",
+      "onnxSha256": "9127a559e11603f10b366d1a20ac7426826081dbc521de4c2420c57728d73f0f",
+      "config": "https://huggingface.co/rhasspy/piper-voices/resolve/e9ab671f2a0e50a701b34361136ba3e6a3a9eb0c/en/en_US/libritts/high/en_US-libritts-high.onnx.json",
+      "configSha256": "2efdc6d7f954588b8180132cbd9b8001933fdd00932c92bc92fd0d2028a9eb3d",
+      "licence": "CC-BY-4.0",
+      "dataset": "LibriTTS (Zen et al., 2019), derived from LibriSpeech and LibriVox",
+      "source": "http://www.openslr.org/60/",
+      "training": "trained from scratch",
+      "attribution": "Voices synthesised with Piper using the en_US-libritts-high model (rhasspy/piper-voices), trained on LibriTTS by Heiga Zen, Viet Dang, Rob Clark, Yu Zhang, Ron J. Weiss, Ye Jia, Zhifeng Chen and Yonghui Wu, derived from LibriSpeech and LibriVox recordings, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)."
+    }
+  }
+}

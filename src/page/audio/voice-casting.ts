@@ -35,6 +35,14 @@ function clamp(value: number, low: number, high: number): number {
 }
 
 /**
+ * The words as they are spoken, and as a clip is keyed: bubbles are written in capitals for the pixel font,
+ * and some engines spell capitals out letter by letter, so the text is lowered.
+ */
+export function spokenText(text: string): string {
+  return text.toLowerCase();
+}
+
+/**
  * The line as this character says it: the Voice's pitch and rate nudged by a stable amount worked out
  * from the id, so the same character always sounds the same and two sharing a Part sound related but
  * distinct. The id keeps any `#n` generation suffix, so a newcomer after a deploy may sound different.
@@ -44,8 +52,7 @@ export function spokenLine(text: string, voice: Voice, characterId: string): Spo
   const pitchShift = ((seed & 0xffff) / 0xffff) * 2 - 1;
   const rateShift = ((seed >>> 16) / 0xffff) * 2 - 1;
   return {
-    // Bubbles are written in capitals for the pixel font; spoken in capitals, some engines spell words out.
-    text: text.toLowerCase(),
+    text: spokenText(text),
     voice,
     pitch: clamp(voice.pitch + pitchShift * PITCH_SPREAD, 0, 2),
     rate: clamp(voice.rate + rateShift * RATE_SPREAD, 0.5, 2),

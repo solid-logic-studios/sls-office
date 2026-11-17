@@ -3,6 +3,7 @@ import type { Cue, Theme } from '../src/contract/theme.ts';
 import { Engine } from '../src/engine/engine.ts';
 import { seededRandom } from '../src/engine/random.ts';
 import { Simulator, type SimCommand } from '../src/simulator/simulator.ts';
+import { THEMES } from '../src/themes/index.ts';
 import { boxesTheme } from '../src/themes/boxes/index.ts';
 import { officeTheme } from '../src/themes/office/index.ts';
 import { VALID_FIXTURES, loadFixture } from './helpers.ts';
@@ -14,7 +15,6 @@ import { RecordingPainter } from './support/recording-painter.ts';
  * the Office theme and under the boxes theme, with no canvas.
  */
 
-const THEMES: readonly Theme[] = [officeTheme, boxesTheme];
 /** With a constant 0.99 the Simulator starts nothing on its own and every pick takes the last candidate. */
 const PICKED_SITE = 'lab-test-api-develop';
 

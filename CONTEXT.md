@@ -78,6 +78,10 @@ _Avoid_: resolved sound, recovery alarm.
 each founder their own; characters sharing a Part sound related but not identical.
 _Avoid_: speaker, narrator, TTS.
 
+**Clip**: a spoken line pre-rendered in a Voice at image build time and played from the image. A line
+with no clip is spoken by the browser's `speechSynthesis` instead.
+_Avoid_: recording, sample, audio file.
+
 **Announcement**: speech the Office composes on the spot from a Theme's fixed vocabulary, rather
 than a line from the line bank: the Standup and the spoken status.
 _Avoid_: report, readout, dynamic line.
