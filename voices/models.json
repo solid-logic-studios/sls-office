@@ -9,15 +9,16 @@
     }
   },
   "models": {
-    "en_GB-vctk-medium": {
-      "onnx": "https://huggingface.co/rhasspy/piper-voices/resolve/e9ab671f2a0e50a701b34361136ba3e6a3a9eb0c/en/en_GB/vctk/medium/en_GB-vctk-medium.onnx",
-      "onnxSha256": "4e9fc85ab9009385319fc6bae7f55577f8a2d7ee77fd9159a5500eb6531f41e6",
-      "config": "https://huggingface.co/rhasspy/piper-voices/resolve/e9ab671f2a0e50a701b34361136ba3e6a3a9eb0c/en/en_GB/vctk/medium/en_GB-vctk-medium.onnx.json",
-      "configSha256": "7f85e6391ed0f7f46e4abd19345929a16be931a0c9945086f96692dce2087fa8",
+    "en_US-libritts-high": {
+      "onnx": "https://huggingface.co/rhasspy/piper-voices/resolve/e9ab671f2a0e50a701b34361136ba3e6a3a9eb0c/en/en_US/libritts/high/en_US-libritts-high.onnx",
+      "onnxSha256": "9127a559e11603f10b366d1a20ac7426826081dbc521de4c2420c57728d73f0f",
+      "config": "https://huggingface.co/rhasspy/piper-voices/resolve/e9ab671f2a0e50a701b34361136ba3e6a3a9eb0c/en/en_US/libritts/high/en_US-libritts-high.onnx.json",
+      "configSha256": "2efdc6d7f954588b8180132cbd9b8001933fdd00932c92bc92fd0d2028a9eb3d",
       "licence": "CC-BY-4.0",
-      "dataset": "CSTR VCTK Corpus (University of Edinburgh)",
-      "source": "https://datashare.ed.ac.uk/handle/10283/3443",
-      "attribution": "Voices synthesised with Piper using the en_GB-vctk-medium model, trained on the CSTR VCTK Corpus by Junichi Yamagishi, Christophe Veaux and Kirsten MacDonald, University of Edinburgh, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)."
+      "dataset": "LibriTTS (Zen et al., 2019), derived from LibriSpeech and LibriVox",
+      "source": "http://www.openslr.org/60/",
+      "training": "trained from scratch",
+      "attribution": "Voices synthesised with Piper using the en_US-libritts-high model (rhasspy/piper-voices), trained on LibriTTS by Heiga Zen, Viet Dang, Rob Clark, Yu Zhang, Ron J. Weiss, Ye Jia, Zhifeng Chen and Yonghui Wu, derived from LibriSpeech and LibriVox recordings, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)."
     }
   }
 }

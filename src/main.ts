@@ -1,5 +1,4 @@
 import type { Snapshot } from './contract/snapshot.ts';
-import type { Theme } from './contract/theme.ts';
 import { Engine } from './engine/engine.ts';
 import { Loop } from './engine/loop.ts';
 import { ClipSpeechOutput } from './page/audio/clip-speech-output.ts';
@@ -23,7 +22,7 @@ import { mountThemeSwitcher } from './page/theme-switcher.ts';
 import { TooltipView } from './page/tooltip-view.ts';
 import { Simulator } from './simulator/simulator.ts';
 import { HttpSnapshotSource } from './source/http-snapshot-source.ts';
-import { boxesTheme } from './themes/boxes/index.ts';
+import { THEMES } from './themes/index.ts';
 import { officeTheme } from './themes/office/index.ts';
 
 /** The composition root: it picks the Theme and the SnapshotSource and joins the Engine to the page. */
@@ -32,7 +31,8 @@ const LIVE_POLL_MS = 5_000;
 /** The Simulator steps by the time between polls, so it is polled often to keep scenes prompt. */
 const SIM_POLL_MS = 1_000;
 const WAKING_TEXT = 'Waking the office…';
-const THEMES: readonly Theme[] = [officeTheme, boxesTheme];
+/** Where the image keeps the rendered clips and their manifest, relative to the page. */
+const VOICES_URL = 'voices/';
 
 function element<T extends HTMLElement>(id: string, type: new () => T): T {
   const found = document.getElementById(id);
@@ -71,9 +71,9 @@ audio.unlockOnGesture(document);
 const clipSpeech = new ClipSpeechOutput({
   player: new HtmlAudioClipPlayer(),
   fallback: new WebSpeechOutput(),
-  baseUrl: 'voices/',
+  baseUrl: VOICES_URL,
 });
-void loadVoiceManifest(fetch, 'voices/manifest.json').then((manifest) => clipSpeech.useManifest(manifest));
+void loadVoiceManifest(fetch, `${VOICES_URL}manifest.json`).then((manifest) => clipSpeech.useManifest(manifest));
 const soundboard = new Soundboard(engine, audio, { speech: clipSpeech });
 
 /** Even reading `localStorage` can throw (blocked site data), so it is fetched inside a try. */

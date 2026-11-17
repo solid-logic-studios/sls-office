@@ -340,11 +340,11 @@ export interface AmbientBed {
  * build time; a Voice without one is never rendered and always uses `speechSynthesis`.
  *
  * A clip is rendered at the model's own pace scaled by the Voice's `rate` (Piper's `length_scale` is the
- * model's default divided by `rate`). The Voice's `pitch` only
- * steers `speechSynthesis`: Piper cannot shift pitch, so the model (and speaker) chosen is the pitch.
+ * model's default divided by `rate`). The Voice's `pitch` only steers `speechSynthesis`: Piper cannot shift
+ * pitch, so the model (and speaker) chosen is the pitch.
  */
 export interface PiperVoice {
-  /** An entry in `voices/models.json`, for example `en_GB-vctk-medium`. */
+  /** An entry in `voices/models.json`, for example `en_US-libritts-high`. */
   model: string;
   /** The speaker id in a multi-speaker model. Omit for a single-speaker model. */
   speaker?: number;

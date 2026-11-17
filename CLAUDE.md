@@ -43,14 +43,15 @@ pnpm format:check       # Prettier check (CI gate)
   only through the `Painter`, and knows nothing about any Theme (a test enforces the imports).
 - **`src/themes/`** holds the Themes: `office/` (the prototype's world) and `boxes/` (a plain test
   theme that proves the contract). A Theme is data and pure drawing functions; it imports only from
-  `src/contract/`, so a new Theme never needs an Engine change.
+  `src/contract/`, so a new Theme never needs an Engine change. `src/themes/index.ts` lists the
+  shipped Themes.
 - **`src/simulator/`** is the Simulator, a synthetic lab behind `SnapshotSource`. `?sim` switches the
   page to it and shows the control room.
 - **`src/source/`** holds the other `SnapshotSource` adapters (live HTTP, in-memory fixture for
   tests) and the `isSnapshot` guard.
 - **`src/page/`** adapts the Engine to the browser: the canvas `Painter`, stage sizing, the poller,
   and the DOM views (tooltip, status strip, log, legend, theme switcher, control room).
-  `src/main.ts` is the composition root and the only file that knows which Themes exist.
+  `src/main.ts` is the composition root: it picks from `THEMES` and wires the Engine to the page.
 - **`fixtures/`** holds sample Snapshots used by tests and for trying the image.
 - **Image:** busybox `httpd` serving `dist/` plus a mounted `snapshot.json` (see ADR 0002).
 

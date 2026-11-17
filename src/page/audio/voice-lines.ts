@@ -87,7 +87,9 @@ export function voiceLines(theme: Theme): VoiceLine[] {
     for (const line of lines ?? []) {
       const text = spokenText(line);
       const key = clipKey(voice.id, text);
-      if (!found.has(key)) found.set(key, { key, voice, text });
+      const existing = found.get(key);
+      if (existing === undefined) found.set(key, { key, voice, text });
+      else if (existing.text !== text) throw new Error(`Clip key ${key} is shared by "${existing.text}" and "${text}"`);
     }
   };
 

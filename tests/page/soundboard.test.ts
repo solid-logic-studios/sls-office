@@ -5,12 +5,11 @@ import { seededRandom } from '../../src/engine/random.ts';
 import { Soundboard } from '../../src/page/audio/soundboard.ts';
 import type { Snapshot } from '../../src/contract/snapshot.ts';
 import { Simulator, type SimCommand } from '../../src/simulator/simulator.ts';
+import { THEMES } from '../../src/themes/index.ts';
 import { boxesTheme } from '../../src/themes/boxes/index.ts';
 import { officeTheme } from '../../src/themes/office/index.ts';
 import { Lab, backup, deploy, oom } from '../support/lab.ts';
 import { RecordingSoundOutput } from '../support/recording-sound-output.ts';
-
-const THEMES: readonly Theme[] = [officeTheme, boxesTheme];
 
 /** A Soundboard over a real Engine, fed by `feed`, which stands in for the page's `show()`. */
 function listen(theme: Theme) {

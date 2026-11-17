@@ -9,9 +9,9 @@ RUN pnpm build
 # The clips to render, from the Themes' lines. Unchanged lines give an identical file, so the voices stage stays cached.
 RUN pnpm voice-lines /app/voice-lines.json
 
-# Renders the spoken lines once, on the build host (glibc for the Piper binary; the clips are the same on
-# any architecture). Piper is build-time only and is not in the image.
-FROM --platform=$BUILDPLATFORM node:24-bookworm-slim AS voices
+# Renders the spoken lines once, on the build host (glibc for the Piper binary), so the clips do not depend on the
+# target architecture. Piper is build-time only and is not in the image.
+FROM --platform=$BUILDPLATFORM node:24-bookworm-slim@sha256:dc26ae92c9fb15cf6b1d63e20f0944b2efe0f115b20e00be48fb23fceb061c54 AS voices
 ARG BUILDARCH
 # The Piper release and its SHA-256 per architecture. Keep in step with voices/models.json (a test checks).
 ARG PIPER_VERSION=2023.11.14-2
@@ -30,10 +30,10 @@ RUN case "$BUILDARCH" in \
     && tar -xzf /tmp/piper.tar.gz -C /opt \
     && rm /tmp/piper.tar.gz
 WORKDIR /voices
-# Models: this layer changes only when the pins do.
+# Models: this layer runs again only when the pins or the fetch scripts change.
 COPY voices/models.json scripts/voice-support.ts scripts/fetch-voices.ts ./
 RUN node fetch-voices.ts --out /models
-# Clips: renders again only when the list of lines, the pins or the render script change.
+# Clips: render again only when the list of lines, the pins or any voices-stage script change.
 COPY --from=build /app/voice-lines.json ./
 COPY scripts/render-voices.ts ./
 RUN node render-voices.ts --piper /opt/piper/piper --models /models --lines voice-lines.json --out /out/voices

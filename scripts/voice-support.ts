@@ -1,4 +1,6 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 /**
  * Shared by the scripts that run in the image's `voices` stage (ADR 0004): `fetch-voices.ts` and
@@ -14,6 +16,8 @@ export interface ModelPin {
   licence: string;
   dataset: string;
   source: string;
+  /** `trained from scratch`, or `fine-tuned from <another pinned model>`: see the licence rule in `voices/README.md`. */
+  training: string;
   attribution: string;
 }
 
@@ -26,6 +30,30 @@ export interface VoicePins {
     sha256: { x86_64: string; aarch64: string };
   };
   models: Readonly<Record<string, ModelPin>>;
+}
+
+/** One clip to render, as `voice-lines.ts` lists it and `render-voices.ts` reads it. */
+export interface RenderLine {
+  key: string;
+  model: string;
+  speaker?: number;
+  /** The Voice's `rate`, 3 decimals. The render script divides the model's own `length_scale` by it, so a faster Voice is a shorter clip. */
+  rate: number;
+  text: string;
+}
+
+/** The file `voice-lines.ts` writes. */
+export interface VoiceListing {
+  version: 1;
+  lines: RenderLine[];
+}
+
+/** Where a script finds the pins when `--pins` is absent: `models.json` beside it (in the image), else the repo's. */
+export function defaultPinsPath(scriptUrl: string): string {
+  const here = dirname(fileURLToPath(scriptUrl));
+  return (
+    [join(here, 'models.json'), join(here, '..', 'voices', 'models.json')].find(existsSync) ?? join(here, 'models.json')
+  );
 }
 
 /** Reads and parses a pin file. A malformed one fails later, loudly, where a field is used. */

@@ -4,8 +4,8 @@ import type { SpeechOutput, SpokenLine } from './speech-output.ts';
 import type { VoiceManifest } from './voice-manifest.ts';
 
 /** How far a clip's playback rate may stray from normal: past this the voice stops sounding natural. */
-const MIN_PLAYBACK_RATE = 0.8;
-const MAX_PLAYBACK_RATE = 1.25;
+const MIN_PLAYBACK_RATE = 0.85;
+const MAX_PLAYBACK_RATE = 1.15;
 
 export interface ClipSpeechOptions {
   player: ClipPlayer;
@@ -75,10 +75,10 @@ export class ClipSpeechOutput implements SpeechOutput {
 }
 
 /**
- * The per-character pitch nudge: the line's pitch over its Voice's. The Voice's own pitch is already in
- * the clip (the model is the pitch), and its rate is baked in at render time, so neither is applied again.
+ * The per-character pitch nudge: how far the line's pitch strays from its Voice's, added to normal speed.
+ * It is the difference, not a ratio, so it does not depend on the Voice's own pitch, which only steers the
+ * `speechSynthesis` fallback (the Piper model is the pitch, and the rate is baked in at render time).
  */
 function playbackRate({ pitch, voice }: SpokenLine): number {
-  const nudge = voice.pitch > 0 ? pitch / voice.pitch : 1;
-  return Math.min(MAX_PLAYBACK_RATE, Math.max(MIN_PLAYBACK_RATE, nudge));
+  return Math.min(MAX_PLAYBACK_RATE, Math.max(MIN_PLAYBACK_RATE, 1 + (pitch - voice.pitch)));
 }

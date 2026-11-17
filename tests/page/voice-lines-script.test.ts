@@ -1,16 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { Theme } from '../../src/contract/theme.ts';
 import { clipKey } from '../../src/page/audio/clip-key.ts';
-import { boxesTheme } from '../../src/themes/boxes/index.ts';
+import { THEMES } from '../../src/themes/index.ts';
 import { officeTheme } from '../../src/themes/office/index.ts';
 import { renderLines } from '../../scripts/voice-lines.ts';
 
 describe('the voice-lines script', () => {
-  const themes: readonly Theme[] = [officeTheme, boxesTheme];
-
   it('is the same list for the same input, sorted and unique by key', () => {
-    const first = renderLines(themes);
-    expect(JSON.stringify(renderLines(themes))).toBe(JSON.stringify(first));
+    const first = renderLines(THEMES);
+    expect(JSON.stringify(renderLines(THEMES))).toBe(JSON.stringify(first));
     expect(first.map((line) => line.key)).toEqual([...new Set(first.map((line) => line.key))].sort());
   });
 
@@ -30,7 +28,7 @@ describe('the voice-lines script', () => {
     expect(renderLines([withoutPiper]).some((line) => line.key === key)).toBe(false);
     const pod = renderLines([officeTheme]).find((line) => line.key === key);
     expect(pod?.rate).toBeCloseTo(podVoice.rate, 3);
-    expect(pod?.speaker).toBe(99);
-    expect(pod?.model).toBe('en_GB-vctk-medium');
+    expect(pod?.speaker).toBe(0);
+    expect(pod?.model).toBe('en_US-libritts-high');
   });
 });

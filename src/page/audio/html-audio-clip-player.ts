@@ -1,7 +1,7 @@
 import type { ClipPlayer } from './clip-player.ts';
 
-/** A clip that never reports its end is given up on after this long, before its length is known. */
-const LOAD_WATCHDOG_MS = 20_000;
+/** A clip whose length is still unknown after this long never loaded; it fails, so the fallback speaks the line. */
+const LOAD_ALLOWANCE_MS = 8000;
 /** Slack added to a clip's own length, once known, before it is given up on. */
 const PLAY_SLACK_MS = 3000;
 
@@ -29,14 +29,16 @@ export class HtmlAudioClipPlayer implements ClipPlayer {
       if (this.finishCurrent === finish) this.finishCurrent = null;
       onEnd(failed);
     };
-    // Now and then a browser never fires `ended`. Without this the queue would wait for it all day.
-    const arm = (ms: number): void => {
+    // Before the length is known the clip never loaded, so it fails and the fallback speaks the line. After it,
+    // a browser that never fires `ended` is not a failure (the clip played): the line just ends, so the queue
+    // does not wait for it all day.
+    const arm = (ms: number, failed: boolean): void => {
       clearTimeout(watchdog);
-      watchdog = setTimeout(() => finish(false), ms);
+      watchdog = setTimeout(() => finish(failed), ms);
     };
-    arm(LOAD_WATCHDOG_MS);
+    arm(LOAD_ALLOWANCE_MS, true);
     audio.addEventListener('loadedmetadata', () => {
-      if (Number.isFinite(audio.duration)) arm((audio.duration / playbackRate) * 1000 + PLAY_SLACK_MS);
+      if (Number.isFinite(audio.duration)) arm((audio.duration / playbackRate) * 1000 + PLAY_SLACK_MS, false);
     });
     audio.addEventListener('ended', () => finish(false));
     audio.addEventListener('error', () => finish(true));

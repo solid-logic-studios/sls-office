@@ -1,23 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import type { Theme } from '../../src/contract/theme.ts';
+import type { Cue } from '../../src/contract/theme.ts';
 import { Engine } from '../../src/engine/engine.ts';
 import { seededRandom } from '../../src/engine/random.ts';
 import { clipKey } from '../../src/page/audio/clip-key.ts';
 import { spokenText, voiceFor } from '../../src/page/audio/voice-casting.ts';
 import { CUE_SPEAKERS, voiceLines } from '../../src/page/audio/voice-lines.ts';
 import { Simulator } from '../../src/simulator/simulator.ts';
-import { boxesTheme } from '../../src/themes/boxes/index.ts';
+import { THEMES } from '../../src/themes/index.ts';
 import { officeTheme } from '../../src/themes/office/index.ts';
 import { run } from '../support/lab.ts';
-
-const THEMES: readonly Theme[] = [officeTheme, boxesTheme];
 
 describe.each(THEMES)('voiceLines for the $name theme', (theme) => {
   const lines = voiceLines(theme);
   const keys = new Set(lines.map((line) => line.key));
 
-  it('is unique by key and sorted by key, with the key of its own Voice and text', () => {
-    expect(keys.size).toBe(lines.length);
+  it('is sorted by key, with the key of its own Voice and text', () => {
     expect(lines.map((line) => line.key)).toEqual([...lines.map((line) => line.key)].sort());
     for (const line of lines) {
       expect(line.key).toBe(clipKey(line.voice.id, line.text));
@@ -100,9 +97,13 @@ describe.each(THEMES)('coverage under the Simulator, in the $name theme', (theme
     const engine = new Engine(theme, { random: seededRandom(11) });
     // The speaker is resolved as the line is said: a character who walks out afterwards is no longer listed.
     const missing: string[] = [];
+    const cuesHeard = new Set<Cue>();
     let said = 0;
     engine.bus.subscribe('speech', ({ speakerId, text }) => {
       said += 1;
+      for (const [cue, bank] of Object.entries(theme.lines.cue) as [Cue, readonly string[]][]) {
+        if (bank.includes(text)) cuesHeard.add(cue);
+      }
       const voice = voiceFor(
         voices,
         engine.characters().find((character) => character.id === speakerId),
@@ -131,6 +132,12 @@ describe.each(THEMES)('coverage under the Simulator, in the $name theme', (theme
     play(12);
     simulator.dispatch({ kind: 'backup' });
     play(40);
+    // A backup that fails: asked for while the data VM is down, and the keeper comes back to report it.
+    simulator.dispatch({ kind: 'set-up', vmId: 'sls-data', up: false });
+    play(3);
+    simulator.dispatch({ kind: 'backup' });
+    simulator.dispatch({ kind: 'set-up', vmId: 'sls-data', up: true });
+    play(40);
     simulator.dispatch({ kind: 'preset', preset: 'fire' });
     play(40);
     // Busy traffic brings visitors, queries and founder check-ins.
@@ -139,5 +146,23 @@ describe.each(THEMES)('coverage under the Simulator, in the $name theme', (theme
 
     expect(said).toBeGreaterThan(30);
     expect(missing).toEqual([]);
+    // Each of these is forced above, so hearing it proves CUE_SPEAKERS lists who says it.
+    const forced: Cue[] = [
+      'delivery',
+      'new-arrival',
+      'health-check',
+      'healthy',
+      'unhealthy',
+      'old-one-out',
+      'sent-home',
+      'still-serving',
+      'backup-start',
+      'backup-locked',
+      'backup-safe',
+      'backup-failed',
+      'pods-up',
+      'recovered',
+    ];
+    expect(forced.filter((cue) => !cuesHeard.has(cue))).toEqual([]);
   });
 });

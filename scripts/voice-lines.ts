@@ -3,31 +3,14 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Theme } from '../src/contract/theme.ts';
 import { voiceLines } from '../src/page/audio/voice-lines.ts';
-import { boxesTheme } from '../src/themes/boxes/index.ts';
-import { officeTheme } from '../src/themes/office/index.ts';
+import { THEMES } from '../src/themes/index.ts';
+import type { RenderLine, VoiceListing } from './voice-support.ts';
 
 /**
  * Writes the list of clips the image must render (ADR 0004): every line a Voice with a Piper voice can say,
  * in every Theme the page ships. The `voices` Docker stage renders from it, and the file is stable
  * byte for byte for unchanged input, so it is the layer cache key. Usage: `node scripts/voice-lines.ts [out]`.
  */
-
-/** The Themes the page ships; keep in step with `src/main.ts`. */
-const THEMES: readonly Theme[] = [officeTheme, boxesTheme];
-
-export interface RenderLine {
-  key: string;
-  model: string;
-  speaker?: number;
-  /** The Voice's `rate`, 3 decimals. The render script divides the model's own `length_scale` by it, so a faster Voice is a shorter clip. */
-  rate: number;
-  text: string;
-}
-
-export interface VoiceListing {
-  version: 1;
-  lines: RenderLine[];
-}
 
 /** The pairs to render across `themes`: only Voices with a Piper voice, unique by key, sorted by key. */
 export function renderLines(themes: readonly Theme[]): RenderLine[] {

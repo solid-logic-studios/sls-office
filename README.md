@@ -51,8 +51,9 @@ manifest and an `ATTRIBUTION.txt`), and the page plays a clip when it has one. P
 pinned in [`voices/models.json`](voices/README.md) by version and SHA-256, and Piper is not in the image.
 `pnpm dev` has no clips, so it speaks through the browser's `speechSynthesis`, as does any line without a clip.
 
-To render a few clips locally, download the Piper release for your machine and a model from `voices/models.json`
-(`node scripts/fetch-voices.ts --out models` checks the hashes), install `opus-tools`, then:
+To render a few clips locally, download the Piper release for your machine (the version in `voices/models.json`),
+fetch the models from the repo root with `node scripts/fetch-voices.ts --out models` (it checks every hash against
+`voices/models.json`), install `opus-tools`, then:
 
 ```bash
 pnpm voice-lines dist-voices/voice-lines.json

@@ -307,7 +307,13 @@ const LEGEND: readonly LegendEntry[] = CAST_PARTS.map((part) => ({
  */
 const SOUNDSCAPE: Soundscape = {
   voices: {
-    default: { id: 'boxes-default', pitch: 1, rate: 1, lang: 'en', piper: { model: 'en_GB-vctk-medium', speaker: 99 } },
+    default: {
+      id: 'boxes-default',
+      pitch: 1,
+      rate: 1,
+      lang: 'en',
+      piper: { model: 'en_US-libritts-high', speaker: 0 },
+    },
   },
   effects: {
     workloadAdded: {

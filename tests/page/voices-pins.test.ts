@@ -1,17 +1,15 @@
 import { readFileSync } from 'node:fs';
+import { basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import type { Theme } from '../../src/contract/theme.ts';
 import { voiceLines } from '../../src/page/audio/voice-lines.ts';
-import { boxesTheme } from '../../src/themes/boxes/index.ts';
-import { officeTheme } from '../../src/themes/office/index.ts';
+import { THEMES } from '../../src/themes/index.ts';
 import { readPins } from '../../scripts/voice-support.ts';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const pins = readPins(`${root}voices/models.json`);
 const SHA256 = /^[0-9a-f]{64}$/;
 const LICENCES = ['public domain', 'CC0-1.0', 'CC-BY-4.0'];
-const THEMES: readonly Theme[] = [officeTheme, boxesTheme];
 
 describe('voices/models.json', () => {
   const used = new Set(
@@ -23,7 +21,7 @@ describe('voices/models.json', () => {
     for (const model of used) expect(pins.models[model], model).toBeDefined();
   });
 
-  it.each(Object.entries(pins.models))('pins %s by hash, to a revision, under an accepted licence', (_name, pin) => {
+  it.each(Object.entries(pins.models))('pins %s by hash, to a revision, under an accepted licence', (name, pin) => {
     expect(pin.onnxSha256).toMatch(SHA256);
     expect(pin.configSha256).toMatch(SHA256);
     for (const url of [pin.onnx, pin.config]) {
@@ -32,7 +30,16 @@ describe('voices/models.json', () => {
       expect(url).toMatch(/\/resolve\/[0-9a-f]{40}\//);
     }
     expect(LICENCES).toContain(pin.licence);
+    expect(basename(new URL(pin.onnx).pathname)).toBe(`${name}.onnx`);
+    expect(basename(new URL(pin.config).pathname)).toBe(`${name}.onnx.json`);
     for (const field of [pin.dataset, pin.source, pin.attribution]) expect(field.length).toBeGreaterThan(0);
+  });
+
+  it.each(Object.entries(pins.models))('records how %s was trained, and never from an unpinned model', (name, pin) => {
+    const others = Object.keys(pins.models).filter((other) => other !== name);
+    const fineTuned = /^fine-tuned from (.+)$/.exec(pin.training)?.[1];
+    if (fineTuned === undefined) expect(pin.training).toBe('trained from scratch');
+    else expect(others).toContain(fineTuned);
   });
 
   it('pins the Piper release for both architectures', () => {

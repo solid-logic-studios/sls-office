@@ -1,9 +1,16 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { readFlags, readPins, type ModelPin, type VoicePins } from './voice-support.ts';
+import { join, resolve } from 'node:path';
+import {
+  defaultPinsPath,
+  readFlags,
+  readPins,
+  type ModelPin,
+  type RenderLine,
+  type VoiceListing,
+  type VoicePins,
+} from './voice-support.ts';
 
 /**
  * Renders the image's voice clips (ADR 0004): reads the list `voice-lines.ts` wrote, runs Piper once per
@@ -14,19 +21,11 @@ import { readFlags, readPins, type ModelPin, type VoicePins } from './voice-supp
  * [--pins <models.json>] [--limit N]`. `--limit` renders only the first N lines, to sample locally.
  */
 
-interface Line {
-  key: string;
-  model: string;
-  speaker?: number;
-  rate: number;
-  text: string;
-}
-
 interface Group {
   model: string;
   speaker: number | undefined;
   rate: number;
-  lines: Line[];
+  lines: RenderLine[];
 }
 
 const BITRATE_KBPS = '24';
@@ -43,7 +42,7 @@ function run(command: string, args: readonly string[], input?: string): string {
   return result.stdout;
 }
 
-function groupLines(lines: readonly Line[]): Group[] {
+function groupLines(lines: readonly RenderLine[]): Group[] {
   const groups = new Map<string, Group>();
   for (const line of lines) {
     const id = `${line.model}|${line.speaker ?? ''}|${line.rate}`;
@@ -61,7 +60,7 @@ function groupLines(lines: readonly Line[]): Group[] {
 
 /**
  * Piper's `length_scale` for a Voice at `rate`: the model's own pace (`inference.length_scale` in its config,
- * 1.4 for VCTK) divided by the rate. Piper reads the config's noise settings itself when no flag is given.
+ * 1 for libritts-high) divided by the rate. Piper reads the config's noise settings itself when no flag is given.
  */
 function lengthScaleFor(configPath: string, rate: number): number {
   const config = JSON.parse(readFileSync(configPath, 'utf8')) as { inference?: { length_scale?: number } };
@@ -86,15 +85,12 @@ function attribution(pins: VoicePins, used: readonly string[]): string {
 
 const flags = readFlags(process.argv.slice(2), ['piper', 'models', 'lines', 'out', 'pins', 'limit']);
 const need = (name: string): string => flags.get(name) ?? fail(`Missing --${name}`);
-const here = dirname(fileURLToPath(import.meta.url));
-const pinsPath =
-  flags.get('pins') ?? [join(here, 'models.json'), join(here, '..', 'voices', 'models.json')].find(existsSync);
-const pins = readPins(resolve(pinsPath ?? fail('Missing --pins and no models.json beside the script')));
+const pins = readPins(resolve(flags.get('pins') ?? defaultPinsPath(import.meta.url)));
 const piper = resolve(need('piper'));
 const models = resolve(need('models'));
 const out = resolve(need('out'));
-const listing = JSON.parse(readFileSync(resolve(need('lines')), 'utf8')) as { version: number; lines: Line[] };
-if (listing.version !== 1) fail(`Unsupported voice-lines version ${listing.version}`);
+const listing = JSON.parse(readFileSync(resolve(need('lines')), 'utf8')) as VoiceListing;
+if (listing.version !== 1) fail(`Unsupported voice-lines version ${String(listing.version)}`);
 const limit = flags.has('limit') ? Number(flags.get('limit')) : listing.lines.length;
 if (!Number.isInteger(limit) || limit < 1) fail('--limit must be a positive whole number');
 const lines = listing.lines.slice(0, limit);

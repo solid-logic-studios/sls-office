@@ -32,8 +32,8 @@ function tick(volume: number, gap: number): SynthNote {
   return hiss([0.002, 0.004, 0.025], volume, gap);
 }
 
-/** Every Voice is rendered with this Piper model and speaker (VCTK p303) for now; recasting a Part is a one-line change. */
-const PIPER_VOICE: PiperVoice = { model: 'en_GB-vctk-medium', speaker: 99 };
+/** Every Voice is rendered with this Piper model and speaker (0) for now; recasting a Part is a one-line change (#30). */
+const PIPER_VOICE: PiperVoice = { model: 'en_US-libritts-high', speaker: 0 };
 
 /** An Australian-English Voice; `id` is its name and what keys its pre-rendered clips. */
 function voice(id: string, pitch: number, rate: number): Voice {

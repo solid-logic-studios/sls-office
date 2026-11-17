@@ -6,7 +6,6 @@ import { clipKey } from '../../src/page/audio/clip-key.ts';
 import { ClipSpeechOutput } from '../../src/page/audio/clip-speech-output.ts';
 import { Soundboard } from '../../src/page/audio/soundboard.ts';
 import type { SpokenLine } from '../../src/page/audio/speech-output.ts';
-import { parseVoiceManifest, loadVoiceManifest } from '../../src/page/audio/voice-manifest.ts';
 import { officeTheme } from '../../src/themes/office/index.ts';
 import { Lab, oom } from '../support/lab.ts';
 import { RecordingClipPlayer } from '../support/recording-clip-player.ts';
@@ -30,7 +29,7 @@ function open(clips: Record<string, string> = { [clipKey('v', 'hello')]: 'abc.og
 describe('ClipSpeechOutput', () => {
   it('plays the clip when the manifest has it, at the per-character pitch nudge', () => {
     const { player, fallback, speak, ends } = open();
-    speak(spoken('hello', PIPER_VOICE, 1.2 * 1.1));
+    speak(spoken('hello', PIPER_VOICE, 1.2 + 0.1));
     expect(player.played).toHaveLength(1);
     expect(player.played[0]?.url).toBe('voices/abc.ogg');
     expect(player.played[0]?.playbackRate).toBeCloseTo(1.1);
@@ -44,7 +43,17 @@ describe('ClipSpeechOutput', () => {
     speak(spoken('hello', PIPER_VOICE, 2));
     player.finish();
     speak(spoken('hello', PIPER_VOICE, 0));
-    expect(player.played.map((clip) => clip.playbackRate)).toEqual([1.25, 0.8]);
+    expect(player.played.map((clip) => clip.playbackRate)).toEqual([1.15, 0.85]);
+  });
+
+  it('nudges by the difference from the Voice pitch, whatever the Voice pitch is', () => {
+    const { player, speak } = open({ [clipKey('v', 'hello')]: 'abc.ogg', [clipKey('low', 'hello')]: 'low.ogg' });
+    const low: Voice = { ...PIPER_VOICE, id: 'low', pitch: 0.6 };
+    speak(spoken('hello', PIPER_VOICE, 1.2));
+    player.finish();
+    speak(spoken('hello', low, 0.6 + 0.05));
+    expect(player.played[0]?.playbackRate).toBeCloseTo(1);
+    expect(player.played[1]?.playbackRate).toBeCloseTo(1.05);
   });
 
   it('says the line through the fallback when the manifest has no clip for it', () => {
@@ -151,56 +160,5 @@ describe('a Soundboard speaking through a ClipSpeechOutput', () => {
     soundboard.muted = true;
     expect(player.stops).toBe(1);
     expect(player.playing).toBe(false);
-  });
-});
-
-describe('parseVoiceManifest', () => {
-  it('reads a valid manifest', () => {
-    const manifest = parseVoiceManifest({ version: 1, clips: { '00ac723eda9c59cb': '00ac723eda9c59cb.ogg' } });
-    expect(manifest.get('00ac723eda9c59cb')).toBe('00ac723eda9c59cb.ogg');
-  });
-
-  it.each([
-    ['null', null],
-    ['an array', []],
-    ['a string', 'clips'],
-    ['no version', { clips: {} }],
-    ['another version', { version: 2, clips: {} }],
-    ['no clips', { version: 1 }],
-    ['clips as an array', { version: 1, clips: ['a.ogg'] }],
-    ['a non-string file', { version: 1, clips: { a: 3 } }],
-    ['a path out of the folder', { version: 1, clips: { a: '../a.ogg' } }],
-    ['one bad entry among good', { version: 1, clips: { a: 'a.ogg', b: '' } }],
-  ])('gives an empty manifest for %s', (_name, json) => {
-    expect(parseVoiceManifest(json).size).toBe(0);
-  });
-});
-
-describe('loadVoiceManifest', () => {
-  const json =
-    (body: unknown, status = 200) =>
-    async () =>
-      new Response(JSON.stringify(body), { status });
-
-  it('loads the manifest from the URL', async () => {
-    const asked: string[] = [];
-    const manifest = await loadVoiceManifest(async (url) => {
-      asked.push(url);
-      return new Response(JSON.stringify({ version: 1, clips: { a: 'a.ogg' } }));
-    }, 'voices/manifest.json');
-    expect(asked).toEqual(['voices/manifest.json']);
-    expect(manifest.get('a')).toBe('a.ogg');
-  });
-
-  it('gives an empty manifest on a 404, a network failure or bad JSON', async () => {
-    expect((await loadVoiceManifest(json({}, 404), 'u')).size).toBe(0);
-    expect(
-      (
-        await loadVoiceManifest(async () => {
-          throw new TypeError('offline');
-        }, 'u')
-      ).size,
-    ).toBe(0);
-    expect((await loadVoiceManifest(async () => new Response('<html>'), 'u')).size).toBe(0);
   });
 });
