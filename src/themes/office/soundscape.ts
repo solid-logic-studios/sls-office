@@ -32,45 +32,88 @@ function tick(volume: number, gap: number): SynthNote {
   return hiss([0.002, 0.004, 0.025], volume, gap);
 }
 
-/** Every Voice is rendered with this Piper model and speaker (0) for now; recasting a Part is a one-line change (#30). */
-const PIPER_VOICE: PiperVoice = { model: 'en_US-libritts-high', speaker: 0 };
+/** The one Piper model every Office Voice is cast from: 904 LibriTTS speakers, so each Part gets its own. */
+const MODEL = 'en_US-libritts-high';
 
-/** An Australian-English Voice; `id` is its name and what keys its pre-rendered clips. */
-function voice(id: string, pitch: number, rate: number): Voice {
-  return { id, pitch, rate, lang: 'en-AU', piper: PIPER_VOICE };
+/**
+ * A Voice cast from a speaker of the model. `rate` paces the clip; `pitch` only steers the `speechSynthesis`
+ * fallback (Piper cannot shift pitch, so the speaker is the pitch). `id` is its name and keys its clips.
+ */
+function voice(id: string, speaker: number, rate: number, pitch: number): Voice {
+  const piper: PiperVoice = { model: MODEL, speaker };
+  return { id, pitch, rate, lang: 'en-AU', piper };
 }
+
+/**
+ * Words to say instead of a bubble line, where reading it as lower case would come out wrong: symbols,
+ * initialisms, digits, a trailing ellipsis or a slang spelling an American voice would mangle (#30).
+ */
+const SPOKEN: Readonly<Record<string, string>> = {
+  '!!': 'argh!',
+  'CPU IS COOKED': 'c p u is cooked',
+  '200 OK': 'two hundred, okay',
+  LGTM: 'looks good to me',
+  'ONE SEC...': 'one sec',
+  'SHHH.': 'shush',
+  'FSYNC IS ON': 'f sync is on',
+  'QUIET TODAY, EH': 'quiet today, ay',
+  'HEARD ABOUT THE NVME?': 'heard about the n v m e?',
+  'HEALTH CHECK...': 'health check',
+  'OLD ONE OUT. CYA!': 'old one out. see ya!',
+  'SENT HOME...': 'sent home',
+  '02:30. BACKUP TIME.': 'two thirty. backup time.',
+  'SAFE IN R2': 'safe in r two',
+  'SELECT * FROM SCORES': 'select star from scores',
+  'ONE QUERY, TA': 'one query, tah',
+  'WP_POSTS PLEASE': 'w p posts please',
+  'NEED WP_OPTIONS': 'need w p options',
+  'GET /': 'get slash',
+  'GET /HEALTH': 'get slash health',
+  'POST /SCORES': 'post slash scores',
+  'GET /WP-LOGIN': 'get slash w p login',
+  'ROUTING YOU NOW': 'rooting you now',
+  '#ALERTS IS RINGING!': 'the alerts channel is ringing!',
+  'THAT NVME HAS UNTIL JANUARY': 'that n v m e has until january',
+  'DAD JOKE LOADING...': 'dad joke loading',
+  'HOWZAT! GREEN BUILD': 'how zat! green build',
+  'CHUCK IT ON STAGING, EH': 'chuck it on staging, ay',
+  'BIT OF A DRAMA, EH': 'bit of a drama, ay',
+  'CRIKEY, #ALERTS IS GOING OFF': 'crikey, the alerts channel is going off',
+};
 
 /** The Office's sounds. The Alarm: three rising and falling pairs, about 1.2 s, chiptune but not shrill. */
 export const SOUNDSCAPE: Soundscape = {
   voices: {
-    default: voice('office-default', 1, 1),
+    // The visitors' voice (an HTTP request): a clear, neutral man, an outsider among the workers.
+    default: voice('office-default', 776, 1.1, 1),
     parts: {
-      // The desk workers: steady, a touch brisk, like people with a lot on.
-      worker: voice('office-worker', 1, 1.05),
-      // The CI pods: quick and high, in and out before you notice.
-      pod: voice('office-pod', 1.5, 1.3),
-      // The greeter at the gateway: warm, bright and unhurried.
-      greeter: voice('office-greeter', 1.3, 1),
-      // The guard: slow and low, in no hurry to let anyone past.
-      guard: voice('office-guard', 0.6, 0.8),
-      // The checker: crisp and even, reading the list out.
-      checker: voice('office-checker', 0.95, 1.15),
-      // The keeper of the vault: quiet, deep and careful.
-      keeper: voice('office-keeper', 0.75, 0.85),
-      // The courier: fast and light, always on the way somewhere else.
-      courier: voice('office-courier', 1.2, 1.25),
-      // The wrangler: gruff and unhurried, used to herding things.
-      wrangler: voice('office-wrangler', 0.85, 0.9),
-      // Any founder not named below.
-      founder: voice('office-founder', 1, 1),
+      // The desk workers: a plain, even woman, steady and a touch brisk.
+      worker: voice('office-worker', 644, 1.05, 1),
+      // The CI pods: a young, bright woman, quick and high, in and out before you notice.
+      pod: voice('office-pod', 702, 1.3, 1.5),
+      // The greeter at the gateway: a warm, bright woman, unhurried.
+      greeter: voice('office-greeter', 354, 1, 1.3),
+      // The guard: a thick, dark, mature man, slow and low.
+      guard: voice('office-guard', 573, 0.8, 0.6),
+      // The checker: a crisp, sharp woman, reading the list out like a verdict.
+      checker: voice('office-checker', 564, 1.15, 0.95),
+      // The keeper of the vault: a calm, soft, deep man, quiet and careful.
+      keeper: voice('office-keeper', 480, 0.85, 0.75),
+      // The courier: a light, lively man, fast and always on the way somewhere else.
+      courier: voice('office-courier', 350, 1.25, 1.2),
+      // The wrangler: a gruff, middle-aged man, unhurried and used to herding things.
+      wrangler: voice('office-wrangler', 523, 0.9, 0.85),
+      // Any founder not named below: a plain, pleasant man.
+      founder: voice('office-founder', 27, 1, 1),
     },
     founders: {
-      // Paul: a little lower and measured, the dad-joke delivery.
-      paul: voice('founder-paul', 0.85, 0.95),
-      // Dhruv: higher and quicker, an easy, cheerful drawl.
-      dhruv: voice('founder-dhruv', 1.1, 1.05),
+      // Paul: clear, warm and measured, a little lower; the dad-joke delivery.
+      paul: voice('founder-paul', 174, 0.95, 0.85),
+      // Dhruv: brighter and livelier, the easy, cheerful one.
+      dhruv: voice('founder-dhruv', 565, 1.05, 1.1),
     },
   },
+  spoken: SPOKEN,
   // Runs all day under everything, so it is barely there: felt more than heard.
   ambient: {
     // A dark, soft wash of air conditioning, like the next room over.

@@ -1,5 +1,3 @@
-import { spokenText } from './voice-casting.ts';
-
 /**
  * Two independent 32-bit FNV-1a style passes over the string's UTF-16 units (different offsets and primes),
  * each finished with a mix so near-identical strings still spread widely.
@@ -21,10 +19,11 @@ function hex32(value: number): string {
 
 /**
  * The name of a pre-rendered clip (ADR 0004): 16 lower-case hex characters hashed from the Voice's id and
- * the spoken text. The image build and the page both call this, so the two always agree. Only the Voice
+ * the spoken text. The image build and the page both call this, so the two always agree. Callers pass the
+ * text already spoken (`spokenText`, with any Theme override applied); it is hashed as given. Only the Voice
  * and the words count: the per-character pitch and rate nudge never changes which clip is played.
  */
-export function clipKey(voiceId: string, text: string): string {
-  const keyed = `${voiceId}\n${spokenText(text)}`;
+export function clipKey(voiceId: string, spokenWords: string): string {
+  const keyed = `${voiceId}\n${spokenWords}`;
   return hex32(pass(keyed, 0x811c9dc5, 0x01000193)) + hex32(pass(keyed, 0x9747b28c, 0x01000197));
 }

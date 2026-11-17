@@ -377,6 +377,12 @@ export interface Voices {
 export interface Soundscape {
   /** The Voices its characters speak with. A Theme without them keeps its lines to bubbles. */
   voices?: Voices;
+  /**
+   * Words to say instead of a bubble line, keyed by the exact bubble text (as written in the line bank) with
+   * the lower-case words as the value: `'GET /'` spoken as `'get slash'`. It changes only what is heard; the
+   * bubble stays as written, and the clip key follows the spoken words, so an edit re-renders that clip.
+   */
+  spoken?: Readonly<Record<string, string>>;
   /** The ambient bed. A Theme without one has no background. */
   ambient?: AmbientBed;
   /** Stage effects, panned by where they happen. A happening without one stays silent. */
