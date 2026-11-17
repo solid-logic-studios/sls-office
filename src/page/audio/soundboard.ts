@@ -2,7 +2,9 @@ import type { Findings, Snapshot } from '../../contract/snapshot.ts';
 import type { AmbientBed, Layout, SynthSound, Theme } from '../../contract/theme.ts';
 import type { CharacterView } from '../../engine/engine.ts';
 import type { EventBus } from '../../engine/event-bus.ts';
+import { localHour } from '../clock.ts';
 import { ambientMix, busyness, labLoad } from './ambient-mix.ts';
+import { DEFAULT_QUIET_HOURS, isQuiet, type QuietHours } from './quiet-hours.ts';
 import { soundSeconds, type AmbientMix, type PlayOptions, type SoundOutput } from './sound-output.ts';
 import type { SpeechOutput } from './speech-output.ts';
 import { SpeechQueue } from './speech-queue.ts';
@@ -25,10 +27,17 @@ export interface SoundboardOptions {
   later?: (callback: () => void, ms: number) => void;
   /** Where spoken lines go. Defaults to silence, so a Soundboard without one keeps every line to its bubble. */
   speech?: SpeechOutput;
+  /** The local time of day as a fractional hour, 0 to 24. Injected so tests can move it; defaults to the wall clock. */
+  hour?: () => number;
+  /** When the Office keeps quiet (ADR 0004). Defaults to `DEFAULT_QUIET_HOURS`. */
+  quietHours?: QuietHours;
 }
 
 /** The effect and ambient channels' level while an Alarm sounds, so the Alarm cuts through. */
 export const ALARM_DUCK = 0.25;
+
+/** The Alarm's volume during quiet hours: still heard, but not startling. */
+export const QUIET_ALARM_VOLUME = 0.5;
 
 /** The ambient channel's level while a line is spoken, so the speaker can be heard. */
 export const SPEECH_DUCK = 0.5;
@@ -41,6 +50,8 @@ const SILENT_SPEECH: SpeechOutput = {
 
 /** The Soundscape's Alarm-channel sounds. */
 type AlarmCue = 'alarm' | 'reminder' | 'allClear';
+/** Everything the Soundboard may sound: the Alarm-channel cues, the stage effects, speech and the ambient bed. */
+type Sounding = AlarmCue | 'effect' | 'speech' | 'ambient';
 const FULL_LEVEL = 1;
 /** Passed with a `null` bed, which has no mix to speak of. */
 const SILENT_MIX: AmbientMix = { room: 0, hum: 0, keysPerSecond: 0 };
@@ -54,12 +65,16 @@ export const REMINDER_MS = 10 * 60 * 1000;
  * `alarm`), at most one per Snapshot, in that order of priority. Stage effects (channel `effect`) come
  * from `StageEffects`, and the ambient bed (channel `ambient`) follows the lab's load and the workers'
  * moods; both are ducked while an Alarm sounds. Speech (the `speech` event on the bus) goes through a
- * `SpeechQueue` to the `SpeechOutput`: it ducks the bed, and an Alarm cuts it off and holds it back.
+ * `SpeechQueue` to the `SpeechOutput`: it ducks the bed, and an Alarm cuts it off and holds it back. During
+ * quiet hours only the Alarm sounds, at half volume; the bed, effects, speech, Reminder and All-clear stay
+ * silent until they end.
  */
 export class Soundboard {
   private readonly unsubscribe: readonly (() => void)[];
   private readonly now: () => number;
   private readonly later: (callback: () => void, ms: number) => void;
+  private readonly hour: () => number;
+  private readonly quietHours: QuietHours;
   private readonly effects: StageEffects;
   private readonly speech: SpeechQueue;
   private alarmPending = false;
@@ -70,6 +85,8 @@ export class Soundboard {
   private reminderSince = 0;
 
   private isMuted = false;
+  /** Whether it is quiet hours, as of construction and each Snapshot, so entering them can be told. */
+  private quiet: boolean;
   /** True while an Alarm is sounding, so the lower channels are ducked. */
   private alarmSounding = false;
   /** True while a line is being spoken, so the bed is ducked. */
@@ -88,6 +105,9 @@ export class Soundboard {
   ) {
     this.now = options.now ?? (() => performance.now());
     this.later = options.later ?? ((callback, ms) => void setTimeout(callback, ms));
+    this.hour = options.hour ?? (() => localHour(new Date()));
+    this.quietHours = options.quietHours ?? DEFAULT_QUIET_HOURS;
+    this.quiet = isQuiet(this.quietHours, this.hour());
     this.speech = new SpeechQueue(options.speech ?? SILENT_SPEECH, {
       now: this.now,
       later: this.later,
@@ -126,19 +146,19 @@ export class Soundboard {
     this.isMuted = value;
     if (value) {
       this.output.stop('alarm');
-      this.output.stop('effect');
-      this.speech.interrupt();
-      this.switchBed(null);
-    } else if (this.lastAmbient !== null) {
+      this.silenceBelowAlarm();
+    } else if (this.lastAmbient !== null && this.mayPlay('ambient')) {
       this.switchBed(this.lastAmbient);
     }
   }
 
   /**
    * Call right after `engine.accept(snapshot)`, with that same Snapshot. Moves the ambient bed to the lab's
-   * load, then sounds at most one thing: Alarm, then All-clear, then Reminder.
+   * load, then sounds at most one thing: Alarm, then All-clear, then Reminder. It is also where quiet hours
+   * are noticed: entering them cuts off what is playing, leaving them lets the bed come back.
    */
   endSnapshot(snapshot: Snapshot): void {
+    this.followClock();
     this.followLab(snapshot);
     const { crit } = this.source.findings;
     const previous = this.lastCrit;
@@ -180,12 +200,40 @@ export class Soundboard {
     return true;
   }
 
-  /** Works out the bed's mix from the Snapshot and the cast, and sends it unless muted. A Theme without a bed has none. */
+  /**
+   * Reads the clock. On entering quiet hours it cuts off the line, effects and bed in flight, as muting does.
+   * `endSnapshot` calls it; the page also calls it on a poll with no fresh Snapshot, so a lab that has gone
+   * quiet (a stale or missing Snapshot) still cannot leave the bed humming through the night.
+   */
+  followClock(): void {
+    const quiet = isQuiet(this.quietHours, this.hour());
+    const entering = quiet && !this.quiet;
+    this.quiet = quiet;
+    if (entering) this.silenceBelowAlarm();
+  }
+
+  /** Cuts off everything under the Alarm channel: effects, the line being said (and those waiting) and the bed. */
+  private silenceBelowAlarm(): void {
+    this.output.stop('effect');
+    this.speech.interrupt();
+    this.switchBed(null);
+  }
+
+  /**
+   * The one place that decides whether a sound may play now. Mute silences everything; quiet hours
+   * silence everything but the Alarm.
+   */
+  private mayPlay(sounding: Sounding): boolean {
+    if (this.isMuted) return false;
+    return !this.quiet || sounding === 'alarm';
+  }
+
+  /** Works out the bed's mix from the Snapshot and the cast, and sends it unless muted or quiet. No bed, none. */
   private followLab(snapshot: Snapshot): void {
     const bed = this.source.theme.soundscape?.ambient;
     this.lastAmbient =
       bed === undefined ? null : { bed, mix: ambientMix(bed, labLoad(snapshot), busyness(this.source.characters())) };
-    if (!this.isMuted) this.switchBed(this.lastAmbient);
+    if (this.mayPlay('ambient')) this.switchBed(this.lastAmbient);
   }
 
   /** The one place the ambient bed is set. `null` switches it off, and only tells the output if it was on. */
@@ -201,19 +249,20 @@ export class Soundboard {
     }
   }
 
-  /** The one place an Alarm-channel sound plays: silent while muted or when the Theme has no Soundscape. */
+  /** The one place an Alarm-channel sound plays: silent while muted, and in quiet hours bar the Alarm (half volume). */
   private play(name: AlarmCue): void {
-    if (this.isMuted) return;
+    if (!this.mayPlay(name)) return;
     const sound = this.source.theme.soundscape?.[name];
     if (sound === undefined) return;
-    this.output.play(sound, { channel: 'alarm', volume: 1, pan: 0 });
+    const volume = this.quiet ? QUIET_ALARM_VOLUME : FULL_LEVEL;
+    this.output.play(sound, { channel: 'alarm', volume, pan: 0 });
     if (name === 'alarm') this.duckForAlarm(sound);
   }
 
-  /** Voices a line of speech in the speaker's Voice, if the Theme has Voices and the Soundboard is not muted. */
+  /** Voices a line in the speaker's Voice, if the Theme has Voices and it is neither muted nor quiet hours. */
   private say(speakerId: string, text: string): void {
     const voices = this.source.theme.soundscape?.voices;
-    if (this.isMuted || voices === undefined) return;
+    if (!this.mayPlay('speech') || voices === undefined) return;
     const speaker = this.source.characters().find((character) => character.id === speakerId);
     // A hidden speaker gets no bubble, so it gets no voice either.
     if (speaker?.visible === false) return;
@@ -221,7 +270,7 @@ export class Soundboard {
   }
 
   private playEffect(sound: SynthSound, placement: Pick<PlayOptions, 'volume' | 'pan'>): void {
-    if (this.isMuted) return;
+    if (!this.mayPlay('effect')) return;
     this.output.play(sound, { channel: 'effect', ...placement });
   }
 

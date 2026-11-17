@@ -124,6 +124,12 @@ chromium-browser --kiosk --autoplay-policy=no-user-gesture-required http://<host
 The speaker button mutes and unmutes, and the choice is remembered per browser. Add `?mute` to the URL
 (`http://<host>:8080/?mute`) to force a screen silent; that overrides the saved choice and does not change it.
 
+Quiet hours run from 22:00 to 07:00 local time by default. During them Alarms still sound, at half volume,
+and everything else (the ambient bed, effects, speech, Reminders and All-clears) is silent. Change the window
+with `?quiet=22-7`: two whole hours from 0 to 23, which wraps past midnight when the start is later than the end.
+`?quiet=0-0` turns quiet hours off, and an invalid value falls back to the default. In `?sim` the time-of-day
+slider moves the clock, so you can try them.
+
 ## Contributing
 
 See [`CLAUDE.md`](CLAUDE.md) (canonical), [`AGENTS.md`](AGENTS.md) and [`CONTEXT.md`](CONTEXT.md).
