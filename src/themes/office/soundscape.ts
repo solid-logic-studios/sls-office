@@ -1,4 +1,4 @@
-import type { Soundscape, SynthNote } from '../../contract/theme.ts';
+import type { Soundscape, SynthNote, Voice } from '../../contract/theme.ts';
 
 /** One half of the two-tone: a square wave that slides from `from` to `to`. */
 function beep(from: number, to: number, gap = 0.04): SynthNote {
@@ -32,8 +32,42 @@ function tick(volume: number, gap: number): SynthNote {
   return hiss([0.002, 0.004, 0.025], volume, gap);
 }
 
+/** An Australian-English Voice; `id` is its name and what a later phase keys a pre-rendered clip by. */
+function voice(id: string, pitch: number, rate: number): Voice {
+  return { id, pitch, rate, lang: 'en-AU' };
+}
+
 /** The Office's sounds. The Alarm: three rising and falling pairs, about 1.2 s, chiptune but not shrill. */
 export const SOUNDSCAPE: Soundscape = {
+  voices: {
+    default: voice('office-default', 1, 1),
+    parts: {
+      // The desk workers: steady, a touch brisk, like people with a lot on.
+      worker: voice('office-worker', 1, 1.05),
+      // The CI pods: quick and high, in and out before you notice.
+      pod: voice('office-pod', 1.5, 1.3),
+      // The greeter at the gateway: warm, bright and unhurried.
+      greeter: voice('office-greeter', 1.3, 1),
+      // The guard: slow and low, in no hurry to let anyone past.
+      guard: voice('office-guard', 0.6, 0.8),
+      // The checker: crisp and even, reading the list out.
+      checker: voice('office-checker', 0.95, 1.15),
+      // The keeper of the vault: quiet, deep and careful.
+      keeper: voice('office-keeper', 0.75, 0.85),
+      // The courier: fast and light, always on the way somewhere else.
+      courier: voice('office-courier', 1.2, 1.25),
+      // The wrangler: gruff and unhurried, used to herding things.
+      wrangler: voice('office-wrangler', 0.85, 0.9),
+      // Any founder not named below.
+      founder: voice('office-founder', 1, 1),
+    },
+    founders: {
+      // Paul: a little lower and measured, the dad-joke delivery.
+      paul: voice('founder-paul', 0.85, 0.95),
+      // Dhruv: higher and quicker, an easy, cheerful drawl.
+      dhruv: voice('founder-dhruv', 1.1, 1.05),
+    },
+  },
   // Runs all day under everything, so it is barely there: felt more than heard.
   ambient: {
     // A dark, soft wash of air conditioning, like the next room over.
