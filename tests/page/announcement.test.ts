@@ -137,6 +137,14 @@ describe('SpeechQueue.announce', () => {
     expect(output.texts).toEqual(['all calm']);
   });
 
+  it('drops a second Announcement made while the first is being said, as a double tap does', () => {
+    const { output, speech } = queue();
+    speech.announce(announcement('all calm'));
+    speech.announce(announcement('all calm'));
+    output.finish();
+    expect(output.texts).toEqual(['all calm']);
+  });
+
   it('waits for the line being said, then goes ahead of waiting lines, ignoring the gap', () => {
     const { output, clock, speech } = queue();
     speech.enqueue(plain('one'));

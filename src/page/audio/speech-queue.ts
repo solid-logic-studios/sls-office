@@ -32,8 +32,11 @@ export class SpeechQueue {
   private waiting: Waiting[] = [];
   /** The Announcement waiting its turn, if any. Only one waits: a newer one replaces it. */
   private announcement: SpokenLine | null = null;
-  /** The line being said now. Marked `done` once it has ended or been cut off, so a late `onEnd` is ignored. */
-  private current: { done: boolean } | null = null;
+  /**
+   * The line being said now. Marked `done` once it has ended or been cut off, so a late `onEnd` is ignored, and
+   * `announcement` when it is one, so a second tap does not say the same status again straight after.
+   */
+  private current: { done: boolean; announcement: boolean } | null = null;
   private lastStart: number | null = null;
   private held = false;
   private wakePending = false;
@@ -53,9 +56,10 @@ export class SpeechQueue {
   /**
    * Says an Announcement as soon as the line being said ends (or the Alarm lets go), ahead of any waiting
    * lines. It ignores the gap and the stale rule, counts as the last start, and never talks over anything.
-   * A newer Announcement replaces one still waiting.
+   * A newer Announcement replaces one still waiting, and is dropped while one is being said (a double tap).
    */
   announce(line: SpokenLine): void {
+    if (this.current?.announcement === true) return;
     this.announcement = line;
     this.pump();
   }
@@ -96,7 +100,7 @@ export class SpeechQueue {
     if (this.announcement !== null) {
       const line = this.announcement;
       this.announcement = null;
-      this.start(line);
+      this.start(line, true);
       return;
     }
     const { now } = this.options;
@@ -114,8 +118,8 @@ export class SpeechQueue {
     this.start(next.line);
   }
 
-  private start(line: SpokenLine): void {
-    const current = { done: false };
+  private start(line: SpokenLine, announcement = false): void {
+    const current = { done: false, announcement };
     this.current = current;
     this.lastStart = this.options.now();
     this.options.onSpeaking(true);
