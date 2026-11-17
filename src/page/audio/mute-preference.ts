@@ -4,7 +4,7 @@ export type MuteStorage = Pick<Storage, 'getItem' | 'setItem'>;
 export const MUTE_KEY = 'sls-office.muted';
 
 /** `?mute` (present, any value) forces a screen silent, whatever this browser saved. */
-export function forcedMute(query: URLSearchParams): boolean {
+function forcedMute(query: URLSearchParams): boolean {
   return query.has('mute');
 }
 
