@@ -20,6 +20,10 @@ const EFFECT_ORDER: readonly EffectName[] = [
   'workloadRemoved',
   'backupStarted',
   'backupFinished',
+  'snore',
+  'streak',
+  'smoko',
+  'hatTrick',
 ];
 
 /** Each distinct Voice in the Soundscape, the default first, then the Parts', then the founders'. */

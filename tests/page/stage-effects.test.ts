@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { SNORE_EVERY_MS } from '../../src/page/audio/easter-eggs.ts';
 import type { Snapshot } from '../../src/contract/snapshot.ts';
 import type { EffectName, Theme } from '../../src/contract/theme.ts';
 import { Engine } from '../../src/engine/engine.ts';
@@ -22,6 +23,10 @@ const EFFECT_NAMES: readonly EffectName[] = [
   'workloadRemoved',
   'backupStarted',
   'backupFinished',
+  'snore',
+  'streak',
+  'smoko',
+  'hatTrick',
 ];
 
 /** A Soundboard over a real Engine with a Lab's cast on stage, a fake clock and a fake `later`. */
@@ -32,7 +37,8 @@ function listen(theme: Theme) {
   const timers: { callback: () => void; ms: number }[] = [];
   const soundboard = new Soundboard(engine, output, {
     now: () => clock.ms,
-    later: (callback, ms) => timers.push({ callback, ms }),
+    // The easter eggs' snore loop waits on `later` too, and these tests are about the Alarm's timers.
+    later: (callback, ms) => ms === SNORE_EVERY_MS || timers.push({ callback, ms }),
   });
   const lab = new Lab();
   engine.accept(lab.snapshot());

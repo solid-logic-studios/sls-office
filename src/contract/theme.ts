@@ -309,7 +309,9 @@ export interface SynthSound {
 
 /**
  * The stage happenings that have a sound effect, one per bus event (and deploy or backup phase) worth
- * hearing. A rolled-back deploy and a failed backup are Alarms, not effects.
+ * hearing. A rolled-back deploy and a failed backup are Alarms, not effects. The last four are easter eggs:
+ * `snore` (a fainted character sleeping it off), `streak` (a milestone of days with no Alarm), `smoko` (morning
+ * tea at 10:30) and `hatTrick` (three healthy deploys in a row).
  */
 export type EffectName =
   | 'deployStarted'
@@ -320,7 +322,11 @@ export type EffectName =
   | 'workloadAdded'
   | 'workloadRemoved'
   | 'backupStarted'
-  | 'backupFinished';
+  | 'backupFinished'
+  | 'snore'
+  | 'streak'
+  | 'smoko'
+  | 'hatTrick';
 
 /**
  * The continuous background of a busy lab (ADR 0004): room tone, a server hum that rises with load and

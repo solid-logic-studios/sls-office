@@ -4,6 +4,8 @@ import type { CharacterView } from '../../engine/engine.ts';
 import type { EventBus } from '../../engine/event-bus.ts';
 import { localHour } from '../clock.ts';
 import type { Audition } from './auditions.ts';
+import { EasterEggs } from './easter-eggs.ts';
+import type { MuteStorage } from './mute-preference.ts';
 import { ambientMix, busyness, labLoad } from './ambient-mix.ts';
 import { DEFAULT_QUIET_HOURS, isQuiet, type QuietHours } from './quiet-hours.ts';
 import { soundSeconds, type AmbientMix, type PlayOptions, type SoundOutput } from './sound-output.ts';
@@ -33,6 +35,10 @@ export interface SoundboardOptions {
   hour?: () => number;
   /** When the Office keeps quiet (ADR 0004). Defaults to `DEFAULT_QUIET_HOURS`. */
   quietHours?: QuietHours;
+  /** Epoch milliseconds, for the uptime streak. Injected so tests can move it; defaults to `Date.now()`. */
+  wallNow?: () => number;
+  /** Where the uptime streak is remembered. Defaults to none, so it lasts only for the page load. */
+  storage?: MuteStorage | null;
 }
 
 /** The effect and ambient channels' level while an Alarm sounds, so the Alarm cuts through. */
@@ -68,11 +74,12 @@ export const REMINDER_MS = 10 * 60 * 1000;
  * Turns what the lab does into sound (ADR 0004). It listens to the Engine's bus and reads the Theme's
  * Soundscape; the Engine stays silent. It sounds the Alarm, the Reminder and the All-clear (channel
  * `alarm`), at most one per Snapshot, in that order of priority. Stage effects (channel `effect`) come
- * from `StageEffects`, and the ambient bed (channel `ambient`) follows the lab's load and the workers'
- * moods; both are ducked while an Alarm sounds. Speech (the `speech` event on the bus) goes through a
- * `SpeechQueue` to the `SpeechOutput`: it ducks the bed, and an Alarm cuts it off and holds it back. During
- * quiet hours only the Alarm sounds, at half volume; the bed, effects, speech, Reminder and All-clear stay
- * silent until they end. The master `volume` scales every channel, and `audition` plays any one sound on
+ * from `StageEffects` and the easter eggs (also effects) from `EasterEggs`, and the ambient bed (channel
+ * `ambient`) follows the lab's load and the workers' moods; both are ducked while an Alarm sounds. Speech
+ * (the `speech` event on the bus) goes through a `SpeechQueue` to the `SpeechOutput`: it ducks the bed, and
+ * an Alarm cuts it off and holds it back. During quiet hours only the Alarm sounds, at half volume; the bed,
+ * effects, speech, Reminder and All-clear stay silent until they end. The master `volume` scales every
+ * channel, and `audition` plays any one sound on
  * request for the `?sim` Sound panel.
  */
 export class Soundboard {
@@ -82,6 +89,7 @@ export class Soundboard {
   private readonly hour: () => number;
   private readonly quietHours: QuietHours;
   private readonly effects: StageEffects;
+  private readonly eggs: EasterEggs;
   private readonly speech: SpeechQueue;
   private readonly speechOutput: SpeechOutput;
   private alarmPending = false;
@@ -130,6 +138,13 @@ export class Soundboard {
       },
     });
     this.effects = new StageEffects(source, (sound, placement) => this.playEffect(sound, placement), this.now);
+    this.eggs = new EasterEggs(source, (sound, placement) => this.playEffect(sound, placement), {
+      now: this.now,
+      later: this.later,
+      hour: this.hour,
+      wallNow: options.wallNow ?? (() => Date.now()),
+      storage: options.storage ?? null,
+    });
     const arm = (): void => {
       this.alarmPending = true;
     };
@@ -230,9 +245,12 @@ export class Soundboard {
     this.allClearPending = false;
     const reminderDue = this.advanceReminderClock(crit, previous === null || alarmDue);
 
-    if (alarmDue) this.play('alarm');
-    else if (allClearDue) this.play('allClear');
+    if (alarmDue) {
+      this.play('alarm');
+      this.eggs.alarmed();
+    } else if (allClearDue) this.play('allClear');
     else if (reminderDue) this.play('reminder');
+    this.eggs.endSnapshot();
   }
 
   /**
@@ -278,6 +296,7 @@ export class Soundboard {
   dispose(): void {
     for (const stop of this.unsubscribe) stop();
     this.effects.dispose();
+    this.eggs.dispose();
     this.speech.interrupt();
     this.switchBed(null);
     // A duck restore still pending finds itself stale and does nothing.

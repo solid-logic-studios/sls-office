@@ -177,6 +177,40 @@ export const SOUNDSCAPE: Soundscape = {
         tick(0.1, 0),
       ],
     },
+    // A comic snore, about 1.6 s: a slow breath in (air swelling, then a low rumble sliding down), then a softer
+    // breath out.
+    snore: {
+      notes: [
+        hiss([0.3, 0.1, 0.1], 0.05),
+        glide('triangle', 90, 70, [0.1, 0.25, 0.1], 0.12, 0.2),
+        hiss([0.1, 0.05, 0.25], 0.03),
+        glide('triangle', 75, 60, [0.05, 0.1, 0.2], 0.07),
+      ],
+    },
+    // An uptime fanfare, about 1 s: four rising notes in D, the last held.
+    streak: {
+      notes: [
+        glide('triangle', 294, 294, [0.01, 0.07, 0.04], 0.2, 0.02),
+        glide('triangle', 370, 370, [0.01, 0.07, 0.04], 0.2, 0.02),
+        glide('triangle', 440, 440, [0.01, 0.07, 0.04], 0.2, 0.02),
+        glide('square', 587, 587, [0.01, 0.4, 0.3], 0.1),
+      ],
+    },
+    // Morning tea, about 2 s: a kettle coming to the boil (the hiss rising) into a soft whistle gliding up.
+    smoko: {
+      notes: [hiss([1.2, 0.3, 0.1], 0.07), glide('sine', 1200, 1600, [0.1, 0.35, 0.15], 0.05)],
+    },
+    // Three wickets in three balls, about 0.8 s: three quick bright blips, then a landing that rings.
+    hatTrick: {
+      notes: [
+        glide('square', 587, 587, [0.005, 0.05, 0.03], 0.1, 0.03),
+        glide('square', 740, 740, [0.005, 0.05, 0.03], 0.1, 0.03),
+        glide('square', 880, 880, [0.005, 0.05, 0.03], 0.1, 0.05),
+        glide('triangle', 587, 587, [0.01, 0.05, 0.05], 0.15),
+        glide('triangle', 740, 740, [0.01, 0.05, 0.05], 0.13),
+        glide('triangle', 880, 880, [0.01, 0.15, 0.25], 0.12),
+      ],
+    },
   },
   alarm: {
     notes: [

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { SNORE_EVERY_MS } from '../../src/page/audio/easter-eggs.ts';
 import type { Part, Theme, Voice, Voices } from '../../src/contract/theme.ts';
 import { Engine } from '../../src/engine/engine.ts';
 import { seededRandom } from '../../src/engine/random.ts';
@@ -146,7 +147,8 @@ describe('SpeechQueue', () => {
     const speaking: boolean[] = [];
     const speech = new SpeechQueue(output, {
       now: () => clock.ms,
-      later: (callback, ms) => timers.push({ callback, ms }),
+      // The easter eggs' snore loop waits on `later` too, and these tests are about the Alarm's timers.
+      later: (callback, ms) => ms === SNORE_EVERY_MS || timers.push({ callback, ms }),
       onSpeaking: (value) => speaking.push(value),
     });
     const advance = (ms: number): void => {
@@ -294,7 +296,8 @@ function listen(theme: Theme) {
   const timers: { callback: () => void; ms: number }[] = [];
   const soundboard = new Soundboard(engine, output, {
     now: () => clock.ms,
-    later: (callback, ms) => timers.push({ callback, ms }),
+    // The easter eggs' snore loop waits on `later` too, and these tests are about the Alarm's timers.
+    later: (callback, ms) => ms === SNORE_EVERY_MS || timers.push({ callback, ms }),
     speech,
   });
   const lab = new Lab();

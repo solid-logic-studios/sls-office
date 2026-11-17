@@ -171,3 +171,10 @@ the decisions above, they supersede them.
   starts a fresh one. The day is marked done (in `localStorage`, and in memory) as soon as the Standup falls due,
   so one that cannot be spoken (muted, quiet hours, no founders or vocabulary) is skipped for the day, not retried,
   and a reload does not repeat it. A Vocabulary also names each room by role (`rooms`).
+- **Easter eggs are effects** (`snore`, `streak`, `smoko`, `hatTrick`), so they are throttled, muted and hushed like
+  any other. A fainted character snores every 3 s until it recovers (one loop, the first fainted character). The
+  uptime streak earns `streak` at 7, 30, 100 and 365 days with no Alarm, once per milestone; `localStorage` holds
+  `sls-office.calmSince` (the last Alarm, or the first run) and `sls-office.streakCelebrated`, and an Alarm resets
+  both. A milestone that falls due while muted or in quiet hours is counted, not saved up. `smoko` sounds when the
+  local hour crosses 10:30 between Snapshots (not stored, so a reload after it does not repeat it), and `hatTrick`
+  on the third healthy deploy in a row, a rollback resetting the count.
