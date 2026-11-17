@@ -7,7 +7,7 @@ export interface VoiceLine {
   /** The clip's name: `clipKey(voice.id, text)`. */
   key: string;
   voice: Voice;
-  /** As spoken: lower case. */
+  /** As spoken: lower case, or the Theme's `spoken` override. */
   text: string;
 }
 
@@ -82,10 +82,11 @@ function founderVoice(voices: Voices, founder: Founder): Voice {
 export function voiceLines(theme: Theme): VoiceLine[] {
   const voices = theme.soundscape?.voices;
   if (voices === undefined) return [];
+  const spoken = theme.soundscape?.spoken;
   const found = new Map<string, VoiceLine>();
   const add = (voice: Voice, lines: readonly string[] | undefined): void => {
     for (const line of lines ?? []) {
-      const text = spokenText(line);
+      const text = spokenText(line, spoken);
       const key = clipKey(voice.id, text);
       const existing = found.get(key);
       if (existing === undefined) found.set(key, { key, voice, text });

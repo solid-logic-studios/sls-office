@@ -51,6 +51,11 @@ manifest and an `ATTRIBUTION.txt`), and the page plays a clip when it has one. P
 pinned in [`voices/models.json`](voices/README.md) by version and SHA-256, and Piper is not in the image.
 `pnpm dev` has no clips, so it speaks through the browser's `speechSynthesis`, as does any line without a clip.
 
+Every Office Part and founder is cast as a different speaker of one model, `en_US-libritts-high`, which
+has 904 speakers; a few lines are respelt for the ear (`GET /` is said "get slash") in the Theme's `spoken`
+map, while the bubbles keep their text. The casting was chosen blind from speaker metadata, so Paul signs it
+off by ear in `?sim`. The voice model's licence and credits are in the image at `/voices/ATTRIBUTION.txt`.
+
 To render a few clips locally, download the Piper release for your machine (the version in `voices/models.json`),
 fetch the models from the repo root with `node scripts/fetch-voices.ts --out models` (it checks every hash against
 `voices/models.json`), install `opus-tools`, then:

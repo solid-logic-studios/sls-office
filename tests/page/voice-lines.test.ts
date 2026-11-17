@@ -10,20 +10,26 @@ import { THEMES } from '../../src/themes/index.ts';
 import { officeTheme } from '../../src/themes/office/index.ts';
 import { run } from '../support/lab.ts';
 
+/** The clip key for a bubble line, spoken as the Theme would say it. */
+function keyOf(voiceId: string, text: string, spoken: Readonly<Record<string, string>> | undefined): string {
+  return clipKey(voiceId, spokenText(text, spoken));
+}
+
 describe.each(THEMES)('voiceLines for the $name theme', (theme) => {
   const lines = voiceLines(theme);
   const keys = new Set(lines.map((line) => line.key));
+  const spoken = theme.soundscape?.spoken;
 
   it('is sorted by key, with the key of its own Voice and text', () => {
     expect(lines.map((line) => line.key)).toEqual([...lines.map((line) => line.key)].sort());
     for (const line of lines) {
       expect(line.key).toBe(clipKey(line.voice.id, line.text));
-      expect(line.text).toBe(spokenText(line.text));
+      expect(line.text).toBe(line.text.toLowerCase());
     }
   });
 
   it('covers every line in the line banks and every founder line, in at least one Voice', () => {
-    const spoken = new Set(lines.map((line) => line.text));
+    const heard = new Set(lines.map((line) => line.text));
     const { lines: bank } = theme;
     const banked = [
       ...Object.values(bank.mood).flat(),
@@ -33,7 +39,7 @@ describe.each(THEMES)('voiceLines for the $name theme', (theme) => {
       ...theme.founders.flatMap((founder) => [...founder.lines.idle, ...founder.lines.checkIn, ...founder.lines.alarm]),
     ];
     expect(banked.length).toBeGreaterThan(0);
-    for (const text of banked) expect(spoken.has(spokenText(text)), text).toBe(true);
+    for (const text of banked) expect(heard.has(spokenText(text, spoken)), text).toBe(true);
   });
 
   it('says every cue in the Voice of each Part that can say it', () => {
@@ -43,7 +49,7 @@ describe.each(THEMES)('voiceLines for the $name theme', (theme) => {
       const bank = theme.lines.cue[cue as keyof typeof CUE_SPEAKERS];
       for (const speaker of speakers) {
         const voice = voiceFor(voices, speaker === 'visitor' ? undefined : { id: '', part: speaker });
-        for (const text of bank) expect(keys.has(clipKey(voice.id, text)), `${cue} as ${speaker}`).toBe(true);
+        for (const text of bank) expect(keys.has(keyOf(voice.id, text, spoken)), `${cue} as ${speaker}`).toBe(true);
       }
     }
   });
@@ -52,6 +58,7 @@ describe.each(THEMES)('voiceLines for the $name theme', (theme) => {
 describe('voiceLines asks no Voice for a line it can never say', () => {
   const voices = officeTheme.soundscape?.voices;
   const keys = new Set(voiceLines(officeTheme).map((line) => line.key));
+  const heard = officeTheme.soundscape?.spoken;
 
   it('gives the founders none of the cue lines', () => {
     const founderVoices = officeTheme.founders.map((founder) => voices?.founders?.[founder.id]?.id ?? '');
@@ -61,7 +68,7 @@ describe('voiceLines asks no Voice for a line it can never say', () => {
         const alsoFounderLine = officeTheme.founders.some((founder) =>
           [...founder.lines.idle, ...founder.lines.checkIn, ...founder.lines.alarm].includes(text),
         );
-        if (!alsoFounderLine) expect(keys.has(clipKey(id, text)), `${id}: ${text}`).toBe(false);
+        if (!alsoFounderLine) expect(keys.has(keyOf(id, text, heard)), `${id}: ${text}`).toBe(false);
       }
     }
   });
@@ -69,16 +76,16 @@ describe('voiceLines asks no Voice for a line it can never say', () => {
   it('gives the workers no cue line, and nobody but the workers a mood or break line', () => {
     const worker = voices?.parts?.worker?.id ?? '';
     const cueOnly = Object.values(officeTheme.lines.cue).flat();
-    expect(keys.has(clipKey(worker, 'DELIVERY!'))).toBe(false);
+    expect(keys.has(clipKey(worker, 'delivery!'))).toBe(false);
     expect(cueOnly).toContain('DELIVERY!');
     const others = [voices?.default, ...Object.values(voices?.parts ?? {}), ...Object.values(voices?.founders ?? {})]
       .map((voice) => voice?.id ?? '')
       .filter((id) => id !== worker);
     for (const text of Object.values(officeTheme.lines.mood).flat()) {
-      for (const id of others) expect(keys.has(clipKey(id, text)), `${id}: ${text}`).toBe(false);
+      for (const id of others) expect(keys.has(keyOf(id, text, heard)), `${id}: ${text}`).toBe(false);
     }
     for (const text of Object.values(officeTheme.lines.breakSpot).flat()) {
-      for (const id of others) expect(keys.has(clipKey(id, text)), `${id}: ${text}`).toBe(false);
+      for (const id of others) expect(keys.has(keyOf(id, text, heard)), `${id}: ${text}`).toBe(false);
     }
   });
 
@@ -108,7 +115,8 @@ describe.each(THEMES)('coverage under the Simulator, in the $name theme', (theme
         voices,
         engine.characters().find((character) => character.id === speakerId),
       );
-      if (!keys.has(clipKey(voice.id, text))) missing.push(`${speakerId} (${voice.id}): ${text}`);
+      if (!keys.has(keyOf(voice.id, text, theme.soundscape?.spoken)))
+        missing.push(`${speakerId} (${voice.id}): ${text}`);
     });
     const play = (seconds: number): void => {
       for (let second = 0; second < seconds; second++) {

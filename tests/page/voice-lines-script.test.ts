@@ -28,7 +28,8 @@ describe('the voice-lines script', () => {
     expect(renderLines([withoutPiper]).some((line) => line.key === key)).toBe(false);
     const pod = renderLines([officeTheme]).find((line) => line.key === key);
     expect(pod?.rate).toBeCloseTo(podVoice.rate, 3);
-    expect(pod?.speaker).toBe(0);
+    expect(pod?.speaker).toBe(podVoice.piper?.speaker);
+    expect(pod?.speaker).toBe(702);
     expect(pod?.model).toBe('en_US-libritts-high');
   });
 });

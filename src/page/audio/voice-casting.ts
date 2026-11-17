@@ -35,11 +35,13 @@ function clamp(value: number, low: number, high: number): number {
 }
 
 /**
- * The words as they are spoken, and as a clip is keyed: bubbles are written in capitals for the pixel font,
- * and some engines spell capitals out letter by letter, so the text is lowered.
+ * The words as they are spoken, and as a clip is keyed: the Theme's `spoken` override for this exact bubble
+ * text if it has one, else the text lowered (bubbles are written in capitals for the pixel font, and some
+ * engines spell capitals out letter by letter).
  */
-export function spokenText(text: string): string {
-  return text.toLowerCase();
+export function spokenText(text: string, spoken?: Readonly<Record<string, string>>): string {
+  const override = spoken !== undefined && Object.hasOwn(spoken, text) ? spoken[text] : undefined;
+  return override ?? text.toLowerCase();
 }
 
 /**
@@ -47,12 +49,17 @@ export function spokenText(text: string): string {
  * from the id, so the same character always sounds the same and two sharing a Part sound related but
  * distinct. The id keeps any `#n` generation suffix, so a newcomer after a deploy may sound different.
  */
-export function spokenLine(text: string, voice: Voice, characterId: string): SpokenLine {
+export function spokenLine(
+  text: string,
+  voice: Voice,
+  characterId: string,
+  spoken?: Readonly<Record<string, string>>,
+): SpokenLine {
   const seed = hash(characterId);
   const pitchShift = ((seed & 0xffff) / 0xffff) * 2 - 1;
   const rateShift = ((seed >>> 16) / 0xffff) * 2 - 1;
   return {
-    text: spokenText(text),
+    text: spokenText(text, spoken),
     voice,
     pitch: clamp(voice.pitch + pitchShift * PITCH_SPREAD, 0, 2),
     rate: clamp(voice.rate + rateShift * RATE_SPREAD, 0.5, 2),

@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import {
@@ -145,4 +145,5 @@ try {
 
 writeFileSync(join(out, 'manifest.json'), `${JSON.stringify({ version: 1, clips }, null, 2)}\n`);
 writeFileSync(join(out, 'ATTRIBUTION.txt'), attribution(pins, [...new Set(lines.map((line) => line.model))].sort()));
-console.log(`Wrote ${Object.keys(clips).length} clips to ${out}`);
+const bytes = Object.values(clips).reduce((total, file) => total + statSync(join(out, file)).size, 0);
+console.log(`Wrote ${Object.keys(clips).length} clips (${(bytes / 1024).toFixed(0)} KiB) to ${out}`);
