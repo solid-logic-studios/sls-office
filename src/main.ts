@@ -160,6 +160,7 @@ function show(snapshot: Snapshot | null): void {
   waking.hidden = awake;
   canvas.hidden = !awake;
   if (snapshot === null || !awake) {
+    soundboard.followClock();
     strip.clear();
     updateRoster([]);
     tooltip.hide();

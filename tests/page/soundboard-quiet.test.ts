@@ -142,6 +142,15 @@ describe('the Soundboard going into and out of quiet hours', () => {
     expect(bedIsOn(office.output)).toBe(false);
   });
 
+  it('switches the bed off when quiet hours begin with no fresh Snapshot, as the page asks on a stale poll', () => {
+    const office = listen(DAY);
+    office.feed();
+    expect(bedIsOn(office.output)).toBe(true);
+    office.clock.hour = NIGHT;
+    office.soundboard.followClock();
+    expect(bedIsOn(office.output)).toBe(false);
+  });
+
   it('brings everything back when quiet hours end', () => {
     const office = listen(NIGHT);
     office.openCrit();

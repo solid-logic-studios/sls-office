@@ -146,9 +146,7 @@ export class Soundboard {
     this.isMuted = value;
     if (value) {
       this.output.stop('alarm');
-      this.output.stop('effect');
-      this.speech.interrupt();
-      this.switchBed(null);
+      this.silenceBelowAlarm();
     } else if (this.lastAmbient !== null && this.mayPlay('ambient')) {
       this.switchBed(this.lastAmbient);
     }
@@ -160,7 +158,7 @@ export class Soundboard {
    * are noticed: entering them cuts off what is playing, leaving them lets the bed come back.
    */
   endSnapshot(snapshot: Snapshot): void {
-    this.followQuietHours();
+    this.followClock();
     this.followLab(snapshot);
     const { crit } = this.source.findings;
     const previous = this.lastCrit;
@@ -202,12 +200,20 @@ export class Soundboard {
     return true;
   }
 
-  /** Reads the clock. On entering quiet hours it cuts off the line and effects in flight, as muting does. */
-  private followQuietHours(): void {
+  /**
+   * Reads the clock. On entering quiet hours it cuts off the line, effects and bed in flight, as muting does.
+   * `endSnapshot` calls it; the page also calls it on a poll with no fresh Snapshot, so a lab that has gone
+   * quiet (a stale or missing Snapshot) still cannot leave the bed humming through the night.
+   */
+  followClock(): void {
     const quiet = isQuiet(this.quietHours, this.hour());
     const entering = quiet && !this.quiet;
     this.quiet = quiet;
-    if (!entering) return;
+    if (entering) this.silenceBelowAlarm();
+  }
+
+  /** Cuts off everything under the Alarm channel: effects, the line being said (and those waiting) and the bed. */
+  private silenceBelowAlarm(): void {
     this.output.stop('effect');
     this.speech.interrupt();
     this.switchBed(null);
