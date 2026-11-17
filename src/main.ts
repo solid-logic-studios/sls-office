@@ -8,6 +8,7 @@ import { isStale } from './page/freshness.ts';
 import { renderLegend } from './page/legend.ts';
 import { OfficeLog } from './page/office-log.ts';
 import { Poller } from './page/poller.ts';
+import { pollWhileVisible } from './page/visibility.ts';
 import { StageCanvas } from './page/stage-canvas.ts';
 import { StatusStrip } from './page/status-strip.ts';
 import { mountThemeSwitcher } from './page/theme-switcher.ts';
@@ -138,6 +139,6 @@ function snapshotSource(): HttpSnapshotSource | Simulator {
   return simulator;
 }
 
-new Poller(snapshotSource(), simulated ? SIM_POLL_MS : LIVE_POLL_MS, show).start();
+pollWhileVisible(new Poller(snapshotSource(), simulated ? SIM_POLL_MS : LIVE_POLL_MS, show), document);
 if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) setPaused(true);
 loop.start();
