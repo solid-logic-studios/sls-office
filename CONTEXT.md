@@ -56,6 +56,38 @@ _Avoid_: trigger, prompt.
 stressed, swamped, fainted, absent.
 _Avoid_: status, state, emotion.
 
+**Soundboard**: the part of the page that makes the Office audible. It listens to what happens in
+the Office and plays the Theme's Soundscape. The Engine itself is silent.
+_Avoid_: audio engine, sound manager, player.
+
+**Soundscape**: what a Theme sounds like, supplied as data alongside its looks and lines. A Theme
+without one is silent.
+_Avoid_: sound pack, audio theme, sound skin.
+
+**Alarm**: the sound the Office makes the moment something goes wrong in the lab: an OOM kill, a VM
+going down, a rolled-back deploy, a failed backup, or the first critical finding. It sounds once,
+then a softer **Reminder** follows now and then while a critical finding stays open. It outranks
+every other sound. Not to be confused with the `alarm` Cue, which is a line a worker says.
+_Avoid_: alert, siren, notification.
+
+**All-clear**: the sound the Office makes when the lab recovers: a VM back up, or the last critical
+finding closed.
+_Avoid_: resolved sound, recovery alarm.
+
+**Voice**: how a character sounds when its lines are spoken. A Theme gives each Part a Voice and
+each founder their own; characters sharing a Part sound related but not identical.
+_Avoid_: speaker, narrator, TTS.
+
+**Announcement**: speech the Office composes on the spot from a Theme's fixed vocabulary, rather
+than a line from the line bank: the Standup and the spoken status.
+_Avoid_: report, readout, dynamic line.
+
+**Standup**: the morning Announcement in which a founder sums up the last day of the Office log.
+_Avoid_: daily summary, briefing.
+
+**Quiet hours**: the nightly stretch when the Office holds its tongue: only Alarms sound, and softly.
+_Avoid_: night mode, do not disturb, sleep.
+
 ## Versioning (trunk-based)
 
 Work off `main`; Conventional Commits + Keep a Changelog; bump version + tag at release;
