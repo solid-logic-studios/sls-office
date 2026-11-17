@@ -75,6 +75,21 @@ describe('OfficeDiary', () => {
     expect(diary.summary()).toMatchObject({ busiest: 'compute', calmest: 'data' });
   });
 
+  it('keeps only hours wholly inside the window', () => {
+    const { clock, diary, sample } = keep();
+    clock.ms += 30 * 60 * 1000;
+    sample({ data: 95, compute: 5 });
+    clock.ms += DIARY_WINDOW_MS - 10 * 60 * 1000;
+    sample({ data: 10, compute: 30 });
+    expect(diary.summary()).toMatchObject({ busiest: 'compute', calmest: 'data' });
+  });
+
+  it('names neither room when busiest and calmest tie', () => {
+    const { diary, sample } = keep();
+    sample({ data: 0, compute: 0, ci: 0 });
+    expect(diary.summary()).toMatchObject({ busiest: null, calmest: null });
+  });
+
   it('keeps nothing once disposed from the bus', () => {
     const { bus, diary } = keep();
     diary.dispose();

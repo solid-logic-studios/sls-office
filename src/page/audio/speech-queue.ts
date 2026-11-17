@@ -6,6 +6,8 @@ export const SPEECH_GAP_MS = 8000;
 export const SPEECH_STALE_MS = 4000;
 /** How many lines may wait behind the one being said. A newer line pushes out the oldest. */
 export const SPEECH_QUEUE_MAX = 2;
+/** How many Announcements may wait behind the one being said. A further one is dropped. */
+export const ANNOUNCEMENT_QUEUE_MAX = 2;
 
 export interface SpeechQueueOptions {
   /** Milliseconds on a monotonic clock. */
@@ -24,19 +26,19 @@ interface Waiting {
 
 /**
  * Decides which line is said when (ADR 0004): one at a time, at most `SPEECH_QUEUE_MAX` waiting (the
- * oldest is dropped for a newer one), a waiting line older than `SPEECH_STALE_MS` is dropped, and a line
+ * oldest is dropped for a newer one; Announcements wait apart, in order), a waiting line older than `SPEECH_STALE_MS` is dropped, and a line
  * starts no sooner than `SPEECH_GAP_MS` after the last one started. Saying the line is the
  * `SpeechOutput`'s job.
  */
 export class SpeechQueue {
   private waiting: Waiting[] = [];
-  /** The Announcement waiting its turn, if any. Only one waits: a newer one replaces it. */
-  private announcement: SpokenLine | null = null;
+  /** The Announcements waiting their turn, oldest first, at most `ANNOUNCEMENT_QUEUE_MAX`. */
+  private announcements: SpokenLine[] = [];
   /**
    * The line being said now. Marked `done` once it has ended or been cut off, so a late `onEnd` is ignored, and
-   * `announcement` when it is one, so a second tap does not say the same status again straight after.
+   * `announcement` (its text) when it is one, so a second tap does not say the same status again straight after.
    */
-  private current: { done: boolean; announcement: boolean } | null = null;
+  private current: { done: boolean; announcement: string | null } | null = null;
   private lastStart: number | null = null;
   private held = false;
   private wakePending = false;
@@ -56,11 +58,14 @@ export class SpeechQueue {
   /**
    * Says an Announcement as soon as the line being said ends (or the Alarm lets go), ahead of any waiting
    * lines. It ignores the gap and the stale rule, counts as the last start, and never talks over anything.
-   * A newer Announcement replaces one still waiting, and is dropped while one is being said (a double tap).
+   * Announcements wait their turn in order (at most `ANNOUNCEMENT_QUEUE_MAX`; a further one is dropped), and
+   * one with the same text as the one being said or already waiting is dropped too (a double tap).
    */
   announce(line: SpokenLine): void {
-    if (this.current?.announcement === true) return;
-    this.announcement = line;
+    if (this.current?.announcement === line.text) return;
+    if (this.announcements.some((waiting) => waiting.text === line.text)) return;
+    if (this.announcements.length >= ANNOUNCEMENT_QUEUE_MAX) return;
+    this.announcements.push(line);
     this.pump();
   }
 
@@ -80,7 +85,7 @@ export class SpeechQueue {
    */
   interrupt(): void {
     this.waiting = [];
-    this.announcement = null;
+    this.announcements = [];
     const current = this.current;
     if (current === null) return;
     current.done = true;
@@ -97,10 +102,9 @@ export class SpeechQueue {
 
   private pump(): void {
     if (this.held || this.current !== null) return;
-    if (this.announcement !== null) {
-      const line = this.announcement;
-      this.announcement = null;
-      this.start(line, true);
+    const announcement = this.announcements.shift();
+    if (announcement !== undefined) {
+      this.start(announcement, announcement.text);
       return;
     }
     const { now } = this.options;
@@ -118,7 +122,7 @@ export class SpeechQueue {
     this.start(next.line);
   }
 
-  private start(line: SpokenLine, announcement = false): void {
+  private start(line: SpokenLine, announcement: string | null = null): void {
     const current = { done: false, announcement };
     this.current = current;
     this.lastStart = this.options.now();

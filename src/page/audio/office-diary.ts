@@ -15,9 +15,9 @@ export interface DiarySummary {
   /** Backups that finished. */
   backupsFinished: number;
   backupsFailed: number;
-  /** The role with the highest mean CPU, or `null` with no samples. */
+  /** The role with the highest mean CPU, or `null` with no samples or a tie for it. */
   busiest: VmRole | null;
-  /** The role with the lowest mean CPU, or `null` with fewer than two roles sampled. */
+  /** The role with the lowest mean CPU, or `null` with fewer than two roles sampled or a tie for it. */
   calmest: VmRole | null;
 }
 
@@ -85,14 +85,17 @@ export class OfficeDiary {
     this.prune();
     const count = (kind: EntryKind): number => this.entries.filter((entry) => entry.kind === kind).length;
     const means = this.meanCpuByRole().sort((a, b) => b.mean - a.mean);
+    const busiest = means[0];
+    const calmest = means.length > 1 ? means.at(-1) : undefined;
+    const tied = busiest !== undefined && calmest !== undefined && busiest.mean === calmest.mean;
     return {
       deploys: count('deploy'),
       rollbacks: count('rollback'),
       faults: count('fault'),
       backupsFinished: count('backup-finished'),
       backupsFailed: count('backup-failed'),
-      busiest: means[0]?.role ?? null,
-      calmest: means.length > 1 ? (means.at(-1)?.role ?? null) : null,
+      busiest: tied ? null : (busiest?.role ?? null),
+      calmest: tied ? null : (calmest?.role ?? null),
     };
   }
 
@@ -105,9 +108,9 @@ export class OfficeDiary {
     this.entries.push({ at: this.now(), kind });
   }
 
-  /** The first wall-clock hour still inside the window. */
+  /** The first wall-clock hour lying wholly inside the window. */
   private get firstHour(): number {
-    return Math.floor((this.now() - DIARY_WINDOW_MS) / HOUR_MS);
+    return Math.ceil((this.now() - DIARY_WINDOW_MS) / HOUR_MS);
   }
 
   private prune(): void {

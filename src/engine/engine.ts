@@ -75,7 +75,7 @@ export class Engine {
 
   /**
    * Calls the founder with this id to the front of the ground floor for the Standup. It publishes `standup` on
-   * the bus once the founder arrives and stays about 25 seconds. Nothing is spoken here: the page listens.
+   * the bus once the founder arrives and stays `STANDUP_SECONDS`. Nothing is spoken here: the page listens.
    * Returns `false`, doing nothing, for an unknown id or a founder already on its way to or giving a Standup.
    */
   callStandup(founderId: string): boolean {

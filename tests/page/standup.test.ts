@@ -3,7 +3,7 @@ import { Engine } from '../../src/engine/engine.ts';
 import { seededRandom } from '../../src/engine/random.ts';
 import { OfficeDiary } from '../../src/page/audio/office-diary.ts';
 import { Soundboard } from '../../src/page/audio/soundboard.ts';
-import { Standup } from '../../src/page/audio/standup.ts';
+import { Standup, STANDUP_ARRIVAL_ALLOWANCE_MS } from '../../src/page/audio/standup.ts';
 import { StandupSchedule, localDayNumber } from '../../src/page/audio/standup-schedule.ts';
 import { voiceFor } from '../../src/page/audio/voice-casting.ts';
 import { officeTheme } from '../../src/themes/office/index.ts';
@@ -15,6 +15,7 @@ const at = (day: number, hour: number, minute = 0): Date => new Date(2026, 10, d
 
 /** A Standup over a real Engine and Soundboard, with the local time moved by hand. */
 function open(quiet = { start: 22, end: 7 }) {
+  const timers: { callback: () => void; ms: number }[] = [];
   const engine = new Engine(officeTheme, { random: seededRandom(7) });
   const speech = new RecordingSpeechOutput();
   const clock = { now: at(17, 8, 0) };
@@ -24,7 +25,9 @@ function open(quiet = { start: 22, end: 7 }) {
     quietHours: quiet,
   });
   const diary = new OfficeDiary(engine.bus, () => clock.now.getTime());
-  const standup = new Standup(engine, soundboard, diary, new StandupSchedule(null));
+  const standup = new Standup(engine, soundboard, diary, new StandupSchedule(null), (callback, ms) =>
+    timers.push({ callback, ms }),
+  );
   const lab = new Lab();
   const standups: string[] = [];
   engine.bus.subscribe('standup', (event) => standups.push(event.founderId));
@@ -37,7 +40,7 @@ function open(quiet = { start: 22, end: 7 }) {
   };
   const announcements = () => speech.spoken.filter((line) => line.pieces !== undefined);
   feed();
-  return { engine, speech, clock, soundboard, standup, feed, standups, announcements };
+  return { engine, speech, clock, soundboard, standup, feed, standups, announcements, timers };
 }
 
 const FOUNDERS = officeTheme.founders;
@@ -122,5 +125,55 @@ describe('Standup', () => {
     expect(standup.run(clock.now)).toBe(true);
     run(engine, 60, () => standups.length > 0);
     expect(standups).toEqual([founderOn(17)]);
+  });
+
+  describe('without the founder arriving', () => {
+    it('still speaks once the allowance runs out when the page is paused', () => {
+      const { clock, feed, standups, announcements, timers } = open();
+      clock.now = at(17, 9, 0);
+      feed();
+      expect(timers.map((timer) => timer.ms)).toEqual([STANDUP_ARRIVAL_ALLOWANCE_MS]);
+      expect(announcements()).toEqual([]);
+      timers[0]?.callback();
+      expect(standups).toEqual([]);
+      expect(announcements()[0]?.pieces?.[0]).toBe('good morning');
+    });
+
+    it('speaks once on arrival, and the timer then does nothing', () => {
+      const { engine, speech, clock, feed, standups, announcements, timers } = open();
+      clock.now = at(17, 9, 0);
+      feed();
+      run(engine, 60, () => standups.length > 0);
+      speech.finish();
+      expect(announcements()).toHaveLength(1);
+      timers[0]?.callback();
+      speech.finish();
+      expect(announcements()).toHaveLength(1);
+    });
+
+    it('says nothing for an arrival after the allowance', () => {
+      const { engine, speech, clock, feed, standups, announcements, timers } = open();
+      clock.now = at(17, 9, 0);
+      feed();
+      timers[0]?.callback();
+      speech.finish();
+      expect(announcements()).toHaveLength(1);
+      run(engine, 60, () => standups.length > 0);
+      speech.finish();
+      expect(announcements()).toHaveLength(1);
+    });
+
+    it('still speaks when the Theme is switched mid-walk', () => {
+      const { engine, speech, clock, feed, standups, announcements, timers } = open();
+      clock.now = at(17, 9, 0);
+      feed();
+      run(engine, 1);
+      engine.setTheme(officeTheme);
+      run(engine, 60);
+      expect(standups).toEqual([]);
+      timers[0]?.callback();
+      speech.finish();
+      expect(announcements()).toHaveLength(1);
+    });
   });
 });

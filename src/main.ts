@@ -201,7 +201,9 @@ function snapshotSource(): HttpSnapshotSource | Simulator {
   soundPanel = mountSoundPanel({
     theme: engine.theme,
     play: (audition) => soundboard.audition(audition),
-    onStandup: () => void standup.run(new Date()),
+    onStandup: () => {
+      standup.run(new Date());
+    },
     volume: soundboard.volume,
     onVolume: (level) => {
       soundboard.volume = level;
