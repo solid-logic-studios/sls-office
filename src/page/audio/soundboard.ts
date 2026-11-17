@@ -215,6 +215,8 @@ export class Soundboard {
     const voices = this.source.theme.soundscape?.voices;
     if (this.isMuted || voices === undefined) return;
     const speaker = this.source.characters().find((character) => character.id === speakerId);
+    // A hidden speaker gets no bubble, so it gets no voice either.
+    if (speaker?.visible === false) return;
     this.speech.enqueue(spokenLine(text, voiceFor(voices, speaker), speakerId));
   }
 

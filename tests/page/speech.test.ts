@@ -308,6 +308,23 @@ function listen(theme: Theme) {
 }
 
 describe('the Soundboard speaking', () => {
+  it('gives no voice to a hidden speaker, which has no bubble', () => {
+    const engine = new Engine(officeTheme, { random: seededRandom(7) });
+    engine.accept(new Lab().snapshot());
+    const speech = new RecordingSpeechOutput();
+    const hidden = engine.characters().map((character) => ({ ...character, visible: false }));
+    const source = {
+      bus: engine.bus,
+      theme: engine.theme,
+      findings: engine.findings,
+      layout: engine.layout,
+      characters: () => hidden,
+    };
+    new Soundboard(source, new RecordingSoundOutput(), { now: () => 0, later: () => undefined, speech });
+    engine.bus.publish({ kind: 'speech', speakerId: hidden[0]?.id ?? '', text: 'HELLO', force: false });
+    expect(speech.spoken).toHaveLength(0);
+  });
+
   it('speaks a bubble line in its speaker Part Voice', () => {
     const { speech, say, idOf } = listen(officeTheme);
     const worker = idOf('worker');

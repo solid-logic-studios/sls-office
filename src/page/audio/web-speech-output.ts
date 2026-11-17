@@ -31,6 +31,8 @@ export function watchdogMs(text: string, rate: number): number {
 export class WebSpeechOutput implements SpeechOutput {
   /** Held so the browser cannot collect an utterance mid-line, which in Chrome drops its `end` event. */
   private utterance: SpeechSynthesisUtterance | null = null;
+  /** Ends the line being said: clears its watchdog and calls its `onEnd`, once. */
+  private finishCurrent: (() => void) | null = null;
 
   speak(line: SpokenLine, onEnd: () => void): void {
     if (typeof speechSynthesis === 'undefined' || typeof SpeechSynthesisUtterance === 'undefined') {
@@ -49,7 +51,10 @@ export class WebSpeechOutput implements SpeechOutput {
       if (ended) return;
       ended = true;
       clearTimeout(watchdog);
-      if (this.utterance === utterance) this.utterance = null;
+      if (this.utterance === utterance) {
+        this.utterance = null;
+        this.finishCurrent = null;
+      }
       onEnd();
     };
     // Some engines (Chrome on Linux among them) now and then never fire `end`. Without this the queue
@@ -66,11 +71,14 @@ export class WebSpeechOutput implements SpeechOutput {
     utterance.onend = finish;
     utterance.onerror = finish;
     this.utterance = utterance;
+    this.finishCurrent = finish;
     speechSynthesis.speak(utterance);
   }
 
+  /** Cancels the line and ends it here, so its watchdog can never cancel a later line. */
   stop(): void {
     if (typeof speechSynthesis === 'undefined') return;
     speechSynthesis.cancel();
+    this.finishCurrent?.();
   }
 }
