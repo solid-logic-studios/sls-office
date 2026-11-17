@@ -7,6 +7,7 @@ import { WebAudioOutput } from './page/audio/web-audio-output.ts';
 import { initialMuted, saveMuted, type MuteStorage } from './page/audio/mute-preference.ts';
 import { parseQuietHours } from './page/audio/quiet-hours.ts';
 import { Soundboard } from './page/audio/soundboard.ts';
+import { initialVolume, saveVolume } from './page/audio/volume-preference.ts';
 import { loadVoiceManifest } from './page/audio/voice-manifest.ts';
 import { WebSpeechOutput } from './page/audio/web-speech-output.ts';
 import { localHour } from './page/clock.ts';
@@ -15,6 +16,7 @@ import { isStale } from './page/freshness.ts';
 import { renderLegend } from './page/legend.ts';
 import { OfficeLog } from './page/office-log.ts';
 import { Poller } from './page/poller.ts';
+import { mountSoundPanel } from './page/sound-panel.ts';
 import { mountSpeakerButton } from './page/speaker-button.ts';
 import { pollWhileVisible } from './page/visibility.ts';
 import { StageCanvas } from './page/stage-canvas.ts';
@@ -88,6 +90,8 @@ function browserStorage(): MuteStorage | null {
 
 const storage = browserStorage();
 soundboard.muted = initialMuted(query, storage);
+/** The saved volume applies everywhere; only the slider that sets it is `?sim`-only. */
+soundboard.volume = initialVolume(storage);
 mountSpeakerButton(element('sound', HTMLButtonElement), {
   get muted() {
     return soundboard.muted;
@@ -131,12 +135,16 @@ stage.onPoint((point) => {
   else tooltip.show(tip, point);
 });
 
+/** The `?sim` Sound panel, which follows the Theme switcher. Stays `null` outside `?sim`. */
+let soundPanel: ReturnType<typeof mountSoundPanel> | null = null;
+
 mountThemeSwitcher(element('theme', HTMLSelectElement), THEMES, firstTheme.id, (id) => {
   const theme = THEMES.find((candidate) => candidate.id === id);
   if (theme === undefined) return;
   engine.setTheme(theme);
   stage.resize(theme.layout.width, theme.layout.height);
   renderLegend(legend, theme.legend);
+  soundPanel?.setTheme(theme);
   tooltip.hide();
 });
 
@@ -178,10 +186,24 @@ function snapshotSource(): HttpSnapshotSource | Simulator {
   const simulator = new Simulator();
   const container = element('control-room', HTMLDivElement);
   container.hidden = false;
+  soundPanel = mountSoundPanel({
+    theme: engine.theme,
+    play: (audition) => soundboard.audition(audition),
+    volume: soundboard.volume,
+    onVolume: (level) => {
+      soundboard.volume = level;
+      saveVolume(storage, level);
+    },
+    ignoreQuietHours: soundboard.ignoreQuietHours,
+    onIgnoreQuietHours: (on) => {
+      soundboard.ignoreQuietHours = on;
+    },
+  });
   const controls = mountControlRoom(container, simulator, {
     onHour: (value) => {
       hourOverride = value;
     },
+    extra: [soundPanel.element],
   });
   refreshControls = () => controls.refresh();
   return simulator;

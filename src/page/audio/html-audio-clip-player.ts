@@ -9,6 +9,9 @@ const PLAY_SLACK_MS = 3000;
 export class HtmlAudioClipPlayer implements ClipPlayer {
   /** Ends the clip being played: clears its watchdog and calls its `onEnd`, once. */
   private finishCurrent: ((failed: boolean) => void) | null = null;
+  /** The clip being played now, so a volume change reaches it. */
+  private current: HTMLAudioElement | null = null;
+  private volume = 1;
 
   play(url: string, playbackRate: number, onEnd: (failed: boolean) => void): void {
     if (typeof Audio === 'undefined') {
@@ -19,6 +22,7 @@ export class HtmlAudioClipPlayer implements ClipPlayer {
     // Speed and pitch move together: the nudge is a pitch shift, and it is small enough to keep speech natural.
     audio.preservesPitch = false;
     audio.playbackRate = playbackRate;
+    audio.volume = this.volume;
     let ended = false;
     let watchdog: ReturnType<typeof setTimeout>;
     const finish = (failed: boolean): void => {
@@ -26,7 +30,10 @@ export class HtmlAudioClipPlayer implements ClipPlayer {
       ended = true;
       clearTimeout(watchdog);
       audio.pause();
-      if (this.finishCurrent === finish) this.finishCurrent = null;
+      if (this.finishCurrent === finish) {
+        this.finishCurrent = null;
+        this.current = null;
+      }
       onEnd(failed);
     };
     // Before the length is known the clip never loaded, so it fails and the fallback speaks the line. After it,
@@ -43,6 +50,7 @@ export class HtmlAudioClipPlayer implements ClipPlayer {
     audio.addEventListener('ended', () => finish(false));
     audio.addEventListener('error', () => finish(true));
     this.finishCurrent = finish;
+    this.current = audio;
     // A rejection covers `NotAllowedError`, which the browser raises before the first gesture.
     audio.play().catch(() => finish(true));
   }
@@ -50,5 +58,10 @@ export class HtmlAudioClipPlayer implements ClipPlayer {
   /** Pauses the clip and ends it here, so its watchdog can never end a later one. */
   stop(): void {
     this.finishCurrent?.(false);
+  }
+
+  setVolume(level: number): void {
+    this.volume = level;
+    if (this.current !== null) this.current.volume = level;
   }
 }

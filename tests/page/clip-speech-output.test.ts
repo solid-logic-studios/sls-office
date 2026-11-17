@@ -161,4 +161,11 @@ describe('a Soundboard speaking through a ClipSpeechOutput', () => {
     expect(player.stops).toBe(1);
     expect(player.playing).toBe(false);
   });
+
+  it('forwards the volume to the clip player and the fallback', () => {
+    const { player, fallback, output } = open();
+    output.setVolume(0.3);
+    expect(player.volume).toBe(0.3);
+    expect(fallback.volume).toBe(0.3);
+  });
 });

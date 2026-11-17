@@ -23,6 +23,8 @@ export class RecordingSoundOutput implements SoundOutput {
   readonly levels: LevelChange[] = [];
   readonly stops: Channel[] = [];
   readonly ambients: AmbientCall[] = [];
+  /** The master level last set, if any. */
+  master: number | undefined;
 
   /** Just the Alarm channel's plays: the Alarm, Reminder and All-clear, without the stage effects around them. */
   get alarms(): PlayedSound[] {
@@ -35,6 +37,10 @@ export class RecordingSoundOutput implements SoundOutput {
 
   setLevel(channel: Channel, level: number): void {
     this.levels.push({ channel, level });
+  }
+
+  setMaster(level: number): void {
+    this.master = level;
   }
 
   stop(channel: Channel): void {

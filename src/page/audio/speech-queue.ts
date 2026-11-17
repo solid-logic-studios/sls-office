@@ -48,6 +48,16 @@ export class SpeechQueue {
     this.pump();
   }
 
+  /**
+   * Says `line` at once: it cuts off the line being said, forgets the waiting ones and ignores the gap (it
+   * still counts as the last start). Dropped while held, so an Alarm is not talked over.
+   */
+  sayNow(line: SpokenLine): void {
+    if (this.held) return;
+    this.interrupt();
+    this.start(line);
+  }
+
   /** Cuts off the line being said and forgets the waiting ones. The 8 s gap still counts from the last start. */
   interrupt(): void {
     this.waiting = [];

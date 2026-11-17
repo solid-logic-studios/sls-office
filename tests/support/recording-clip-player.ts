@@ -6,6 +6,8 @@ export class RecordingClipPlayer implements ClipPlayer {
   readonly played: { url: string; playbackRate: number }[] = [];
   /** How many times `stop()` was called. */
   stops = 0;
+  /** The volume last set, if any. */
+  volume: number | undefined;
   private onEnd: ((failed: boolean) => void) | null = null;
 
   /** Whether a clip is playing now. */
@@ -16,6 +18,10 @@ export class RecordingClipPlayer implements ClipPlayer {
   play(url: string, playbackRate: number, onEnd: (failed: boolean) => void): void {
     this.played.push({ url, playbackRate });
     this.onEnd = onEnd;
+  }
+
+  setVolume(level: number): void {
+    this.volume = level;
   }
 
   /** Like the real thing, cutting a clip off still reports it ended, not failed. */

@@ -130,6 +130,11 @@ with `?quiet=22-7`: two whole hours from 0 to 23, which wraps past midnight when
 `?quiet=0-0` turns quiet hours off, and an invalid value falls back to the default. In `?sim` the time-of-day
 slider moves the clock, so you can try them.
 
+`?sim` also has a Sound panel in the control room: a button for every sound in the current Theme (the Alarm,
+Reminder and All-clear, each effect and a sample line per Voice), a master volume that applies to every channel
+and is remembered per browser, and an "Ignore quiet hours" switch for testing by day. Mute and quiet hours still
+apply to the buttons unless that switch is on.
+
 ## Contributing
 
 See [`CLAUDE.md`](CLAUDE.md) (canonical), [`AGENTS.md`](AGENTS.md) and [`CONTEXT.md`](CONTEXT.md).
