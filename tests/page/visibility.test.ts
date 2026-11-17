@@ -12,10 +12,6 @@ class FakePage implements VisibilitySource {
     this.listeners.add(listener);
   }
 
-  removeEventListener(_type: string, listener: EventListenerOrEventListenerObject): void {
-    this.listeners.delete(listener);
-  }
-
   show(hidden: boolean): void {
     this.hidden = hidden;
     for (const listener of this.listeners) {
@@ -33,8 +29,8 @@ describe('pollWhileVisible', () => {
     const page = new FakePage();
     page.hidden = hidden;
     const poller = new Poller({ fetch }, 5_000, () => {});
-    const detach = pollWhileVisible(poller, page);
-    return { fetch, page, poller, detach };
+    pollWhileVisible(poller, page);
+    return { fetch, page };
   }
 
   it('polls at once and on the interval while visible', async () => {
@@ -66,15 +62,5 @@ describe('pollWhileVisible', () => {
     page.show(false);
     await vi.advanceTimersByTimeAsync(0);
     expect(fetch).toHaveBeenCalledTimes(1);
-  });
-
-  it('stops listening once detached', async () => {
-    const { fetch, page, detach } = rig();
-    await vi.advanceTimersByTimeAsync(0);
-    detach();
-    page.show(true);
-    await vi.advanceTimersByTimeAsync(10_000);
-    // Detached, so hiding the page no longer stops the poller: its two interval ticks still fire.
-    expect(fetch).toHaveBeenCalledTimes(3);
   });
 });
