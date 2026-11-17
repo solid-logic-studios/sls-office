@@ -1,5 +1,6 @@
-import type { AmbientBed, SynthNote, SynthSound } from '../../contract/theme.ts';
+import type { AmbientBed, MusicScore, SynthNote, SynthSound } from '../../contract/theme.ts';
 import { RunningBed, holdAt } from './ambient-bed.ts';
+import { RunningMusic } from './running-music.ts';
 import { noteSeconds, type AmbientMix, type Channel, type PlayOptions, type SoundOutput } from './sound-output.ts';
 
 /** An exponential ramp cannot reach 0, so envelopes fall to this instead. */
@@ -42,8 +43,16 @@ export class WebAudioOutput implements SoundOutput {
   /** The bed the Soundboard last asked for, kept so a context that was blocked can start it once it runs. */
   private requested: { bed: AmbientBed; mix: AmbientMix } | null = null;
 
+  /** The music that is sounding now, if any. */
+  private playing: RunningMusic | null = null;
+  /** The music the Soundboard last asked for, kept so a context that was blocked can start it once it runs. */
+  private requestedMusic: { score: MusicScore; load: number } | null = null;
+
   constructor() {
-    this.context?.addEventListener('statechange', () => this.startRequestedBed());
+    this.context?.addEventListener('statechange', () => {
+      this.startRequestedBed();
+      this.startRequestedMusic();
+    });
   }
 
   /** True when there is Web Audio but the browser is holding it back until a gesture. */
@@ -96,6 +105,40 @@ export class WebAudioOutput implements SoundOutput {
       return;
     }
     this.startRequestedBed();
+  }
+
+  /**
+   * Runs the music at `load`; `null` fades it out and releases it. Music asked for while the context was
+   * blocked starts when the context runs. A different `score` object than the playing one rebuilds it.
+   */
+  music(score: MusicScore | null, load: number): void {
+    this.requestedMusic = score === null ? null : { score, load };
+    if (score === null) {
+      this.playing?.stop();
+      this.playing = null;
+      return;
+    }
+    this.startRequestedMusic();
+  }
+
+  private startRequestedMusic(): void {
+    const { context, requestedMusic } = this;
+    if (context === null || context.state !== 'running' || requestedMusic === null) return;
+    if (this.playing !== null && this.playing.score !== requestedMusic.score) {
+      this.playing.stop();
+      this.playing = null;
+    }
+    if (this.playing === null) {
+      this.playing = new RunningMusic(
+        context,
+        this.channelGain(context, 'ambient'),
+        requestedMusic.score,
+        requestedMusic.load,
+        (note, at, out) => void this.schedule(context, out, 'ambient', note, at, 1),
+      );
+    } else {
+      this.playing.setLoad(requestedMusic.load);
+    }
   }
 
   private startRequestedBed(): void {

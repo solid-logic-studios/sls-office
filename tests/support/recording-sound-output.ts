@@ -1,4 +1,4 @@
-import type { AmbientBed, SynthSound } from '../../src/contract/theme.ts';
+import type { AmbientBed, MusicScore, SynthSound } from '../../src/contract/theme.ts';
 import type { AmbientMix, Channel, PlayOptions, SoundOutput } from '../../src/page/audio/sound-output.ts';
 
 export interface PlayedSound {
@@ -17,12 +17,19 @@ export interface AmbientCall {
   mix: AmbientMix;
 }
 
+export interface MusicCall {
+  /** `null` is the music being switched off. */
+  score: MusicScore | null;
+  load: number;
+}
+
 /** A `SoundOutput` that remembers what it was asked to play, to set and to stop. */
 export class RecordingSoundOutput implements SoundOutput {
   readonly played: PlayedSound[] = [];
   readonly levels: LevelChange[] = [];
   readonly stops: Channel[] = [];
   readonly ambients: AmbientCall[] = [];
+  readonly musics: MusicCall[] = [];
   /** The master level last set, if any. */
   master: number | undefined;
 
@@ -51,10 +58,15 @@ export class RecordingSoundOutput implements SoundOutput {
     this.ambients.push({ bed, mix });
   }
 
+  music(score: MusicScore | null, load: number): void {
+    this.musics.push({ score, load });
+  }
+
   clear(): void {
     this.played.length = 0;
     this.levels.length = 0;
     this.stops.length = 0;
     this.ambients.length = 0;
+    this.musics.length = 0;
   }
 }

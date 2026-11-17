@@ -360,6 +360,28 @@ const VOCABULARY: Vocabulary = {
  */
 const SOUNDSCAPE: Soundscape = {
   vocabulary: VOCABULARY,
+  // One bar, one voice: four plain square blips going up, quavers as the step. Proves the contract, nothing more.
+  music: {
+    bpm: { calm: 60, busy: 120 },
+    stepsPerBeat: 2,
+    stepsPerBar: 8,
+    volume: 1,
+    voices: { blip: { wave: 'square', volume: 0.02, attack: 0.01, release: 0.05, gate: 0.5 } },
+    sections: [
+      {
+        bars: 1,
+        parts: {
+          blip: [
+            { step: 0, steps: 2, hz: 220 },
+            { step: 2, steps: 2, hz: 277 },
+            { step: 4, steps: 2, hz: 330 },
+            { step: 6, steps: 2, hz: 440 },
+          ],
+        },
+      },
+    ],
+    order: [0],
+  },
   voices: {
     default: {
       id: 'boxes-default',

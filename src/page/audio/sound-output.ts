@@ -1,4 +1,4 @@
-import type { AmbientBed, SynthNote, SynthSound } from '../../contract/theme.ts';
+import type { AmbientBed, MusicScore, SynthNote, SynthSound } from '../../contract/theme.ts';
 
 /** How long a note takes, in seconds, including the silence after it. */
 export function noteSeconds(note: SynthNote): number {
@@ -48,4 +48,9 @@ export interface SoundOutput {
    * to the new mix if it is (no clicks). `null` fades the bed out and stops it.
    */
   ambient(bed: AmbientBed | null, mix: AmbientMix): void;
+  /**
+   * Plays the music on the `ambient` channel at lab `load` (0 to 1): starts it with a fade-in if it is not
+   * running, and only moves its tempo target if it is. `null` fades it out and stops it.
+   */
+  music(score: MusicScore | null, load: number): void;
 }

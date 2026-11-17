@@ -93,6 +93,10 @@ _Avoid_: daily summary, briefing.
 **Quiet hours**: the nightly stretch when the Office holds its tongue: only Alarms sound, and softly.
 _Avoid_: night mode, do not disturb, sleep.
 
+**Music**: the optional chiptune score a Theme can carry in its Soundscape, switched on by the Music button.
+Its tempo follows lab load, and it keeps to mute and quiet hours like the ambient bed.
+_Avoid_: soundtrack, background track.
+
 ## Versioning (trunk-based)
 
 Work off `main`; Conventional Commits + Keep a Changelog; bump version + tag at release;

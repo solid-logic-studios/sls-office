@@ -183,3 +183,11 @@ the decisions above, they supersede them.
   two Snapshots less than 15 minutes apart (a gap, such as an outage or a hidden tab, is no smoko; not stored, so a
   reload after it does not repeat it), and `hatTrick`
   on the third healthy deploy in a row, a rollback resetting the count.
+- **Music** is a Theme's optional `soundscape.music`: a data-only step sequencer (`MusicScore`: voices, fixed
+  sections, an `order` that loops forever, a `bpm` range and a step grid). The Office's is lo-fi chiptune in D
+  major, tuned from the hum's D3 (`D3_HZ`, shared with `ambient.hum.hz`) so it never beats against the drone. The
+  tempo runs from 68 BPM (idle) to 96 BPM (every VM flat out) with lab load, snapped to 2 BPM and moving at most
+  4 BPM a bar, only at bar lines, so a bar never changes speed under its own notes. It plays on the `ambient`
+  channel through its own `music` gain, so it ducks with the bed under speech and the Alarm and keeps time while
+  ducked. It is off until the Music button (remembered per browser, `sls-office.music`) turns it on, and it stops,
+  rather than keeps scheduling, when muted, in quiet hours or switched off; it restarts from the top afterwards.

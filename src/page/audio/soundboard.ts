@@ -1,5 +1,5 @@
 import type { Findings, Snapshot } from '../../contract/snapshot.ts';
-import type { AmbientBed, Layout, SynthSound, Theme } from '../../contract/theme.ts';
+import type { AmbientBed, Layout, MusicScore, SynthSound, Theme } from '../../contract/theme.ts';
 import type { CharacterView } from '../../engine/engine.ts';
 import type { EventBus } from '../../engine/event-bus.ts';
 import { localHour } from '../clock.ts';
@@ -116,6 +116,12 @@ export class Soundboard {
   private lastSnapshot: Snapshot | null = null;
   /** Whether the output has been told to run a bed, so a Theme without one is only switched off once. */
   private bedOn = false;
+  /** Whether the Music button is on. Off until the page switches it on. */
+  private wantsMusic = false;
+  /** The score and lab load last worked out from a Snapshot, so unmuting can bring the music straight back. */
+  private lastMusic: { score: MusicScore; load: number } | null = null;
+  /** Whether the output has been told to run music, so it is only switched off once. */
+  private musicSounding = false;
 
   constructor(
     private readonly source: SoundSource,
@@ -174,9 +180,18 @@ export class Soundboard {
     if (value) {
       this.output.stop('alarm');
       this.silenceBelowAlarm();
-    } else if (this.lastAmbient !== null && this.mayPlay('ambient')) {
-      this.switchBed(this.lastAmbient);
-    }
+    } else this.resumeAmbient();
+  }
+
+  /** Whether the music is switched on. It still keeps to mute and quiet hours, and plays only if the Theme has any. */
+  get musicOn(): boolean {
+    return this.wantsMusic;
+  }
+
+  set musicOn(value: boolean) {
+    this.wantsMusic = value;
+    if (value) this.resumeAmbient();
+    else this.switchMusic(null);
   }
 
   /** The master volume, 0 to 1, for every channel: Web Audio, clips and `speechSynthesis` alike. */
@@ -203,7 +218,7 @@ export class Soundboard {
     this.ignoringQuietHours = value;
     this.followClock();
     if (this.hushed) this.silenceBelowAlarm();
-    else if (this.lastAmbient !== null && this.mayPlay('ambient')) this.switchBed(this.lastAmbient);
+    else this.resumeAmbient();
   }
 
   /** Plays one thing from the Sound panel now, through the same gates as the real thing (mute, quiet hours). */
@@ -298,6 +313,7 @@ export class Soundboard {
     this.eggs.dispose();
     this.speech.interrupt();
     this.switchBed(null);
+    this.switchMusic(null);
     // A duck restore still pending finds itself stale and does nothing.
     this.duckGeneration += 1;
   }
@@ -335,11 +351,19 @@ export class Soundboard {
     return this.quiet && !this.ignoringQuietHours;
   }
 
-  /** Cuts off everything under the Alarm channel: effects, the line being said (and those waiting) and the bed. */
+  /** Cuts off everything under the Alarm channel: effects, speech (and what waits), the bed and the music. */
   private silenceBelowAlarm(): void {
     this.output.stop('effect');
     this.speech.interrupt();
     this.switchBed(null);
+    this.switchMusic(null);
+  }
+
+  /** Brings back the bed and the music from the last Snapshot, if they may play now. */
+  private resumeAmbient(): void {
+    if (!this.mayPlay('ambient')) return;
+    if (this.lastAmbient !== null) this.switchBed(this.lastAmbient);
+    this.followMusic();
   }
 
   /**
@@ -357,6 +381,26 @@ export class Soundboard {
     this.lastAmbient =
       bed === undefined ? null : { bed, mix: ambientMix(bed, labLoad(snapshot), busyness(this.source.characters())) };
     if (this.mayPlay('ambient')) this.switchBed(this.lastAmbient);
+    const score = this.source.theme.soundscape?.music;
+    this.lastMusic = score === undefined ? null : { score, load: labLoad(snapshot) };
+    this.followMusic();
+  }
+
+  /** Sends the music to the output if it is on and may play now; otherwise switches it off. */
+  private followMusic(): void {
+    const { lastMusic } = this;
+    this.switchMusic(this.wantsMusic && lastMusic !== null && this.mayPlay('ambient') ? lastMusic : null);
+  }
+
+  /** The one place the music is set. `null` switches it off, and only tells the output if it was on. */
+  private switchMusic(target: { score: MusicScore; load: number } | null): void {
+    if (target !== null) {
+      this.output.music(target.score, target.load);
+      this.musicSounding = true;
+    } else if (this.musicSounding) {
+      this.output.music(null, 0);
+      this.musicSounding = false;
+    }
   }
 
   /** The one place the ambient bed is set. `null` switches it off, and only tells the output if it was on. */
