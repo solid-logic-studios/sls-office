@@ -6,6 +6,8 @@ import { formatHour, localHour } from './clock.ts';
 export interface ControlRoomOptions {
   /** `null` means follow the local clock. */
   onHour(hour: number | null): void;
+  /** More groups for the end of the control room, built by the caller (the Sound panel), which it knows nothing of. */
+  extra?: readonly HTMLElement[];
 }
 
 interface Action {
@@ -26,7 +28,7 @@ const ACTIONS: readonly Action[] = [
 /** The backup preset runs at half past two in the morning, so the sky should match. */
 const BACKUP_HOUR = 2.5;
 
-function make<K extends keyof HTMLElementTagNameMap>(
+export function make<K extends keyof HTMLElementTagNameMap>(
   tag: K,
   className?: string,
   text?: string,
@@ -37,13 +39,13 @@ function make<K extends keyof HTMLElementTagNameMap>(
   return element;
 }
 
-function labelFor(input: HTMLInputElement, text: string, className?: string): HTMLLabelElement {
+export function labelFor(input: HTMLInputElement, text: string, className?: string): HTMLLabelElement {
   const label = make('label', className, text);
   label.htmlFor = input.id;
   return label;
 }
 
-function range(id: string, min: number, max: number, step: number, value: number): HTMLInputElement {
+export function range(id: string, min: number, max: number, step: number, value: number): HTMLInputElement {
   const input = make('input');
   input.type = 'range';
   input.id = id;
@@ -54,7 +56,7 @@ function range(id: string, min: number, max: number, step: number, value: number
   return input;
 }
 
-function checkbox(id: string, checked: boolean): HTMLInputElement {
+export function checkbox(id: string, checked: boolean): HTMLInputElement {
   const input = make('input');
   input.type = 'checkbox';
   input.id = id;
@@ -62,14 +64,14 @@ function checkbox(id: string, checked: boolean): HTMLInputElement {
   return input;
 }
 
-function button(label: string, className: string | undefined, onClick: () => void): HTMLButtonElement {
+export function button(label: string, className: string | undefined, onClick: () => void): HTMLButtonElement {
   const element = make('button', className, label);
   element.type = 'button';
   element.addEventListener('click', onClick);
   return element;
 }
 
-function group(title: string, ...children: HTMLElement[]): HTMLElement {
+export function group(title: string, ...children: HTMLElement[]): HTMLElement {
   const element = make('div', 'grp');
   element.append(make('span', 'lab', title), ...children);
   return element;
@@ -214,7 +216,13 @@ export function mountControlRoom(
   }
 
   const inner = make('div', 'in');
-  inner.append(group('Presets', presets), group('Make something happen', actions), group('VM load', vms), time.element);
+  inner.append(
+    group('Presets', presets),
+    group('Make something happen', actions),
+    group('VM load', vms),
+    time.element,
+    ...(options.extra ?? []),
+  );
 
   const details = make('details', 'console px');
   details.open = window.innerWidth >= 720;

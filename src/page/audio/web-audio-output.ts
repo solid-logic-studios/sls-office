@@ -29,8 +29,12 @@ export class WebAudioOutput implements SoundOutput {
    */
   private readonly context: AudioContext | null = typeof AudioContext === 'undefined' ? null : new AudioContext();
   private noise: AudioBuffer | null = null;
-  /** One gain per channel, created on first use, all into `destination`. */
+  /** One gain per channel, created on first use, all into the master gain. */
   private readonly channels = new Map<Channel, GainNode>();
+  /** The master gain every channel passes through, created on first use, into `destination`. */
+  private master: GainNode | null = null;
+  /** The master level last asked for, so a master gain created later starts at it. */
+  private masterLevel = 1;
   /** The notes still scheduled or sounding on each channel; each leaves on `ended`, so nothing accumulates. */
   private readonly live = new Map<Channel, Set<LiveNote>>();
   /** The bed that is sounding now, if any. */
@@ -135,6 +139,16 @@ export class WebAudioOutput implements SoundOutput {
     gain.setTargetAtTime(level, now, LEVEL_GLIDE);
   }
 
+  setMaster(level: number): void {
+    this.masterLevel = level;
+    const { context } = this;
+    if (context === null) return;
+    const { gain } = this.masterGain(context);
+    const now = context.currentTime;
+    holdAt(gain, now);
+    gain.setTargetAtTime(level, now, LEVEL_GLIDE);
+  }
+
   /**
    * Fades every note on the channel out over a few milliseconds, then cuts it, so a stop never clicks. On
    * `ambient` that cuts the clatter's key presses; the bed's room tone and hum are `ambient(null)`'s to stop.
@@ -155,10 +169,19 @@ export class WebAudioOutput implements SoundOutput {
     let gain = this.channels.get(channel);
     if (gain === undefined) {
       gain = context.createGain();
-      gain.connect(context.destination);
+      gain.connect(this.masterGain(context));
       this.channels.set(channel, gain);
     }
     return gain;
+  }
+
+  private masterGain(context: AudioContext): GainNode {
+    if (this.master === null) {
+      this.master = context.createGain();
+      this.master.gain.value = this.masterLevel;
+      this.master.connect(context.destination);
+    }
+    return this.master;
   }
 
   private liveNotes(channel: Channel): Set<LiveNote> {

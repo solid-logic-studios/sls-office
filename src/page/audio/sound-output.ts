@@ -39,6 +39,8 @@ export interface SoundOutput {
   play(sound: SynthSound, options: PlayOptions): void;
   /** Moves a channel's level (0 to 1, 1 is normal) to `level`, gliding so the change never clicks. */
   setLevel(channel: Channel, level: number): void;
+  /** Moves the master level (0 to 1, 1 is normal) every channel passes through to `level`, gliding like `setLevel`. */
+  setMaster(level: number): void;
   /** Cuts off whatever the channel is playing now. Later sounds on it play as normal. */
   stop(channel: Channel): void;
   /**

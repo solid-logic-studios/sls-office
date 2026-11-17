@@ -33,6 +33,8 @@ export class WebSpeechOutput implements SpeechOutput {
   private utterance: SpeechSynthesisUtterance | null = null;
   /** Ends the line being said: clears its watchdog and calls its `onEnd`, once. */
   private finishCurrent: (() => void) | null = null;
+  /** Applied to each new utterance. A line already being said keeps the volume it started with. */
+  private volume = 1;
 
   speak(line: SpokenLine, onEnd: () => void): void {
     if (typeof speechSynthesis === 'undefined' || typeof SpeechSynthesisUtterance === 'undefined') {
@@ -43,6 +45,7 @@ export class WebSpeechOutput implements SpeechOutput {
     utterance.lang = line.voice.lang;
     utterance.pitch = line.pitch;
     utterance.rate = line.rate;
+    utterance.volume = this.volume;
     // Voices load asynchronously and may be empty at first, so look one up each time.
     const voice = pickVoice(speechSynthesis.getVoices(), line.voice.lang);
     if (voice !== undefined) utterance.voice = voice;
@@ -73,6 +76,10 @@ export class WebSpeechOutput implements SpeechOutput {
     this.utterance = utterance;
     this.finishCurrent = finish;
     speechSynthesis.speak(utterance);
+  }
+
+  setVolume(level: number): void {
+    this.volume = level;
   }
 
   /** Cancels the line and ends it here, so its watchdog can never cancel a later line. */

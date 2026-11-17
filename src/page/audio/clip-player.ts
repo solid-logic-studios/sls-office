@@ -11,4 +11,6 @@ export interface ClipPlayer {
   play(url: string, playbackRate: number, onEnd: (failed: boolean) => void): void;
   /** Cuts off the clip being played now, if any (its `onEnd` still fires, with `failed` false). */
   stop(): void;
+  /** Sets how loud clips are (0 to 1, 1 is normal), for the clip being played now and those after it. */
+  setVolume(level: number): void;
 }

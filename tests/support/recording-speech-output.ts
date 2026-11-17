@@ -6,6 +6,8 @@ export class RecordingSpeechOutput implements SpeechOutput {
   readonly spoken: SpokenLine[] = [];
   /** How many times `stop()` was called. */
   stops = 0;
+  /** The volume last set, if any. */
+  volume: number | undefined;
   private onEnd: (() => void) | null = null;
 
   /** The line being said now, if any. */
@@ -16,6 +18,10 @@ export class RecordingSpeechOutput implements SpeechOutput {
   speak(line: SpokenLine, onEnd: () => void): void {
     this.spoken.push(line);
     this.onEnd = onEnd;
+  }
+
+  setVolume(level: number): void {
+    this.volume = level;
   }
 
   /** Like the real thing, cutting a line off still reports it ended. */

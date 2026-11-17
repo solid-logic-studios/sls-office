@@ -3,6 +3,7 @@ import type { AmbientBed, Layout, SynthSound, Theme } from '../../contract/theme
 import type { CharacterView } from '../../engine/engine.ts';
 import type { EventBus } from '../../engine/event-bus.ts';
 import { localHour } from '../clock.ts';
+import type { Audition } from './auditions.ts';
 import { ambientMix, busyness, labLoad } from './ambient-mix.ts';
 import { DEFAULT_QUIET_HOURS, isQuiet, type QuietHours } from './quiet-hours.ts';
 import { soundSeconds, type AmbientMix, type PlayOptions, type SoundOutput } from './sound-output.ts';
@@ -46,6 +47,7 @@ export const SPEECH_DUCK = 0.5;
 const SILENT_SPEECH: SpeechOutput = {
   speak: (_line, onEnd) => onEnd(),
   stop: () => undefined,
+  setVolume: () => undefined,
 };
 
 /** The Soundscape's Alarm-channel sounds. */
@@ -53,6 +55,8 @@ type AlarmCue = 'alarm' | 'reminder' | 'allClear';
 /** Everything the Soundboard may sound: the Alarm-channel cues, the stage effects, speech and the ambient bed. */
 type Sounding = AlarmCue | 'effect' | 'speech' | 'ambient';
 const FULL_LEVEL = 1;
+/** An audition plays dead centre and at full strength, as an effect from a stranger does. */
+const AUDITION_PLACEMENT: Pick<PlayOptions, 'volume' | 'pan'> = { volume: 1, pan: 0 };
 /** Passed with a `null` bed, which has no mix to speak of. */
 const SILENT_MIX: AmbientMix = { room: 0, hum: 0, keysPerSecond: 0 };
 
@@ -67,7 +71,8 @@ export const REMINDER_MS = 10 * 60 * 1000;
  * moods; both are ducked while an Alarm sounds. Speech (the `speech` event on the bus) goes through a
  * `SpeechQueue` to the `SpeechOutput`: it ducks the bed, and an Alarm cuts it off and holds it back. During
  * quiet hours only the Alarm sounds, at half volume; the bed, effects, speech, Reminder and All-clear stay
- * silent until they end.
+ * silent until they end. The master `volume` scales every channel, and `audition` plays any one sound on
+ * request for the `?sim` Sound panel.
  */
 export class Soundboard {
   private readonly unsubscribe: readonly (() => void)[];
@@ -77,6 +82,7 @@ export class Soundboard {
   private readonly quietHours: QuietHours;
   private readonly effects: StageEffects;
   private readonly speech: SpeechQueue;
+  private readonly speechOutput: SpeechOutput;
   private alarmPending = false;
   private allClearPending = false;
   /** `null` until the first Snapshot, so an already open finding on page load is not an edge. */
@@ -85,6 +91,9 @@ export class Soundboard {
   private reminderSince = 0;
 
   private isMuted = false;
+  /** Set from the `?sim` Sound panel so quiet hours can be tested by day. Not remembered. */
+  private ignoringQuietHours = false;
+  private level = FULL_LEVEL;
   /** Whether it is quiet hours, as of construction and each Snapshot, so entering them can be told. */
   private quiet: boolean;
   /** True while an Alarm is sounding, so the lower channels are ducked. */
@@ -108,7 +117,8 @@ export class Soundboard {
     this.hour = options.hour ?? (() => localHour(new Date()));
     this.quietHours = options.quietHours ?? DEFAULT_QUIET_HOURS;
     this.quiet = isQuiet(this.quietHours, this.hour());
-    this.speech = new SpeechQueue(options.speech ?? SILENT_SPEECH, {
+    this.speechOutput = options.speech ?? SILENT_SPEECH;
+    this.speech = new SpeechQueue(this.speechOutput, {
       now: this.now,
       later: this.later,
       onSpeaking: (speaking) => {
@@ -149,6 +159,52 @@ export class Soundboard {
       this.silenceBelowAlarm();
     } else if (this.lastAmbient !== null && this.mayPlay('ambient')) {
       this.switchBed(this.lastAmbient);
+    }
+  }
+
+  /** The master volume, 0 to 1, for every channel: Web Audio, clips and `speechSynthesis` alike. */
+  get volume(): number {
+    return this.level;
+  }
+
+  set volume(value: number) {
+    if (Number.isNaN(value)) return;
+    this.level = Math.min(FULL_LEVEL, Math.max(0, value));
+    this.output.setMaster(this.level);
+    this.speechOutput.setVolume(this.level);
+  }
+
+  /**
+   * While true quiet hours have no effect: everything may play, the Alarm sounds at full volume, and
+   * entering them cuts nothing off. Turning it off during quiet hours silences everything under the Alarm.
+   */
+  get ignoreQuietHours(): boolean {
+    return this.ignoringQuietHours;
+  }
+
+  set ignoreQuietHours(value: boolean) {
+    this.ignoringQuietHours = value;
+    this.followClock();
+    if (this.hushed) this.silenceBelowAlarm();
+    else if (this.lastAmbient !== null && this.mayPlay('ambient')) this.switchBed(this.lastAmbient);
+  }
+
+  /** Plays one thing from the Sound panel now, through the same gates as the real thing (mute, quiet hours). */
+  audition(audition: Audition): void {
+    switch (audition.kind) {
+      case 'cue':
+        this.play(audition.cue);
+        break;
+      case 'effect': {
+        const sound = this.source.theme.soundscape?.effects?.[audition.effect];
+        if (sound !== undefined) this.playEffect(sound, AUDITION_PLACEMENT);
+        break;
+      }
+      case 'voice': {
+        const { voice, text } = audition;
+        if (this.mayPlay('speech')) this.speech.sayNow({ text, voice, pitch: voice.pitch, rate: voice.rate });
+        break;
+      }
     }
   }
 
@@ -209,7 +265,12 @@ export class Soundboard {
     const quiet = isQuiet(this.quietHours, this.hour());
     const entering = quiet && !this.quiet;
     this.quiet = quiet;
-    if (entering) this.silenceBelowAlarm();
+    if (entering && !this.ignoringQuietHours) this.silenceBelowAlarm();
+  }
+
+  /** Whether quiet hours are in force: it is quiet and they are not being ignored. */
+  private get hushed(): boolean {
+    return this.quiet && !this.ignoringQuietHours;
   }
 
   /** Cuts off everything under the Alarm channel: effects, the line being said (and those waiting) and the bed. */
@@ -225,7 +286,7 @@ export class Soundboard {
    */
   private mayPlay(sounding: Sounding): boolean {
     if (this.isMuted) return false;
-    return !this.quiet || sounding === 'alarm';
+    return !this.hushed || sounding === 'alarm';
   }
 
   /** Works out the bed's mix from the Snapshot and the cast, and sends it unless muted or quiet. No bed, none. */
@@ -254,7 +315,7 @@ export class Soundboard {
     if (!this.mayPlay(name)) return;
     const sound = this.source.theme.soundscape?.[name];
     if (sound === undefined) return;
-    const volume = this.quiet ? QUIET_ALARM_VOLUME : FULL_LEVEL;
+    const volume = this.hushed ? QUIET_ALARM_VOLUME : FULL_LEVEL;
     this.output.play(sound, { channel: 'alarm', volume, pan: 0 });
     if (name === 'alarm') this.duckForAlarm(sound);
   }

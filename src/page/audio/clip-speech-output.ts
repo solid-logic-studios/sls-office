@@ -65,6 +65,11 @@ export class ClipSpeechOutput implements SpeechOutput {
     else if (active === 'fallback') this.fallback.stop();
   }
 
+  setVolume(level: number): void {
+    this.player.setVolume(level);
+    this.fallback.setVolume(level);
+  }
+
   private sayWithFallback(line: SpokenLine, onEnd: () => void): void {
     this.active = 'fallback';
     this.fallback.speak(line, () => {
