@@ -38,7 +38,7 @@ COPY --from=build /app/voice-lines.json ./
 COPY scripts/render-voices.ts ./
 RUN node render-voices.ts --piper /opt/piper/piper --models /models --lines voice-lines.json --out /out/voices
 
-FROM busybox:1.37.0-musl AS runtime
+FROM busybox:1.38.0-musl AS runtime
 LABEL org.opencontainers.image.source="https://github.com/solid-logic-studios/sls-office" \
       org.opencontainers.image.title="sls-office" \
       org.opencontainers.image.description="SLS Office: the lab as an animated pixel-art dashboard, served as a static site"
