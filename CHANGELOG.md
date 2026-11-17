@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 17 November 2026
+
 ### Fixed
 
 - The page stops polling `snapshot.json` while its tab is hidden and polls again at once when shown, so a forgotten background tab no longer keeps the lab collector awake (#15).
@@ -38,7 +40,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Minimal VM moods page with a "Waking the office…" state when the snapshot is missing or stale.
 - Static image `ghcr.io/solid-logic-studios/sls-office` built by CI.
 
-[Unreleased]: https://github.com/solid-logic-studios/sls-office/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/solid-logic-studios/sls-office/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/solid-logic-studios/sls-office/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/solid-logic-studios/sls-office/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/solid-logic-studios/sls-office/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/solid-logic-studios/sls-office/releases/tag/v0.1.0
