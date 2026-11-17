@@ -87,6 +87,19 @@ mounted at run time), no fixtures, no source maps. Releases are pushed with `pro
 and `sbom: false`, because those attestations carry the GitHub event payload (commit messages,
 emails, repository metadata). This repository stays private.
 
+## Pi kiosk
+
+Sound is on by default (the Alarm, see [ADR 0004](docs/adr/0004-office-audio.md)). Browsers block audio
+until the page has had a tap or key press, so until then the speaker button beside Pause reads "Tap to
+enable". The Pi kiosk often has nobody to tap it, so launch Chromium with the autoplay flag:
+
+```bash
+chromium-browser --kiosk --autoplay-policy=no-user-gesture-required http://<host>:8080/
+```
+
+The speaker button mutes and unmutes, and the choice is remembered per browser. Add `?mute` to the URL
+(`http://<host>:8080/?mute`) to force a screen silent; that overrides the saved choice and does not change it.
+
 ## Contributing
 
 See [`CLAUDE.md`](CLAUDE.md) (canonical), [`AGENTS.md`](AGENTS.md) and [`CONTEXT.md`](CONTEXT.md).

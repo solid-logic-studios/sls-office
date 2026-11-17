@@ -193,3 +193,47 @@ describe('the Soundboard under a Theme with no Soundscape', () => {
     expect(office.output.played[0]?.sound).toBe(boxesTheme.soundscape?.alarm);
   });
 });
+
+describe('the Soundboard while muted', () => {
+  it('plays no Alarm', () => {
+    const lab = new Lab();
+    const office = listen(officeTheme);
+    office.soundboard.muted = true;
+    office.feed(lab.snapshot());
+    office.feed(lab.snapshot([oom('lab-test-api-develop')]));
+    expect(office.output.played).toHaveLength(0);
+  });
+
+  it('sounds the next new trigger once unmuted', () => {
+    const lab = new Lab();
+    const office = listen(officeTheme);
+    office.soundboard.muted = true;
+    office.feed(lab.snapshot());
+    office.soundboard.muted = false;
+    office.feed(lab.snapshot([oom('lab-test-api-develop')]));
+    expect(office.output.played).toHaveLength(1);
+  });
+
+  it('does not replay an Alarm that fired while muted', () => {
+    const lab = new Lab();
+    const office = listen(officeTheme);
+    office.feed(lab.snapshot());
+    office.soundboard.muted = true;
+    office.feed(lab.snapshot([oom('lab-test-api-develop')]));
+    office.soundboard.muted = false;
+    office.feed(lab.snapshot());
+    expect(office.output.played).toHaveLength(0);
+  });
+
+  it('does not sound on unmute for a crit edge that happened while muted', () => {
+    const lab = new Lab();
+    const office = listen(officeTheme);
+    office.feed(lab.snapshot());
+    office.soundboard.muted = true;
+    lab.findings = { ok: 9, warn: 0, crit: 1 };
+    office.feed(lab.snapshot());
+    office.soundboard.muted = false;
+    office.feed(lab.snapshot());
+    expect(office.output.played).toHaveLength(0);
+  });
+});
