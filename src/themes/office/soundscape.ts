@@ -34,6 +34,15 @@ function tick(volume: number, gap: number): SynthNote {
 
 /** The Office's sounds. The Alarm: three rising and falling pairs, about 1.2 s, chiptune but not shrill. */
 export const SOUNDSCAPE: Soundscape = {
+  // Runs all day under everything, so it is barely there: felt more than heard.
+  ambient: {
+    // A dark, soft wash of air conditioning, like the next room over.
+    room: { volume: 0.025, lowpassHz: 420 },
+    // A low server drone that swells a little as the lab works harder.
+    hum: { wave: 'triangle', hz: 147, idle: 0.012, busy: 0.05 },
+    // Soft keyboard ticks: a lazy tap now and then when calm, a rattle when the workers are swamped.
+    clatter: { key: { notes: [tick(0.05, 0)] }, calm: 0.4, frantic: 7 },
+  },
   effects: {
     // Gentle anticipation, about 0.33 s: two triangle steps up, then a slide that stops short of home.
     deployStarted: {

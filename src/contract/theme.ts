@@ -322,8 +322,23 @@ export type EffectName =
   | 'backupStarted'
   | 'backupFinished';
 
+/**
+ * The continuous background of a busy lab (ADR 0004): room tone, a server hum that rises with load and
+ * keyboard clatter that rises with the workers' moods. Volumes are 0 to 1.
+ */
+export interface AmbientBed {
+  /** A steady low wash of noise, darkened by a low-pass filter. */
+  room: { volume: number; lowpassHz: number };
+  /** A drone at `hz` whose volume moves from `idle` (no load) to `busy` (every VM flat out). */
+  hum: { wave: Exclude<Wave, 'noise'>; hz: number; idle: number; busy: number };
+  /** Key presses: `key` plays at random, from `calm` to `frantic` presses a second as the workers get busier. */
+  clatter: { key: SynthSound; calm: number; frantic: number };
+}
+
 /** What a Theme sounds like. Data only; the page Soundboard plays it (ADR 0004). Grows in later phases. */
 export interface Soundscape {
+  /** The ambient bed. A Theme without one has no background. */
+  ambient?: AmbientBed;
   /** Stage effects, panned by where they happen. A happening without one stays silent. */
   effects?: Partial<Record<EffectName, SynthSound>>;
   /** Sounded when the lab breaks: an OOM kill, a VM down, a rolled-back deploy, a failed backup, a new critical finding. */

@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A speaker button beside Pause mutes the Office. The choice is remembered per browser, `?mute` starts a screen silent without saving, and the button reads "Tap to enable" while the browser blocks audio. The README explains the Chromium autoplay flag for the Pi kiosk (#24).
 - A soft Reminder sounds every 10 minutes while a critical finding stays open, and an All-clear sounds when a VM comes back or the last critical finding closes (#25).
 - Stage sound effects for deploys, paper, visitors, check-ins, workloads arriving and leaving, and backups, synthesised in the browser. Each is panned by where it happens, quieter on other floors, sounds at most once per 1.5 seconds, and is ducked under the Alarm (#26).
+- A quiet ambient bed runs under the Office: room tone, a server hum that rises with lab load and keyboard clatter that quickens as the workers get busier. It is ducked under the Alarm and stops when muted (#27).
 
 ## [0.2.1] - 17 November 2026
 

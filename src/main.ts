@@ -154,7 +154,7 @@ function show(snapshot: Snapshot | null): void {
     return;
   }
   engine.accept(snapshot);
-  soundboard.endSnapshot();
+  soundboard.endSnapshot(snapshot);
   strip.update(engine.findings, hour());
   updateRoster(engine.roster());
   refreshControls();

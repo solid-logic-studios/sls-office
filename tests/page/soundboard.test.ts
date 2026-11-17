@@ -23,7 +23,7 @@ function listen(theme: Theme) {
   };
   const feed = (snapshot: Snapshot): void => {
     engine.accept(snapshot);
-    soundboard.endSnapshot();
+    soundboard.endSnapshot(snapshot);
   };
   return { engine, output, soundboard, feed, advance };
 }
@@ -165,10 +165,11 @@ describe.each(THEMES)('the Soundboard under the $name theme', (theme) => {
     const lab = new Lab();
     const office = listen(theme);
     office.feed(lab.snapshot());
-    office.engine.accept(lab.snapshot([oom('lab-test-api-develop')]));
+    const snapshot = lab.snapshot([oom('lab-test-api-develop')]);
+    office.engine.accept(snapshot);
     expect(office.output.alarms).toHaveLength(0);
-    office.soundboard.endSnapshot();
-    office.soundboard.endSnapshot();
+    office.soundboard.endSnapshot(snapshot);
+    office.soundboard.endSnapshot(snapshot);
     expect(office.output.alarms).toHaveLength(1);
   });
 
