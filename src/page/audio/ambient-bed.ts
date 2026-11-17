@@ -3,7 +3,7 @@ import type { AmbientMix } from './sound-output.ts';
 
 /** Time constant (seconds) for a layer's gain to glide to a new mix: slow, because the bed is never meant to be noticed. */
 const MIX_GLIDE = 0.4;
-/** Time constant (seconds) of the fade-out, and how long after it the sources are cut (about 3 time constants). */
+/** Time constant (seconds) of the fade-out, and how long after it the sources are cut (4 time constants, under 2% left). */
 const FADE_OUT = 0.1;
 const STOP_AFTER = 0.4;
 /** How often the clatter scheduler wakes, and how far ahead of the audio clock it schedules key presses (seconds). */

@@ -170,6 +170,8 @@ describe('the ambient bed and mute', () => {
 
     office.soundboard.muted = true;
     expect(office.output.ambients.map((call) => call.bed)).toEqual([null]);
+    // The clatter's key presses already scheduled are cut too.
+    expect(office.output.stops).toContain('ambient');
     office.play(3);
     expect(office.output.ambients).toHaveLength(1);
 

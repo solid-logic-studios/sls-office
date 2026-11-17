@@ -166,6 +166,8 @@ export class Soundboard {
       this.bedOn = true;
     } else if (this.bedOn) {
       this.output.ambient(null, SILENT_MIX);
+      // Key presses already scheduled ahead would otherwise tick on for a moment.
+      this.output.stop('ambient');
       this.bedOn = false;
     }
   }
