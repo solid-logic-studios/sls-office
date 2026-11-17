@@ -135,6 +135,9 @@ Reminder and All-clear, each effect and a sample line per Voice), a master volum
 and is remembered per browser, and an "Ignore quiet hours" switch for testing by day. Mute and quiet hours still
 apply to the buttons unless that switch is on.
 
+Tap an empty part of the stage to hear the lab's status: a founder says how many rooms are up and down, who is
+worst off and any critical findings. Taps on characters, rooms and hotspots show their tooltips as before.
+
 ## Contributing
 
 See [`CLAUDE.md`](CLAUDE.md) (canonical), [`AGENTS.md`](AGENTS.md) and [`CONTEXT.md`](CONTEXT.md).

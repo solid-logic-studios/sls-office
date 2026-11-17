@@ -30,6 +30,8 @@ interface Waiting {
  */
 export class SpeechQueue {
   private waiting: Waiting[] = [];
+  /** The Announcement waiting its turn, if any. Only one waits: a newer one replaces it. */
+  private announcement: SpokenLine | null = null;
   /** The line being said now. Marked `done` once it has ended or been cut off, so a late `onEnd` is ignored. */
   private current: { done: boolean } | null = null;
   private lastStart: number | null = null;
@@ -49,6 +51,16 @@ export class SpeechQueue {
   }
 
   /**
+   * Says an Announcement as soon as the line being said ends (or the Alarm lets go), ahead of any waiting
+   * lines. It ignores the gap and the stale rule, counts as the last start, and never talks over anything.
+   * A newer Announcement replaces one still waiting.
+   */
+  announce(line: SpokenLine): void {
+    this.announcement = line;
+    this.pump();
+  }
+
+  /**
    * Says `line` at once: it cuts off the line being said, forgets the waiting ones and ignores the gap (it
    * still counts as the last start). Dropped while held, so an Alarm is not talked over.
    */
@@ -58,9 +70,13 @@ export class SpeechQueue {
     this.start(line);
   }
 
-  /** Cuts off the line being said and forgets the waiting ones. The 8 s gap still counts from the last start. */
+  /**
+   * Cuts off the line being said and forgets the waiting ones, an Announcement included. The 8 s gap still
+   * counts from the last start.
+   */
   interrupt(): void {
     this.waiting = [];
+    this.announcement = null;
     const current = this.current;
     if (current === null) return;
     current.done = true;
@@ -77,6 +93,12 @@ export class SpeechQueue {
 
   private pump(): void {
     if (this.held || this.current !== null) return;
+    if (this.announcement !== null) {
+      const line = this.announcement;
+      this.announcement = null;
+      this.start(line);
+      return;
+    }
     const { now } = this.options;
     this.waiting = this.waiting.filter((entry) => now() - entry.at <= SPEECH_STALE_MS);
     const next = this.waiting[0];

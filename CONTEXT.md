@@ -83,7 +83,8 @@ with no clip is spoken by the browser's `speechSynthesis` instead.
 _Avoid_: recording, sample, audio file.
 
 **Announcement**: speech the Office composes on the spot from a Theme's fixed vocabulary, rather
-than a line from the line bank: the Standup and the spoken status.
+than a line from the line bank: the Standup and the spoken status. A Theme's vocabulary is its number words,
+Part names, mood words and stock phrases; each is a clip, said in turn, and anything outside it falls back.
 _Avoid_: report, readout, dynamic line.
 
 **Standup**: the morning Announcement in which a founder sums up the last day of the Office log.

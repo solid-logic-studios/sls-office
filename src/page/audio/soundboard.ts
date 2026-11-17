@@ -10,7 +10,8 @@ import { soundSeconds, type AmbientMix, type PlayOptions, type SoundOutput } fro
 import type { SpeechOutput } from './speech-output.ts';
 import { SpeechQueue } from './speech-queue.ts';
 import { StageEffects } from './stage-effects.ts';
-import { spokenLine, voiceFor } from './voice-casting.ts';
+import { statusAnnouncement } from './status-announcement.ts';
+import { announcerVoice, spokenLine, voiceFor } from './voice-casting.ts';
 
 /** The part of the Engine the Soundboard listens to. The real `Engine` satisfies it. */
 export interface SoundSource {
@@ -104,6 +105,8 @@ export class Soundboard {
   private duckGeneration = 0;
   /** The bed and mix last worked out from a Snapshot, so unmuting can bring the bed straight back. */
   private lastAmbient: { bed: AmbientBed; mix: AmbientMix } | null = null;
+  /** The Snapshot last passed to `endSnapshot`, which the spoken status reads the rooms from. */
+  private lastSnapshot: Snapshot | null = null;
   /** Whether the output has been told to run a bed, so a Theme without one is only switched off once. */
   private bedOn = false;
 
@@ -214,6 +217,7 @@ export class Soundboard {
    * are noticed: entering them cuts off what is playing, leaving them lets the bed come back.
    */
   endSnapshot(snapshot: Snapshot): void {
+    this.lastSnapshot = snapshot;
     this.followClock();
     this.followLab(snapshot);
     const { crit } = this.source.findings;
@@ -229,6 +233,27 @@ export class Soundboard {
     if (alarmDue) this.play('alarm');
     else if (allClearDue) this.play('allClear');
     else if (reminderDue) this.play('reminder');
+  }
+
+  /**
+   * Speaks the lab's status in the announcing founder's Voice (ADR 0004): rooms up and down, who is worst
+   * off and any critical findings, stitched from the Theme's vocabulary. It waits for the line being said
+   * but skips the gap, and says nothing before the first Snapshot, without a vocabulary or Voices, or while
+   * muted or in quiet hours.
+   */
+  announceStatus(): void {
+    const { theme } = this.source;
+    const vocabulary = theme.soundscape?.vocabulary;
+    const voice = announcerVoice(theme);
+    const snapshot = this.lastSnapshot;
+    if (vocabulary === undefined || voice === undefined || snapshot === null || !this.mayPlay('speech')) return;
+    const pieces = statusAnnouncement(vocabulary, {
+      vmsUp: snapshot.vms.filter((vm) => vm.up).length,
+      vmsDown: snapshot.vms.filter((vm) => !vm.up).length,
+      characters: this.source.characters(),
+      findings: this.source.findings,
+    });
+    this.speech.announce({ text: pieces.join(' '), pieces, voice, pitch: voice.pitch, rate: voice.rate });
   }
 
   dispose(): void {

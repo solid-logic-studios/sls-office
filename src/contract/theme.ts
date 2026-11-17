@@ -373,6 +373,24 @@ export interface Voices {
   founders?: Readonly<Record<string, Voice>>;
 }
 
+/** Stock phrases an Announcement strings together. */
+export type AnnouncementPhrase =
+  'roomUp' | 'roomsUp' | 'roomDown' | 'roomsDown' | 'allCalm' | 'criticalFinding' | 'criticalFindings';
+
+/**
+ * The fixed words an Announcement is stitched from (ADR 0004), each pre-rendered per announcing Voice.
+ * Lower case, as spoken.
+ */
+export interface Vocabulary {
+  /** Number words from zero up: `numbers[3]` is 'three'. A number past the end is said in digits, by the fallback. */
+  numbers: readonly string[];
+  /** How the Office names each Part in an Announcement: the greeter as 'the gateway'. */
+  parts: Readonly<Partial<Record<Part, string>>>;
+  /** What follows a Part's name for each Mood: 'is swamped'. */
+  moods: Readonly<Record<Mood, string>>;
+  phrases: Readonly<Record<AnnouncementPhrase, string>>;
+}
+
 /** What a Theme sounds like. Data only; the page Soundboard plays it (ADR 0004). Grows in later phases. */
 export interface Soundscape {
   /** The Voices its characters speak with. A Theme without them keeps its lines to bubbles. */
@@ -383,6 +401,8 @@ export interface Soundscape {
    * bubble stays as written, and the clip key follows the spoken words, so an edit re-renders that clip.
    */
   spoken?: Readonly<Record<string, string>>;
+  /** The words its Announcements are stitched from. A Theme without one makes no Announcements. */
+  vocabulary?: Vocabulary;
   /** The ambient bed. A Theme without one has no background. */
   ambient?: AmbientBed;
   /** Stage effects, panned by where they happen. A happening without one stays silent. */

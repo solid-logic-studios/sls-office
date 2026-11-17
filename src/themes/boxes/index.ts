@@ -20,6 +20,7 @@ import type {
   Room,
   Soundscape,
   Theme,
+  Vocabulary,
 } from '../../contract/theme.ts';
 
 type CastPart = Exclude<Part, 'founder'>;
@@ -301,11 +302,44 @@ const LEGEND: readonly LegendEntry[] = CAST_PARTS.map((part) => ({
   label: PART_LABELS[part],
 }));
 
+/** Plain words for a plain Theme: numbers to ten and each Part by its box label. */
+const VOCABULARY: Vocabulary = {
+  numbers: ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'],
+  parts: {
+    worker: 'the worker',
+    pod: 'the pod',
+    greeter: 'the greeter',
+    guard: 'the guard',
+    checker: 'the checker',
+    keeper: 'the keeper',
+    courier: 'the courier',
+    wrangler: 'the wrangler',
+  },
+  moods: {
+    break: 'is on a break',
+    working: 'is working',
+    stressed: 'is stressed',
+    swamped: 'is swamped',
+    fainted: 'has fainted',
+    absent: 'is away',
+  },
+  phrases: {
+    roomUp: 'room up',
+    roomsUp: 'rooms up',
+    roomDown: 'room down',
+    roomsDown: 'rooms down',
+    allCalm: 'all calm',
+    criticalFinding: 'critical finding',
+    criticalFindings: 'critical findings',
+  },
+};
+
 /**
  * Plain beeps to match the plain theme: a two-beep Alarm, one soft Reminder, two rising All-clear beeps,
  * and three short quiet effect beeps (high for an arrival, low for a departure, middle for a deploy).
  */
 const SOUNDSCAPE: Soundscape = {
+  vocabulary: VOCABULARY,
   voices: {
     default: {
       id: 'boxes-default',

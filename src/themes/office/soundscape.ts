@@ -1,4 +1,5 @@
 import type { PiperVoice, Soundscape, SynthNote, Voice } from '../../contract/theme.ts';
+import { VOCABULARY } from './vocabulary.ts';
 
 /** One half of the two-tone: a square wave that slides from `from` to `to`. */
 function beep(from: number, to: number, gap = 0.04): SynthNote {
@@ -113,6 +114,7 @@ export const SOUNDSCAPE: Soundscape = {
     },
   },
   spoken: SPOKEN,
+  vocabulary: VOCABULARY,
   // Runs all day under everything, so it is barely there: felt more than heard.
   ambient: {
     // A dark, soft wash of air conditioning, like the next room over.

@@ -1,4 +1,4 @@
-import type { Cue, Founder, Part, Theme, Voice, Voices } from '../../contract/theme.ts';
+import type { Cue, Founder, Part, Theme, Vocabulary, Voice, Voices } from '../../contract/theme.ts';
 import { clipKey } from './clip-key.ts';
 import { spokenText, voiceFor } from './voice-casting.ts';
 
@@ -74,6 +74,11 @@ function founderVoice(voices: Voices, founder: Founder): Voice {
   return voiceFor(voices, { id: founder.id, part: 'founder' });
 }
 
+/** Every string an Announcement can be stitched from. */
+function vocabularyWords({ numbers, parts, moods, phrases }: Vocabulary): string[] {
+  return [...numbers, ...Object.values(parts), ...Object.values(moods), ...Object.values(phrases)];
+}
+
 /**
  * Every line any character can say in `theme`, with only the Voices that can say it: the line banks by
  * who draws from them, each founder's own lines in their own Voice. Unique by clip key, sorted by key,
@@ -108,5 +113,10 @@ export function voiceLines(theme: Theme): VoiceLine[] {
     add(voice, founder.lines.checkIn);
     add(voice, founder.lines.alarm);
   }
+  // An Announcement can be made in any founder's Voice, or the default one when the Theme has no founders.
+  const announcers =
+    theme.founders.length === 0 ? [voices.default] : theme.founders.map((f) => founderVoice(voices, f));
+  const { vocabulary } = theme.soundscape ?? {};
+  for (const voice of announcers) add(voice, vocabulary === undefined ? undefined : vocabularyWords(vocabulary));
   return [...found.values()].sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
 }

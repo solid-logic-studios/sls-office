@@ -2,7 +2,10 @@ import type { Voice } from '../../contract/theme.ts';
 
 /** One line to say: the text, the speaker's Voice, and the pitch and rate this speaker uses it at. */
 export interface SpokenLine {
+  /** What is said. For an Announcement, `pieces` joined by spaces, so an output that says text says it whole. */
   text: string;
+  /** An Announcement's words in order, each a candidate for its own clip. A line from the line bank has none. */
+  pieces?: readonly string[];
   voice: Voice;
   /** 0 to 2, 1 is normal. */
   pitch: number;
