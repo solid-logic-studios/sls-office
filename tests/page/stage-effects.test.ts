@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { Snapshot } from '../../src/contract/snapshot.ts';
 import type { EffectName, Theme } from '../../src/contract/theme.ts';
 import { Engine } from '../../src/engine/engine.ts';
 import { seededRandom } from '../../src/engine/random.ts';
@@ -38,7 +39,12 @@ function listen(theme: Theme) {
   const advance = (ms: number): void => {
     clock.ms += ms;
   };
-  return { engine, output, soundboard, lab, timers, advance };
+  /** What the page's `show()` does: the Engine takes the Snapshot, then the Soundboard hears of it. */
+  const feed = (snapshot: Snapshot): void => {
+    engine.accept(snapshot);
+    soundboard.endSnapshot(snapshot);
+  };
+  return { engine, output, soundboard, lab, timers, advance, feed };
 }
 
 describe.each([officeTheme, boxesTheme])('the $name Soundscape effects', (theme) => {
@@ -187,41 +193,43 @@ describe('the Alarm ducking stage effects', () => {
   });
 
   it('ducks effects for the Alarm, then restores them after its length', () => {
-    const { engine, output, soundboard, lab, timers } = listen(officeTheme);
-    soundboard.endSnapshot();
-    engine.accept(lab.snapshot([oom('lab-test-api-develop')]));
-    soundboard.endSnapshot();
-    expect(output.levels).toEqual([{ channel: 'effect', level: ALARM_DUCK }]);
+    const { output, lab, timers, feed } = listen(officeTheme);
+    feed(lab.snapshot());
+    feed(lab.snapshot([oom('lab-test-api-develop')]));
+    expect(output.levels).toEqual([
+      { channel: 'effect', level: ALARM_DUCK },
+      { channel: 'ambient', level: ALARM_DUCK },
+    ]);
     expect(timers).toHaveLength(1);
     expect(timers[0]?.ms).toBeCloseTo(alarmSeconds * 1000);
     timers[0]?.callback();
-    expect(output.levels.at(-1)).toEqual({ channel: 'effect', level: 1 });
+    expect(output.levels.slice(-2)).toEqual([
+      { channel: 'effect', level: 1 },
+      { channel: 'ambient', level: 1 },
+    ]);
   });
 
   it('does not let the first Alarm restore the level under a second', () => {
-    const { engine, output, soundboard, lab, timers } = listen(officeTheme);
-    soundboard.endSnapshot();
+    const { output, lab, timers, feed } = listen(officeTheme);
+    feed(lab.snapshot());
     for (let i = 0; i < 2; i++) {
-      engine.accept(lab.snapshot([oom('lab-test-api-develop')]));
-      soundboard.endSnapshot();
+      feed(lab.snapshot([oom('lab-test-api-develop')]));
     }
     expect(timers).toHaveLength(2);
     timers[0]?.callback();
     expect(output.levels.every((change) => change.level === ALARM_DUCK)).toBe(true);
     timers[1]?.callback();
-    expect(output.levels.at(-1)?.level).toBe(1);
+    expect(output.levels.slice(-2).map((change) => change.level)).toEqual([1, 1]);
   });
 
   it('leaves the effect level alone for a Reminder', () => {
-    const { engine, output, soundboard, lab, advance } = listen(officeTheme);
-    soundboard.endSnapshot();
+    const { output, lab, advance, feed } = listen(officeTheme);
+    feed(lab.snapshot());
     lab.findings = { ok: 9, warn: 0, crit: 1 };
-    engine.accept(lab.snapshot());
-    soundboard.endSnapshot();
+    feed(lab.snapshot());
     output.clear();
     advance(10 * 60 * 1000);
-    engine.accept(lab.snapshot());
-    soundboard.endSnapshot();
+    feed(lab.snapshot());
     expect(output.played).toHaveLength(1);
     expect(output.levels).toHaveLength(0);
   });

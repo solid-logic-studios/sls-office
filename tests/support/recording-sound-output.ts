@@ -1,5 +1,5 @@
-import type { SynthSound } from '../../src/contract/theme.ts';
-import type { Channel, PlayOptions, SoundOutput } from '../../src/page/audio/sound-output.ts';
+import type { AmbientBed, SynthSound } from '../../src/contract/theme.ts';
+import type { AmbientMix, Channel, PlayOptions, SoundOutput } from '../../src/page/audio/sound-output.ts';
 
 export interface PlayedSound {
   sound: SynthSound;
@@ -11,11 +11,18 @@ export interface LevelChange {
   level: number;
 }
 
+export interface AmbientCall {
+  /** `null` is the bed being switched off. */
+  bed: AmbientBed | null;
+  mix: AmbientMix;
+}
+
 /** A `SoundOutput` that remembers what it was asked to play, to set and to stop. */
 export class RecordingSoundOutput implements SoundOutput {
   readonly played: PlayedSound[] = [];
   readonly levels: LevelChange[] = [];
   readonly stops: Channel[] = [];
+  readonly ambients: AmbientCall[] = [];
 
   /** Just the Alarm channel's plays: the Alarm, Reminder and All-clear, without the stage effects around them. */
   get alarms(): PlayedSound[] {
@@ -34,9 +41,14 @@ export class RecordingSoundOutput implements SoundOutput {
     this.stops.push(channel);
   }
 
+  ambient(bed: AmbientBed | null, mix: AmbientMix): void {
+    this.ambients.push({ bed, mix });
+  }
+
   clear(): void {
     this.played.length = 0;
     this.levels.length = 0;
     this.stops.length = 0;
+    this.ambients.length = 0;
   }
 }

@@ -1,8 +1,9 @@
-import type { Findings } from '../../contract/snapshot.ts';
-import type { Layout, SynthSound, Theme } from '../../contract/theme.ts';
+import type { Findings, Snapshot } from '../../contract/snapshot.ts';
+import type { AmbientBed, Layout, SynthSound, Theme } from '../../contract/theme.ts';
 import type { CharacterView } from '../../engine/engine.ts';
 import type { EventBus } from '../../engine/event-bus.ts';
-import { soundSeconds, type PlayOptions, type SoundOutput } from './sound-output.ts';
+import { ambientMix, busyness, labLoad } from './ambient-mix.ts';
+import { soundSeconds, type AmbientMix, type PlayOptions, type SoundOutput } from './sound-output.ts';
 import { StageEffects } from './stage-effects.ts';
 
 /** The part of the Engine the Soundboard listens to. The real `Engine` satisfies it. */
@@ -21,12 +22,14 @@ export interface SoundboardOptions {
   later?: (callback: () => void, ms: number) => void;
 }
 
-/** The effect channel's level while an Alarm sounds, so the Alarm cuts through the stage noise. */
+/** The effect and ambient channels' level while an Alarm sounds, so the Alarm cuts through. */
 export const ALARM_DUCK = 0.25;
 
 /** The Soundscape's Alarm-channel sounds. */
 type AlarmCue = 'alarm' | 'reminder' | 'allClear';
 const FULL_LEVEL = 1;
+/** Passed with a `null` bed, which has no mix to speak of. */
+const SILENT_MIX: AmbientMix = { room: 0, hum: 0, keysPerSecond: 0 };
 
 /** How long a critical finding stays open before the Reminder sounds, and between Reminders. */
 export const REMINDER_MS = 10 * 60 * 1000;
@@ -35,7 +38,8 @@ export const REMINDER_MS = 10 * 60 * 1000;
  * Turns what the lab does into sound (ADR 0004). It listens to the Engine's bus and reads the Theme's
  * Soundscape; the Engine stays silent. It sounds the Alarm, the Reminder and the All-clear (channel
  * `alarm`), at most one per Snapshot, in that order of priority. Stage effects (channel `effect`) come
- * from `StageEffects`, and are ducked while an Alarm sounds.
+ * from `StageEffects`, and the ambient bed (channel `ambient`) follows the lab's load and the workers'
+ * moods; both are ducked while an Alarm sounds.
  */
 export class Soundboard {
   private readonly unsubscribe: readonly (() => void)[];
@@ -50,8 +54,14 @@ export class Soundboard {
   private reminderSince = 0;
 
   private isMuted = false;
-  /** Counts Alarms, so only the latest one's timer restores the effect level. */
+  /** True while an Alarm is sounding, so the lower channels are ducked. */
+  private alarmSounding = false;
+  /** Counts Alarms, so only the latest one's timer restores the levels. */
   private duckGeneration = 0;
+  /** The bed and mix last worked out from a Snapshot, so unmuting can bring the bed straight back. */
+  private lastAmbient: { bed: AmbientBed; mix: AmbientMix } | null = null;
+  /** Whether the output has been told to run a bed, so a Theme without one is only switched off once. */
+  private bedOn = false;
 
   constructor(
     private readonly source: SoundSource,
@@ -87,13 +97,21 @@ export class Soundboard {
 
   set muted(value: boolean) {
     this.isMuted = value;
-    if (!value) return;
-    this.output.stop('alarm');
-    this.output.stop('effect');
+    if (value) {
+      this.output.stop('alarm');
+      this.output.stop('effect');
+      this.switchBed(null);
+    } else if (this.lastAmbient !== null) {
+      this.switchBed(this.lastAmbient);
+    }
   }
 
-  /** Call right after `engine.accept(snapshot)`. Sounds at most one thing: Alarm, then All-clear, then Reminder. */
-  endSnapshot(): void {
+  /**
+   * Call right after `engine.accept(snapshot)`, with that same Snapshot. Moves the ambient bed to the lab's
+   * load, then sounds at most one thing: Alarm, then All-clear, then Reminder.
+   */
+  endSnapshot(snapshot: Snapshot): void {
+    this.followLab(snapshot);
     const { crit } = this.source.findings;
     const previous = this.lastCrit;
     this.lastCrit = crit;
@@ -112,6 +130,7 @@ export class Soundboard {
   dispose(): void {
     for (const stop of this.unsubscribe) stop();
     this.effects.dispose();
+    this.switchBed(null);
     // A duck restore still pending finds itself stale and does nothing.
     this.duckGeneration += 1;
   }
@@ -132,13 +151,34 @@ export class Soundboard {
     return true;
   }
 
+  /** Works out the bed's mix from the Snapshot and the cast, and sends it unless muted. A Theme without a bed has none. */
+  private followLab(snapshot: Snapshot): void {
+    const bed = this.source.theme.soundscape?.ambient;
+    this.lastAmbient =
+      bed === undefined ? null : { bed, mix: ambientMix(bed, labLoad(snapshot), busyness(this.source.characters())) };
+    if (!this.isMuted) this.switchBed(this.lastAmbient);
+  }
+
+  /** The one place the ambient bed is set. `null` switches it off, and only tells the output if it was on. */
+  private switchBed(target: { bed: AmbientBed; mix: AmbientMix } | null): void {
+    if (target !== null) {
+      this.output.ambient(target.bed, target.mix);
+      this.bedOn = true;
+    } else if (this.bedOn) {
+      this.output.ambient(null, SILENT_MIX);
+      // Key presses already scheduled ahead would otherwise tick on for a moment.
+      this.output.stop('ambient');
+      this.bedOn = false;
+    }
+  }
+
   /** The one place an Alarm-channel sound plays: silent while muted or when the Theme has no Soundscape. */
   private play(name: AlarmCue): void {
     if (this.isMuted) return;
     const sound = this.source.theme.soundscape?.[name];
     if (sound === undefined) return;
     this.output.play(sound, { channel: 'alarm', volume: 1, pan: 0 });
-    if (name === 'alarm') this.duckEffects(sound);
+    if (name === 'alarm') this.duckForAlarm(sound);
   }
 
   private playEffect(sound: SynthSound, placement: Pick<PlayOptions, 'volume' | 'pan'>): void {
@@ -146,16 +186,26 @@ export class Soundboard {
     this.output.play(sound, { channel: 'effect', ...placement });
   }
 
-  /** Lowers effects for the Alarm's length. A later Alarm takes over the restore, so the first never cuts it short. */
-  private duckEffects(alarm: SynthSound): void {
-    this.output.setLevel('effect', ALARM_DUCK);
+  /** Lowers the lower channels for the Alarm's length. A later Alarm takes over the restore, so the first never cuts it short. */
+  private duckForAlarm(alarm: SynthSound): void {
+    this.alarmSounding = true;
+    this.applyLevels();
     this.duckGeneration += 1;
     const generation = this.duckGeneration;
     this.later(
       () => {
-        if (generation === this.duckGeneration) this.output.setLevel('effect', FULL_LEVEL);
+        if (generation !== this.duckGeneration) return;
+        this.alarmSounding = false;
+        this.applyLevels();
       },
       soundSeconds(alarm) * 1000,
     );
+  }
+
+  /** The one place the ducked channels' levels are worked out from state. Speech joins here in a later phase. */
+  private applyLevels(): void {
+    const level = this.alarmSounding ? ALARM_DUCK : FULL_LEVEL;
+    this.output.setLevel('effect', level);
+    this.output.setLevel('ambient', level);
   }
 }

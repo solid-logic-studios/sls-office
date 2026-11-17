@@ -1,4 +1,4 @@
-import type { SynthNote, SynthSound } from '../../contract/theme.ts';
+import type { AmbientBed, SynthNote, SynthSound } from '../../contract/theme.ts';
 
 /** How long a note takes, in seconds, including the silence after it. */
 export function noteSeconds(note: SynthNote): number {
@@ -11,10 +11,20 @@ export function soundSeconds(sound: SynthSound): number {
 }
 
 /**
- * The ranked Web Audio channels (ADR 0004): an Alarm outranks an effect. Each has its own level, so one
- * can be ducked under another without touching what is already playing.
+ * The ranked Web Audio channels (ADR 0004): Alarm, then effect, then ambient. Each has its own level, so
+ * one can be ducked under another without touching what is already playing.
  */
-export type Channel = 'alarm' | 'effect';
+export type Channel = 'alarm' | 'effect' | 'ambient';
+
+/**
+ * How loud the ambient bed is right now, worked out by the Soundboard from the lab: each layer's volume
+ * (0 to 1) and how many key presses a second.
+ */
+export interface AmbientMix {
+  room: number;
+  hum: number;
+  keysPerSecond: number;
+}
 
 export interface PlayOptions {
   channel: Channel;
@@ -31,4 +41,9 @@ export interface SoundOutput {
   setLevel(channel: Channel, level: number): void;
   /** Cuts off whatever the channel is playing now. Later sounds on it play as normal. */
   stop(channel: Channel): void;
+  /**
+   * Runs the ambient bed on the `ambient` channel at `mix`, starting it if it is not running and gliding
+   * to the new mix if it is (no clicks). `null` fades the bed out and stops it.
+   */
+  ambient(bed: AmbientBed | null, mix: AmbientMix): void;
 }

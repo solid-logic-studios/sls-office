@@ -1,5 +1,6 @@
-import type { SynthNote, SynthSound } from '../../contract/theme.ts';
-import { noteSeconds, type Channel, type PlayOptions, type SoundOutput } from './sound-output.ts';
+import type { AmbientBed, SynthNote, SynthSound } from '../../contract/theme.ts';
+import { RunningBed, holdAt } from './ambient-bed.ts';
+import { noteSeconds, type AmbientMix, type Channel, type PlayOptions, type SoundOutput } from './sound-output.ts';
 
 /** An exponential ramp cannot reach 0, so envelopes fall to this instead. */
 const FLOOR = 0.0001;
@@ -9,16 +10,6 @@ const LEVEL_GLIDE = 0.03;
 /** Time constant (seconds) of the fade a stopped sound takes, and how long after it the source is cut. */
 const STOP_FADE = 0.01;
 const STOP_AFTER = 0.06;
-
-/**
- * Drops whatever was scheduled on `param` from `now` on but keeps its current value. A bare
- * `cancelScheduledValues` mid-ramp would snap back to the ramp's starting value and click.
- */
-function holdAt(param: AudioParam, now: number): void {
-  const { value } = param;
-  param.cancelScheduledValues(now);
-  param.setValueAtTime(value, now);
-}
 
 /** One scheduled note, kept so `stop` can fade and cut it. */
 interface LiveNote {
@@ -42,6 +33,14 @@ export class WebAudioOutput implements SoundOutput {
   private readonly channels = new Map<Channel, GainNode>();
   /** The notes still scheduled or sounding on each channel; each leaves on `ended`, so nothing accumulates. */
   private readonly live = new Map<Channel, Set<LiveNote>>();
+  /** The bed that is sounding now, if any. */
+  private running: RunningBed | null = null;
+  /** The bed the Soundboard last asked for, kept so a context that was blocked can start it once it runs. */
+  private requested: { bed: AmbientBed; mix: AmbientMix } | null = null;
+
+  constructor() {
+    this.context?.addEventListener('statechange', () => this.startRequestedBed());
+  }
 
   /** True when there is Web Audio but the browser is holding it back until a gesture. */
   get blocked(): boolean {
@@ -75,13 +74,48 @@ export class WebAudioOutput implements SoundOutput {
     this.onChange(settle);
   }
 
-  play(sound: SynthSound, { channel, volume, pan }: PlayOptions): void {
+  play(sound: SynthSound, options: PlayOptions): void {
     const { context } = this;
     if (context === null || context.state !== 'running') return;
+    this.playAt(context, sound, options, context.currentTime);
+  }
+
+  /**
+   * Runs the bed at `mix`; `null` fades it out and releases it. A bed that was asked for while the context
+   * was blocked starts when the context runs. A different `bed` object than the running one rebuilds it.
+   */
+  ambient(bed: AmbientBed | null, mix: AmbientMix): void {
+    this.requested = bed === null ? null : { bed, mix };
+    if (bed === null) {
+      this.running?.stop();
+      this.running = null;
+      return;
+    }
+    this.startRequestedBed();
+  }
+
+  private startRequestedBed(): void {
+    const { context, requested } = this;
+    if (context === null || context.state !== 'running' || requested === null) return;
+    if (this.running !== null && this.running.bed !== requested.bed) {
+      this.running.stop();
+      this.running = null;
+    }
+    this.running ??= new RunningBed(
+      context,
+      this.channelGain(context, 'ambient'),
+      requested.bed,
+      this.noiseBuffer(context),
+      (sound, pan, at) => this.playAt(context, sound, { channel: 'ambient', volume: 1, pan }, at),
+    );
+    this.running.setMix(requested.mix);
+  }
+
+  private playAt(context: AudioContext, sound: SynthSound, { channel, volume, pan }: PlayOptions, start: number): void {
     const panner = context.createStereoPanner();
     panner.pan.value = pan;
     panner.connect(this.channelGain(context, channel));
-    let at = context.currentTime;
+    let at = start;
     let last: AudioScheduledSourceNode | null = null;
     for (const note of sound.notes) {
       last = this.schedule(context, panner, channel, note, at, volume);
@@ -101,7 +135,10 @@ export class WebAudioOutput implements SoundOutput {
     gain.setTargetAtTime(level, now, LEVEL_GLIDE);
   }
 
-  /** Fades every note on the channel out over a few milliseconds, then cuts it, so a stop never clicks. */
+  /**
+   * Fades every note on the channel out over a few milliseconds, then cuts it, so a stop never clicks. On
+   * `ambient` that cuts the clatter's key presses; the bed's room tone and hum are `ambient(null)`'s to stop.
+   */
   stop(channel: Channel): void {
     const { context } = this;
     const notes = this.live.get(channel);
