@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Each Office Part and founder has its own Piper voice (one pinned LibriTTS model, a speaker per character, so the guard and the courier no longer sound alike), and tricky lines are spoken naturally: symbols and initialisms are read as words, trailing ellipses dropped and some slang respelt, through a Theme's `spoken` overrides while the bubbles stay as written (#30).
 - Quiet hours, 22:00 to 07:00 local by default and set with `?quiet=22-7` (`?quiet=0-0` turns them off): Alarms still sound at half volume, and the ambient bed, effects, speech, Reminders and All-clears stay silent until they end (#31).
 - A Sound panel in the `?sim` control room: play any sound in the current Theme (the cues, each effect and a sample line per Voice), set a master volume that applies to every channel and is remembered per browser, and ignore quiet hours while testing (#32).
+- Spoken status: tap an empty part of the stage and a founder says how many rooms are up and down, who is worst off and any critical findings, stitched from each Theme's fixed vocabulary of Piper clips, with `speechSynthesis` for anything outside it (#33).
 
 ## [0.2.1] - 17 November 2026
 

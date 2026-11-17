@@ -1,4 +1,4 @@
-import type { Voice, Voices } from '../../contract/theme.ts';
+import type { Theme, Voice, Voices } from '../../contract/theme.ts';
 import type { CharacterView } from '../../engine/engine.ts';
 import type { SpokenLine } from './speech-output.ts';
 
@@ -16,6 +16,14 @@ export function voiceFor(voices: Voices, character: Pick<CharacterView, 'id' | '
   const { founders, parts } = voices;
   const founder = founders !== undefined && Object.hasOwn(founders, character.id) ? founders[character.id] : undefined;
   return founder ?? parts?.[character.part] ?? voices.default;
+}
+
+/** Who speaks in an Announcement: the Theme's first founder, else its default Voice. `undefined` without Voices. */
+export function announcerVoice(theme: Theme): Voice | undefined {
+  const voices = theme.soundscape?.voices;
+  if (voices === undefined) return undefined;
+  const [founder] = theme.founders;
+  return founder === undefined ? voices.default : voiceFor(voices, { id: founder.id, part: 'founder' });
 }
 
 /** FNV-1a over the string's UTF-16 units, then a final mix so near-identical ids still spread widely. */

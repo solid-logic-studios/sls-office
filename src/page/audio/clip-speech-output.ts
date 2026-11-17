@@ -15,10 +15,23 @@ export interface ClipSpeechOptions {
   baseUrl: string;
 }
 
+/** One thing said in turn within an Announcement: a clip's line, or a run of words for the fallback. */
+interface Segment {
+  line: SpokenLine;
+  clip: boolean;
+}
+
+/** The Announcement being said: `cancel` stops it starting the next piece, `finish` ends it (once). */
+interface Sequence {
+  cancel(): void;
+  finish(): void;
+}
+
 /**
  * Speaks a line by playing its pre-rendered clip when the image has one, else through the fallback
  * (`speechSynthesis`). The clip is the Voice's own Piper voice at the Voice's own rate; all that is left
- * to vary per character is a small pitch nudge, applied as the clip's playback rate.
+ * to vary per character is a small pitch nudge, applied as the clip's playback rate. An Announcement (a line
+ * with `pieces`) is stitched: each piece plays its own clip, and the pieces with none go through the fallback.
  */
 export class ClipSpeechOutput implements SpeechOutput {
   private readonly player: ClipPlayer;
@@ -27,6 +40,8 @@ export class ClipSpeechOutput implements SpeechOutput {
   private manifest: VoiceManifest = new Map();
   /** What is speaking now, so `stop()` cuts off the right one. */
   private active: 'clip' | 'fallback' | null = null;
+  /** The Announcement being said, if any, so `stop()` can abandon its remaining pieces. */
+  private sequence: Sequence | null = null;
 
   constructor({ player, fallback, baseUrl }: ClipSpeechOptions) {
     this.player = player;
@@ -40,7 +55,30 @@ export class ClipSpeechOutput implements SpeechOutput {
   }
 
   speak(line: SpokenLine, onEnd: () => void): void {
-    const file = line.voice.piper === undefined ? undefined : this.manifest.get(clipKey(line.voice.id, line.text));
+    if (line.pieces === undefined) this.speakOne(line, onEnd);
+    else this.speakPieces(line, line.pieces, onEnd);
+  }
+
+  stop(): void {
+    const sequence = this.sequence;
+    const active = this.active;
+    this.sequence = null;
+    this.active = null;
+    // Flag the sequence first, so the piece cut off does not start the next one.
+    sequence?.cancel();
+    if (active === 'clip') this.player.stop();
+    else if (active === 'fallback') this.fallback.stop();
+    sequence?.finish();
+  }
+
+  setVolume(level: number): void {
+    this.player.setVolume(level);
+    this.fallback.setVolume(level);
+  }
+
+  /** Plays the clip for `line` if there is one, else says it through the fallback. */
+  private speakOne(line: SpokenLine, onEnd: () => void): void {
+    const file = this.clipFor(line);
     if (file === undefined) {
       this.sayWithFallback(line, onEnd);
       return;
@@ -58,16 +96,53 @@ export class ClipSpeechOutput implements SpeechOutput {
     });
   }
 
-  stop(): void {
-    const active = this.active;
-    this.active = null;
-    if (active === 'clip') this.player.stop();
-    else if (active === 'fallback') this.fallback.stop();
+  /**
+   * Says an Announcement piece by piece: each piece with a clip plays it, and a run of pieces without one is
+   * joined into a single fallback utterance, so the browser's voice is not restarted word by word. `onEnd`
+   * fires once, after the last piece or when `stop()` abandons the rest.
+   */
+  private speakPieces(line: SpokenLine, pieces: readonly string[], onEnd: () => void): void {
+    const segments = this.segmentsOf(line, pieces);
+    let finished = false;
+    let cancelled = false;
+    const finish = (): void => {
+      if (finished) return;
+      finished = true;
+      if (this.sequence === sequence) this.sequence = null;
+      onEnd();
+    };
+    const sequence: Sequence = {
+      cancel: () => {
+        cancelled = true;
+      },
+      finish,
+    };
+    this.sequence = sequence;
+    let index = 0;
+    const next = (): void => {
+      const segment = segments[index++];
+      if (cancelled || segment === undefined) finish();
+      else if (segment.clip) this.speakOne(segment.line, next);
+      else this.sayWithFallback(segment.line, next);
+    };
+    next();
   }
 
-  setVolume(level: number): void {
-    this.player.setVolume(level);
-    this.fallback.setVolume(level);
+  /** The plain lines to say in turn: one per piece with a clip, one per run of pieces without. */
+  private segmentsOf(line: SpokenLine, pieces: readonly string[]): Segment[] {
+    const segments: Segment[] = [];
+    for (const piece of pieces) {
+      const plain: SpokenLine = { ...line, text: piece, pieces: undefined };
+      const clip = this.clipFor(plain) !== undefined;
+      const last = segments.at(-1);
+      if (!clip && last !== undefined && !last.clip) last.line = { ...last.line, text: `${last.line.text} ${piece}` };
+      else segments.push({ line: plain, clip });
+    }
+    return segments;
+  }
+
+  private clipFor(line: SpokenLine): string | undefined {
+    return line.voice.piper === undefined ? undefined : this.manifest.get(clipKey(line.voice.id, line.text));
   }
 
   private sayWithFallback(line: SpokenLine, onEnd: () => void): void {

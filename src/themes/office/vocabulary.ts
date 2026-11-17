@@ -1,0 +1,58 @@
+import type { Vocabulary } from '../../contract/theme.ts';
+
+/**
+ * The words the Office's Announcements are stitched from (ADR 0004). Part names follow who each Part is in
+ * the lab: the greeter is Traefik, the gateway; the guard is a Cloudflare Tunnel doorman. Lower case, as spoken.
+ */
+export const VOCABULARY: Vocabulary = {
+  numbers: [
+    'zero',
+    'one',
+    'two',
+    'three',
+    'four',
+    'five',
+    'six',
+    'seven',
+    'eight',
+    'nine',
+    'ten',
+    'eleven',
+    'twelve',
+    'thirteen',
+    'fourteen',
+    'fifteen',
+    'sixteen',
+    'seventeen',
+    'eighteen',
+    'nineteen',
+    'twenty',
+  ],
+  parts: {
+    worker: 'the site worker',
+    pod: 'the intern',
+    greeter: 'the gateway',
+    guard: 'the doorman',
+    checker: 'the checker',
+    keeper: 'the keeper',
+    courier: 'the courier',
+    wrangler: 'the wrangler',
+  },
+  moods: {
+    break: 'is on a break',
+    working: 'is working',
+    stressed: 'is stressed',
+    swamped: 'is swamped',
+    fainted: 'has fainted',
+    absent: 'is away',
+  },
+  phrases: {
+    roomUp: 'room up',
+    roomsUp: 'rooms up',
+    roomDown: 'room down',
+    roomsDown: 'rooms down',
+    allCalm: 'all calm',
+    criticalFinding: 'critical finding',
+    criticalFindings: 'critical findings',
+  },
+};

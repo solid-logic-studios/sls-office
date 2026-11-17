@@ -47,6 +47,7 @@ export class StageCanvas {
   private current: CanvasPainter;
   private readonly context: CanvasRenderingContext2D;
   private pointHandler: (point: StagePoint | null) => void = () => {};
+  private tapHandler: (point: StagePoint) => void = () => {};
 
   constructor(
     private readonly container: HTMLElement,
@@ -72,6 +73,8 @@ export class StageCanvas {
     canvas.addEventListener('pointerleave', (event) => {
       if (event.pointerType === 'mouse') this.pointHandler(null);
     });
+    // A click is a mouse click or a touch tap; browsers fire none after a pan or scroll, so those are not taps.
+    canvas.addEventListener('click', (event) => this.tapHandler(this.pointOf(event)));
     container.addEventListener('scroll', () => this.pointHandler(null));
   }
 
@@ -102,6 +105,11 @@ export class StageCanvas {
     this.pointHandler = handler;
   }
 
+  /** Called with where a click or tap landed. A drag to pan is not one. */
+  onTap(handler: (point: StagePoint) => void): void {
+    this.tapHandler = handler;
+  }
+
   /** Ignores a step that would not change the scale, so the zoom cannot wind up past a clamp. */
   private step(delta: number): void {
     const next = this.zoom + delta;
@@ -128,12 +136,16 @@ export class StageCanvas {
   }
 
   private report(event: PointerEvent): void {
+    this.pointHandler(this.pointOf(event));
+  }
+
+  private pointOf(event: MouseEvent): StagePoint {
     const box = this.canvas.getBoundingClientRect();
-    this.pointHandler({
+    return {
       x: ((event.clientX - box.left) / box.width) * this.art.width,
       y: ((event.clientY - box.top) / box.height) * this.art.height,
       clientX: event.clientX,
       clientY: event.clientY,
-    });
+    };
   }
 }

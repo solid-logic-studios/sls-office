@@ -138,3 +138,25 @@ supersede them.
   model's `inference.length_scale` divided by `rate`). The per-character pitch nudge, the line's pitch minus
   its Voice's, becomes the clip's `playbackRate` (pitch-preserving off), kept within 0.85 to 1.15.
 - **Clips are Ogg Opus** at 24 kbit/s, which is plenty for speech and keeps the image small.
+
+## Amendment (Phase 4, 17 November 2026)
+
+The spoken status is built, and the vocabulary it is stitched from is fixed. Where these specifics differ from
+the decisions above, they supersede them.
+
+- **A Theme's `soundscape.vocabulary` holds the words:** number words from zero up, a name for each Part ("the
+  gateway"), what follows a name for each Mood ("is swamped") and seven stock phrases ("rooms up", "all calm",
+  "critical findings"). All lower case, as spoken. A Theme without one makes no Announcements.
+- **An Announcement is a line with `pieces`.** Each piece plays its own clip, in order. Pieces with no clip (a
+  number past the vocabulary, said in digits) go to `speechSynthesis`, and consecutive misses are joined into one
+  utterance so the browser's voice is not restarted word by word. A clip that fails to play falls back for that
+  piece alone. `text` is the pieces joined, so the fallback output can say the whole thing.
+- **It is announced in the first founder's Voice** (the Theme's default Voice if it has no founders). The
+  vocabulary is rendered in every founder's Voice, so the Piper stage needs no change: the strings join the
+  (Voice, text) list like any line.
+- **Announcements skip the 8 s gap and the stale rule, but never talk over a line or the Alarm.** One waits for
+  the line being said to end and goes ahead of any waiting lines. Only one waits, and a newer one replaces it.
+  During an Alarm it waits for the Alarm to end, but an Alarm or quiet hours cut off one already waiting.
+- **The status** is the rooms up, the rooms down if any, the visible non-founder character worst off (fainted,
+  then swamped, then stressed) or "all calm", and the critical findings if any. A tap on empty stage speaks it:
+  a tap on anything the Engine gives a tooltip keeps its meaning, and a drag to pan fires no click.

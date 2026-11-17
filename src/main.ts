@@ -135,6 +135,11 @@ stage.onPoint((point) => {
   else tooltip.show(tip, point);
 });
 
+/** A tap on empty stage speaks the status; anything with a tooltip (a character, hotspot or room) is unchanged. */
+stage.onTap((point) => {
+  if (engine.tipAt(point.x, point.y) === null) soundboard.announceStatus();
+});
+
 /** The `?sim` Sound panel, which follows the Theme switcher. Stays `null` outside `?sim`. */
 let soundPanel: ReturnType<typeof mountSoundPanel> | null = null;
 
