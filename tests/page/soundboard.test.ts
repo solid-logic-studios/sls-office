@@ -54,46 +54,46 @@ describe.each(THEMES)('the Soundboard under the $name theme', (theme) => {
     const office = simulate(theme);
     office.send({ kind: 'oom' });
     office.play(1);
-    expect(office.output.played).toHaveLength(1);
-    expect(office.output.played[0]?.sound).toBe(alarm);
-    expect(office.output.played[0]?.options).toEqual({ volume: 1, pan: 0 });
+    expect(office.output.alarms).toHaveLength(1);
+    expect(office.output.alarms[0]?.sound).toBe(alarm);
+    expect(office.output.alarms[0]?.options).toEqual({ channel: 'alarm', volume: 1, pan: 0 });
   });
 
   it('sounds the Alarm once for a VM going down', () => {
     const office = simulate(theme);
     office.send({ kind: 'vm-down' });
     office.play(1);
-    expect(office.output.played).toHaveLength(1);
-    expect(office.output.played[0]?.sound).toBe(alarm);
+    expect(office.output.alarms).toHaveLength(1);
+    expect(office.output.alarms[0]?.sound).toBe(alarm);
   });
 
   it('sounds the Alarm once for a rolled-back deploy, and not for a healthy one', () => {
     const office = simulate(theme);
     office.send({ kind: 'deploy', outcome: 'healthy' });
     office.play(40);
-    expect(office.output.played).toHaveLength(0);
+    expect(office.output.alarms).toHaveLength(0);
 
     office.send({ kind: 'deploy', outcome: 'rolled-back' });
     office.play(40);
-    expect(office.output.played).toHaveLength(1);
-    expect(office.output.played[0]?.sound).toBe(alarm);
+    expect(office.output.alarms).toHaveLength(1);
+    expect(office.output.alarms[0]?.sound).toBe(alarm);
   });
 
   it('sounds the Alarm once for a failed backup, and not for a good one', () => {
     const office = simulate(theme);
     office.send({ kind: 'backup' });
     office.play(40);
-    expect(office.output.played).toHaveLength(0);
+    expect(office.output.alarms).toHaveLength(0);
 
     office.send({ kind: 'set-up', vmId: 'sls-data', up: false });
     office.play(1);
-    expect(office.output.played).toHaveLength(1); // the VM going down alarms by itself
+    expect(office.output.alarms).toHaveLength(1); // the VM going down alarms by itself
     office.output.clear();
 
     office.send({ kind: 'backup' });
     office.play(1);
-    expect(office.output.played).toHaveLength(1);
-    expect(office.output.played[0]?.sound).toBe(alarm);
+    expect(office.output.alarms).toHaveLength(1);
+    expect(office.output.alarms[0]?.sound).toBe(alarm);
   });
 
   // The Simulator cannot raise `crit` without also taking a VM down, so these use the Lab helper.
@@ -101,12 +101,12 @@ describe.each(THEMES)('the Soundboard under the $name theme', (theme) => {
     const lab = new Lab();
     const office = listen(theme);
     office.feed(lab.snapshot());
-    expect(office.output.played).toHaveLength(0);
+    expect(office.output.alarms).toHaveLength(0);
 
     lab.findings = { ok: 9, warn: 0, crit: 1 };
     for (let i = 0; i < 20; i++) office.feed(lab.snapshot());
-    expect(office.output.played).toHaveLength(1);
-    expect(office.output.played[0]?.sound).toBe(alarm);
+    expect(office.output.alarms).toHaveLength(1);
+    expect(office.output.alarms[0]?.sound).toBe(alarm);
   });
 
   it('sounds again when crit falls to 0 and rises again', () => {
@@ -119,7 +119,7 @@ describe.each(THEMES)('the Soundboard under the $name theme', (theme) => {
     office.feed(lab.snapshot());
     lab.findings = { ok: 9, warn: 0, crit: 2 };
     office.feed(lab.snapshot());
-    expect(office.output.played.map((play) => play.sound)).toEqual([
+    expect(office.output.alarms.map((play) => play.sound)).toEqual([
       theme.soundscape?.alarm,
       theme.soundscape?.allClear,
       theme.soundscape?.alarm,
@@ -132,7 +132,7 @@ describe.each(THEMES)('the Soundboard under the $name theme', (theme) => {
     const office = listen(theme);
     office.feed(lab.snapshot());
     office.feed(lab.snapshot());
-    expect(office.output.played).toHaveLength(0);
+    expect(office.output.alarms).toHaveLength(0);
   });
 
   it('does not sound again when the same Snapshot is read twice', () => {
@@ -142,7 +142,7 @@ describe.each(THEMES)('the Soundboard under the $name theme', (theme) => {
     const failing = lab.snapshot([oom('lab-test-api-develop')]);
     office.feed(failing);
     office.feed(failing);
-    expect(office.output.played).toHaveLength(1);
+    expect(office.output.alarms).toHaveLength(1);
   });
 
   it('coalesces several triggers in one Snapshot into one Alarm', () => {
@@ -158,7 +158,7 @@ describe.each(THEMES)('the Soundboard under the $name theme', (theme) => {
         { kind: 'vm-down', subject: 'sls-ci', at: '' },
       ]),
     );
-    expect(office.output.played).toHaveLength(1);
+    expect(office.output.alarms).toHaveLength(1);
   });
 
   it('sounds only when the page ends the Snapshot, and then once', () => {
@@ -166,10 +166,10 @@ describe.each(THEMES)('the Soundboard under the $name theme', (theme) => {
     const office = listen(theme);
     office.feed(lab.snapshot());
     office.engine.accept(lab.snapshot([oom('lab-test-api-develop')]));
-    expect(office.output.played).toHaveLength(0);
+    expect(office.output.alarms).toHaveLength(0);
     office.soundboard.endSnapshot();
     office.soundboard.endSnapshot();
-    expect(office.output.played).toHaveLength(1);
+    expect(office.output.alarms).toHaveLength(1);
   });
 
   it('stops sounding after dispose', () => {
@@ -178,7 +178,7 @@ describe.each(THEMES)('the Soundboard under the $name theme', (theme) => {
     office.feed(lab.snapshot());
     office.soundboard.dispose();
     office.feed(lab.snapshot([oom('lab-test-api-develop')]));
-    expect(office.output.played).toHaveLength(0);
+    expect(office.output.alarms).toHaveLength(0);
   });
 });
 
@@ -201,21 +201,21 @@ describe.each(THEMES)('the Soundboard Reminder and All-clear under the $name the
     const { lab, office } = critOpen();
     office.advance(9.98);
     office.feed(lab.snapshot());
-    expect(office.output.played).toHaveLength(0);
+    expect(office.output.alarms).toHaveLength(0);
 
     office.advance(0.02);
     office.feed(lab.snapshot());
-    expect(office.output.played).toHaveLength(1);
-    expect(office.output.played[0]?.sound).toBe(reminder);
-    expect(office.output.played[0]?.options).toEqual({ volume: 1, pan: 0 });
+    expect(office.output.alarms).toHaveLength(1);
+    expect(office.output.alarms[0]?.sound).toBe(reminder);
+    expect(office.output.alarms[0]?.options).toEqual({ channel: 'alarm', volume: 1, pan: 0 });
 
     office.advance(9.98);
     office.feed(lab.snapshot());
-    expect(office.output.played).toHaveLength(1);
+    expect(office.output.alarms).toHaveLength(1);
     office.advance(0.02);
     office.feed(lab.snapshot());
-    expect(office.output.played).toHaveLength(2);
-    expect(office.output.played[1]?.sound).toBe(reminder);
+    expect(office.output.alarms).toHaveLength(2);
+    expect(office.output.alarms[1]?.sound).toBe(reminder);
   });
 
   it('stops the Reminder when crit returns to 0', () => {
@@ -227,7 +227,7 @@ describe.each(THEMES)('the Soundboard Reminder and All-clear under the $name the
       office.advance(5);
       office.feed(lab.snapshot());
     }
-    expect(office.output.played).toHaveLength(0);
+    expect(office.output.alarms).toHaveLength(0);
   });
 
   it('reminds 10 minutes after a page opened on an open finding, with no Alarm', () => {
@@ -235,40 +235,40 @@ describe.each(THEMES)('the Soundboard Reminder and All-clear under the $name the
     lab.findings = { ok: 8, warn: 0, crit: 2 };
     const office = listen(theme);
     office.feed(lab.snapshot());
-    expect(office.output.played).toHaveLength(0);
+    expect(office.output.alarms).toHaveLength(0);
     office.advance(9.98);
     office.feed(lab.snapshot());
-    expect(office.output.played).toHaveLength(0);
+    expect(office.output.alarms).toHaveLength(0);
     office.advance(0.02);
     office.feed(lab.snapshot());
-    expect(office.output.played.map((play) => play.sound)).toEqual([reminder]);
+    expect(office.output.alarms.map((play) => play.sound)).toEqual([reminder]);
   });
 
   it('restarts the Reminder clock on an Alarm while crit stays open', () => {
     const { lab, office } = critOpen();
     office.advance(6);
     office.feed(lab.snapshot([oom('lab-test-api-develop')]));
-    expect(office.output.played.map((play) => play.sound)).toEqual([alarm]);
+    expect(office.output.alarms.map((play) => play.sound)).toEqual([alarm]);
     office.advance(9);
     office.feed(lab.snapshot());
-    expect(office.output.played.map((play) => play.sound)).toEqual([alarm]);
+    expect(office.output.alarms.map((play) => play.sound)).toEqual([alarm]);
     office.advance(1);
     office.feed(lab.snapshot());
-    expect(office.output.played.map((play) => play.sound)).toEqual([alarm, reminder]);
+    expect(office.output.alarms.map((play) => play.sound)).toEqual([alarm, reminder]);
   });
 
   it('sounds one All-clear when a VM comes back through the Simulator', () => {
     const office = simulate(theme);
     office.send({ kind: 'set-up', vmId: 'sls-data', up: false });
     office.play(1);
-    expect(office.output.played.map((play) => play.sound)).toContain(alarm);
+    expect(office.output.alarms.map((play) => play.sound)).toContain(alarm);
     office.output.clear();
 
     office.send({ kind: 'set-up', vmId: 'sls-data', up: true });
     office.play(1);
-    expect(office.output.played).toHaveLength(1);
-    expect(office.output.played[0]?.sound).toBe(allClear);
-    expect(office.output.played[0]?.options).toEqual({ volume: 1, pan: 0 });
+    expect(office.output.alarms).toHaveLength(1);
+    expect(office.output.alarms[0]?.sound).toBe(allClear);
+    expect(office.output.alarms[0]?.options).toEqual({ channel: 'alarm', volume: 1, pan: 0 });
   });
 
   it('sounds the All-clear when crit falls to 0, and not on the first Snapshot', () => {
@@ -276,18 +276,18 @@ describe.each(THEMES)('the Soundboard Reminder and All-clear under the $name the
     lab.findings = { ok: 8, warn: 0, crit: 2 };
     const office = listen(theme);
     office.feed(lab.snapshot());
-    expect(office.output.played).toHaveLength(0);
+    expect(office.output.alarms).toHaveLength(0);
 
     lab.findings = { ok: 10, warn: 0, crit: 0 };
     office.feed(lab.snapshot());
     office.feed(lab.snapshot());
-    expect(office.output.played.map((play) => play.sound)).toEqual([allClear]);
+    expect(office.output.alarms.map((play) => play.sound)).toEqual([allClear]);
   });
 
   it('does not sound the All-clear on a first Snapshot with crit at 0', () => {
     const office = listen(theme);
     office.feed(new Lab().snapshot());
-    expect(office.output.played).toHaveLength(0);
+    expect(office.output.alarms).toHaveLength(0);
   });
 
   it('lets the Alarm win over the All-clear in the same Snapshot', () => {
@@ -295,17 +295,17 @@ describe.each(THEMES)('the Soundboard Reminder and All-clear under the $name the
     const office = listen(theme);
     office.feed(lab.snapshot());
     office.feed(lab.snapshot([vmUpEvent, oom('lab-test-api-develop')]));
-    expect(office.output.played.map((play) => play.sound)).toEqual([alarm]);
+    expect(office.output.alarms.map((play) => play.sound)).toEqual([alarm]);
   });
 
   it('drops a Reminder that falls due beside an All-clear, and does not owe it', () => {
     const { lab, office } = critOpen();
     office.advance(10);
     office.feed(lab.snapshot([vmUpEvent]));
-    expect(office.output.played.map((play) => play.sound)).toEqual([allClear]);
+    expect(office.output.alarms.map((play) => play.sound)).toEqual([allClear]);
     office.advance(5);
     office.feed(lab.snapshot());
-    expect(office.output.played).toHaveLength(1);
+    expect(office.output.alarms).toHaveLength(1);
   });
 
   it('sounds no Reminder or All-clear while muted, and replays nothing on unmute', () => {
@@ -319,7 +319,7 @@ describe.each(THEMES)('the Soundboard Reminder and All-clear under the $name the
     office.feed(lab.snapshot());
     office.advance(30);
     office.feed(lab.snapshot());
-    expect(office.output.played).toHaveLength(0);
+    expect(office.output.alarms).toHaveLength(0);
   });
 });
 
@@ -330,7 +330,7 @@ describe('the Soundboard under a Theme with no Soundscape', () => {
     office.feed(lab.snapshot());
     lab.findings = { ok: 9, warn: 0, crit: 1 };
     office.feed(lab.snapshot([oom('lab-test-api-develop')]));
-    expect(office.output.played).toHaveLength(0);
+    expect(office.output.alarms).toHaveLength(0);
   });
 
   it('follows a theme switch', () => {
@@ -339,7 +339,7 @@ describe('the Soundboard under a Theme with no Soundscape', () => {
     office.feed(lab.snapshot());
     office.engine.setTheme(boxesTheme);
     office.feed(lab.snapshot([oom('lab-test-api-develop')]));
-    expect(office.output.played[0]?.sound).toBe(boxesTheme.soundscape?.alarm);
+    expect(office.output.alarms[0]?.sound).toBe(boxesTheme.soundscape?.alarm);
   });
 });
 
@@ -350,7 +350,7 @@ describe('the Soundboard while muted', () => {
     office.soundboard.muted = true;
     office.feed(lab.snapshot());
     office.feed(lab.snapshot([oom('lab-test-api-develop')]));
-    expect(office.output.played).toHaveLength(0);
+    expect(office.output.alarms).toHaveLength(0);
   });
 
   it('sounds the next new trigger once unmuted', () => {
@@ -360,7 +360,7 @@ describe('the Soundboard while muted', () => {
     office.feed(lab.snapshot());
     office.soundboard.muted = false;
     office.feed(lab.snapshot([oom('lab-test-api-develop')]));
-    expect(office.output.played).toHaveLength(1);
+    expect(office.output.alarms).toHaveLength(1);
   });
 
   it('does not replay an Alarm that fired while muted', () => {
@@ -371,7 +371,7 @@ describe('the Soundboard while muted', () => {
     office.feed(lab.snapshot([oom('lab-test-api-develop')]));
     office.soundboard.muted = false;
     office.feed(lab.snapshot());
-    expect(office.output.played).toHaveLength(0);
+    expect(office.output.alarms).toHaveLength(0);
   });
 
   it('does not sound on unmute for a crit edge that happened while muted', () => {
@@ -383,6 +383,6 @@ describe('the Soundboard while muted', () => {
     office.feed(lab.snapshot());
     office.soundboard.muted = false;
     office.feed(lab.snapshot());
-    expect(office.output.played).toHaveLength(0);
+    expect(office.output.alarms).toHaveLength(0);
   });
 });

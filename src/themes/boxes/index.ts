@@ -301,8 +301,22 @@ const LEGEND: readonly LegendEntry[] = CAST_PARTS.map((part) => ({
   label: PART_LABELS[part],
 }));
 
-/** Plain beeps to match the plain theme: a two-beep Alarm, one soft Reminder, two rising All-clear beeps. */
+/**
+ * Plain beeps to match the plain theme: a two-beep Alarm, one soft Reminder, two rising All-clear beeps,
+ * and three short quiet effect beeps (high for an arrival, low for a departure, middle for a deploy).
+ */
 const SOUNDSCAPE: Soundscape = {
+  effects: {
+    workloadAdded: {
+      notes: [{ wave: 'square', startHz: 550, endHz: 550, attack: 0.01, sustain: 0.06, decay: 0.04, volume: 0.12 }],
+    },
+    workloadRemoved: {
+      notes: [{ wave: 'square', startHz: 275, endHz: 275, attack: 0.01, sustain: 0.06, decay: 0.04, volume: 0.12 }],
+    },
+    deployStarted: {
+      notes: [{ wave: 'square', startHz: 440, endHz: 440, attack: 0.01, sustain: 0.06, decay: 0.04, volume: 0.12 }],
+    },
+  },
   alarm: {
     notes: [
       { wave: 'square', startHz: 660, endHz: 660, attack: 0.01, sustain: 0.18, decay: 0.05, volume: 0.4, gap: 0.12 },

@@ -1,9 +1,20 @@
 import type { SynthNote, SynthSound } from '../../contract/theme.ts';
-import type { SoundOutput } from './sound-output.ts';
+import type { Channel, PlayOptions, SoundOutput } from './sound-output.ts';
 
 /** An exponential ramp cannot reach 0, so envelopes fall to this instead. */
 const FLOOR = 0.0001;
 const NOISE_SECONDS = 1;
+/** Time constant (seconds) for a channel level change: long enough that it never clicks, short enough to feel prompt. */
+const LEVEL_GLIDE = 0.03;
+/** Time constant (seconds) of the fade a stopped sound takes, and how long after it the source is cut. */
+const STOP_FADE = 0.01;
+const STOP_AFTER = 0.06;
+
+/** One scheduled note, kept so `stop` can fade and cut it. */
+interface LiveNote {
+  source: AudioScheduledSourceNode;
+  gain: GainNode;
+}
 
 /**
  * Plays a `SynthSound` through Web Audio. The only file that touches `AudioContext`. A browser that
@@ -17,6 +28,10 @@ export class WebAudioOutput implements SoundOutput {
    */
   private readonly context: AudioContext | null = typeof AudioContext === 'undefined' ? null : new AudioContext();
   private noise: AudioBuffer | null = null;
+  /** One gain per channel, created on first use, all into `destination`. */
+  private readonly channels = new Map<Channel, GainNode>();
+  /** The notes still scheduled or sounding on each channel; each leaves on `ended`, so nothing accumulates. */
+  private readonly live = new Map<Channel, Set<LiveNote>>();
 
   /** True when there is Web Audio but the browser is holding it back until a gesture. */
   get blocked(): boolean {
@@ -50,16 +65,16 @@ export class WebAudioOutput implements SoundOutput {
     this.onChange(settle);
   }
 
-  play(sound: SynthSound, { volume, pan }: { volume: number; pan: number }): void {
+  play(sound: SynthSound, { channel, volume, pan }: PlayOptions): void {
     const { context } = this;
     if (context === null || context.state !== 'running') return;
     const panner = context.createStereoPanner();
     panner.pan.value = pan;
-    panner.connect(context.destination);
+    panner.connect(this.channelGain(context, channel));
     let at = context.currentTime;
     let last: AudioScheduledSourceNode | null = null;
     for (const note of sound.notes) {
-      last = this.schedule(context, panner, note, at, volume);
+      last = this.schedule(context, panner, channel, note, at, volume);
       at += note.attack + note.sustain + note.decay + (note.gap ?? 0);
     }
     // Free the graph once the sound has finished, so an all-day kiosk does not accumulate nodes.
@@ -67,9 +82,50 @@ export class WebAudioOutput implements SoundOutput {
     else last.addEventListener('ended', () => panner.disconnect());
   }
 
+  setLevel(channel: Channel, level: number): void {
+    const { context } = this;
+    if (context === null) return;
+    const { gain } = this.channelGain(context, channel);
+    gain.cancelScheduledValues(context.currentTime);
+    gain.setTargetAtTime(level, context.currentTime, LEVEL_GLIDE);
+  }
+
+  /** Fades every note on the channel out over a few milliseconds, then cuts it, so a stop never clicks. */
+  stop(channel: Channel): void {
+    const { context } = this;
+    const notes = this.live.get(channel);
+    if (context === null || notes === undefined) return;
+    const now = context.currentTime;
+    for (const { source, gain } of notes) {
+      gain.gain.cancelScheduledValues(now);
+      gain.gain.setTargetAtTime(0, now, STOP_FADE);
+      source.stop(now + STOP_AFTER);
+    }
+  }
+
+  private channelGain(context: AudioContext, channel: Channel): GainNode {
+    let gain = this.channels.get(channel);
+    if (gain === undefined) {
+      gain = context.createGain();
+      gain.connect(context.destination);
+      this.channels.set(channel, gain);
+    }
+    return gain;
+  }
+
+  private liveNotes(channel: Channel): Set<LiveNote> {
+    let notes = this.live.get(channel);
+    if (notes === undefined) {
+      notes = new Set();
+      this.live.set(channel, notes);
+    }
+    return notes;
+  }
+
   private schedule(
     context: AudioContext,
     out: AudioNode,
+    channel: Channel,
     note: SynthNote,
     at: number,
     volume: number,
@@ -87,7 +143,13 @@ export class WebAudioOutput implements SoundOutput {
     source.connect(gain);
     source.start(at);
     source.stop(end);
-    source.addEventListener('ended', () => gain.disconnect());
+    const live: LiveNote = { source, gain };
+    const notes = this.liveNotes(channel);
+    notes.add(live);
+    source.addEventListener('ended', () => {
+      notes.delete(live);
+      gain.disconnect();
+    });
     return source;
   }
 

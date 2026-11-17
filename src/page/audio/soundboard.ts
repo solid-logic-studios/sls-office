@@ -1,18 +1,33 @@
 import type { Findings } from '../../contract/snapshot.ts';
-import type { Soundscape, Theme } from '../../contract/theme.ts';
+import type { Layout, Soundscape, SynthSound, Theme } from '../../contract/theme.ts';
+import type { CharacterView } from '../../engine/engine.ts';
 import type { EventBus } from '../../engine/event-bus.ts';
-import type { SoundOutput } from './sound-output.ts';
+import type { PlayOptions, SoundOutput } from './sound-output.ts';
+import { StageEffects } from './stage-effects.ts';
 
 /** The part of the Engine the Soundboard listens to. The real `Engine` satisfies it. */
 export interface SoundSource {
   readonly bus: EventBus;
   readonly theme: Theme;
   readonly findings: Findings;
+  readonly layout: Layout;
+  characters(): readonly CharacterView[];
 }
 
 export interface SoundboardOptions {
   /** Milliseconds on a monotonic clock. Injected so tests can move it; defaults to `performance.now()`. */
   now?: () => number;
+  /** Runs `callback` after `ms`. Injected so tests can fire it by hand; defaults to `setTimeout`. */
+  later?: (callback: () => void, ms: number) => void;
+}
+
+/** The effect channel's level while an Alarm sounds, so the Alarm cuts through the stage noise. */
+export const ALARM_DUCK = 0.25;
+const FULL_LEVEL = 1;
+
+/** How long a sound lasts, in seconds: every note's attack, sustain, decay and trailing gap added up. */
+export function soundSeconds(sound: SynthSound): number {
+  return sound.notes.reduce((total, note) => total + note.attack + note.sustain + note.decay + (note.gap ?? 0), 0);
 }
 
 /** How long a critical finding stays open before the Reminder sounds, and between Reminders. */
@@ -20,12 +35,15 @@ export const REMINDER_MS = 10 * 60 * 1000;
 
 /**
  * Turns what the lab does into sound (ADR 0004). It listens to the Engine's bus and reads the Theme's
- * Soundscape; the Engine stays silent. It sounds the Alarm, the Reminder and the All-clear, at most one
- * per Snapshot, in that order of priority.
+ * Soundscape; the Engine stays silent. It sounds the Alarm, the Reminder and the All-clear (channel
+ * `alarm`), at most one per Snapshot, in that order of priority. Stage effects (channel `effect`) come
+ * from `StageEffects`, and are ducked while an Alarm sounds.
  */
 export class Soundboard {
   private readonly unsubscribe: readonly (() => void)[];
   private readonly now: () => number;
+  private readonly later: (callback: () => void, ms: number) => void;
+  private readonly effects: StageEffects;
   private alarmPending = false;
   private allClearPending = false;
   /** `null` until the first Snapshot, so an already open finding on page load is not an edge. */
@@ -33,8 +51,9 @@ export class Soundboard {
   /** When the open critical finding last sounded (Alarm or Reminder), or when it was first seen. */
   private reminderSince = 0;
 
-  /** While muted nothing plays, and a sound that falls due meanwhile is lost, not queued. */
-  muted = false;
+  private isMuted = false;
+  /** Counts Alarms, so only the latest one's timer restores the effect level. */
+  private duckGeneration = 0;
 
   constructor(
     private readonly source: SoundSource,
@@ -42,6 +61,8 @@ export class Soundboard {
     options: SoundboardOptions = {},
   ) {
     this.now = options.now ?? (() => performance.now());
+    this.later = options.later ?? ((callback, ms) => void setTimeout(callback, ms));
+    this.effects = new StageEffects(source, (sound, placement) => this.playEffect(sound, placement), this.now);
     const arm = (): void => {
       this.alarmPending = true;
     };
@@ -59,6 +80,18 @@ export class Soundboard {
         this.allClearPending = true;
       }),
     ];
+  }
+
+  /** While muted nothing plays, and a sound that falls due meanwhile is lost, not queued. Muting cuts off what is playing. */
+  get muted(): boolean {
+    return this.isMuted;
+  }
+
+  set muted(value: boolean) {
+    this.isMuted = value;
+    if (!value) return;
+    this.output.stop('alarm');
+    this.output.stop('effect');
   }
 
   /** Call right after `engine.accept(snapshot)`. Sounds at most one thing: Alarm, then All-clear, then Reminder. */
@@ -80,6 +113,7 @@ export class Soundboard {
 
   dispose(): void {
     for (const stop of this.unsubscribe) stop();
+    this.effects.dispose();
   }
 
   /**
@@ -98,10 +132,30 @@ export class Soundboard {
     return true;
   }
 
-  /** The one place a sound plays: silent while muted or when the Theme has no Soundscape. */
-  private play(name: keyof Soundscape): void {
-    if (this.muted) return;
+  /** The one place an Alarm-channel sound plays: silent while muted or when the Theme has no Soundscape. */
+  private play(name: Exclude<keyof Soundscape, 'effects'>): void {
+    if (this.isMuted) return;
     const sound = this.source.theme.soundscape?.[name];
-    if (sound !== undefined) this.output.play(sound, { volume: 1, pan: 0 });
+    if (sound === undefined) return;
+    this.output.play(sound, { channel: 'alarm', volume: 1, pan: 0 });
+    if (name === 'alarm') this.duckEffects(sound);
+  }
+
+  private playEffect(sound: SynthSound, placement: Pick<PlayOptions, 'volume' | 'pan'>): void {
+    if (this.isMuted) return;
+    this.output.play(sound, { channel: 'effect', ...placement });
+  }
+
+  /** Lowers effects for the Alarm's length. A later Alarm takes over the restore, so the first never cuts it short. */
+  private duckEffects(alarm: SynthSound): void {
+    this.output.setLevel('effect', ALARM_DUCK);
+    this.duckGeneration += 1;
+    const generation = this.duckGeneration;
+    this.later(
+      () => {
+        if (generation === this.duckGeneration) this.output.setLevel('effect', FULL_LEVEL);
+      },
+      soundSeconds(alarm) * 1000,
+    );
   }
 }

@@ -307,8 +307,25 @@ export interface SynthSound {
   notes: readonly SynthNote[];
 }
 
+/**
+ * The stage happenings that have a sound effect, one per bus event (and deploy or backup phase) worth
+ * hearing. A rolled-back deploy and a failed backup are Alarms, not effects.
+ */
+export type EffectName =
+  | 'deployStarted'
+  | 'deployHealthy'
+  | 'paper'
+  | 'visitor'
+  | 'checkIn'
+  | 'workloadAdded'
+  | 'workloadRemoved'
+  | 'backupStarted'
+  | 'backupFinished';
+
 /** What a Theme sounds like. Data only; the page Soundboard plays it (ADR 0004). Grows in later phases. */
 export interface Soundscape {
+  /** Stage effects, panned by where they happen. A happening without one stays silent. */
+  effects?: Partial<Record<EffectName, SynthSound>>;
   /** Sounded when the lab breaks: an OOM kill, a VM down, a rolled-back deploy, a failed backup, a new critical finding. */
   alarm: SynthSound;
   /** Sounded softly every 10 minutes while a critical finding stays open, after the Alarm. */
