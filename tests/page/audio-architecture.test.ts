@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
@@ -16,7 +16,7 @@ function sources(folder: string): string[] {
 }
 
 describe('audio architecture (ADR 0004)', () => {
-  const outside = sources(src).filter((file) => !file.startsWith(audio));
+  const outside = sources(src).filter((file) => !file.startsWith(audio + sep));
 
   it('finds the sources outside src/page/audio', () => {
     expect(outside.length).toBeGreaterThan(20);

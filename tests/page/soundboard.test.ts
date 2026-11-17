@@ -153,6 +153,17 @@ describe.each(THEMES)('the Soundboard under the $name theme', (theme) => {
     expect(office.output.played).toHaveLength(1);
   });
 
+  it('sounds only when the page ends the Snapshot, and then once', () => {
+    const lab = new Lab();
+    const office = listen(theme);
+    office.feed(lab.snapshot());
+    office.engine.accept(lab.snapshot([oom('lab-test-api-develop')]));
+    expect(office.output.played).toHaveLength(0);
+    office.soundboard.endSnapshot();
+    office.soundboard.endSnapshot();
+    expect(office.output.played).toHaveLength(1);
+  });
+
   it('stops sounding after dispose', () => {
     const lab = new Lab();
     const office = listen(theme);

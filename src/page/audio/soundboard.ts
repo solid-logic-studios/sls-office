@@ -43,7 +43,7 @@ export class Soundboard {
   /** Call right after `engine.accept(snapshot)`. Triggers in one Snapshot sound a single Alarm. */
   endSnapshot(): void {
     const { crit } = this.source.findings;
-    const critRose = this.lastCrit !== null && this.lastCrit === 0 && crit > 0;
+    const critRose = this.lastCrit === 0 && crit > 0;
     this.lastCrit = crit;
     const due = this.alarmPending || critRose;
     this.alarmPending = false;

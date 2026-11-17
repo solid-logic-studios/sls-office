@@ -18,15 +18,25 @@ export class WebAudioOutput implements SoundOutput {
   private readonly context: AudioContext | null = typeof AudioContext === 'undefined' ? null : new AudioContext();
   private noise: AudioBuffer | null = null;
 
-  /** Resumes audio on the first pointer or key press on `target`. */
+  /**
+   * Resumes audio on the first gesture the browser accepts. A touch `pointerdown` or an Escape key press
+   * does not count as one in Chromium, so the listeners stay until the context is actually running.
+   */
   unlockOnGesture(target: Document): void {
+    const events = ['click', 'pointerup', 'keydown'] as const;
     const unlock = (): void => {
-      target.removeEventListener('pointerdown', unlock);
-      target.removeEventListener('keydown', unlock);
-      void this.context?.resume();
+      const { context } = this;
+      if (context === null) return;
+      context
+        .resume()
+        .then(() => {
+          if (context.state === 'running') for (const event of events) target.removeEventListener(event, unlock);
+        })
+        .catch(() => {
+          // Still blocked; the next gesture tries again.
+        });
     };
-    target.addEventListener('pointerdown', unlock);
-    target.addEventListener('keydown', unlock);
+    for (const event of events) target.addEventListener(event, unlock);
   }
 
   play(sound: SynthSound, { volume, pan }: { volume: number; pan: number }): void {
@@ -36,13 +46,23 @@ export class WebAudioOutput implements SoundOutput {
     panner.pan.value = pan;
     panner.connect(context.destination);
     let at = context.currentTime;
+    let last: AudioScheduledSourceNode | null = null;
     for (const note of sound.notes) {
-      this.schedule(context, panner, note, at, volume);
+      last = this.schedule(context, panner, note, at, volume);
       at += note.attack + note.sustain + note.decay + (note.gap ?? 0);
     }
+    // Free the graph once the sound has finished, so an all-day kiosk does not accumulate nodes.
+    if (last === null) panner.disconnect();
+    else last.addEventListener('ended', () => panner.disconnect());
   }
 
-  private schedule(context: AudioContext, out: AudioNode, note: SynthNote, at: number, volume: number): void {
+  private schedule(
+    context: AudioContext,
+    out: AudioNode,
+    note: SynthNote,
+    at: number,
+    volume: number,
+  ): AudioScheduledSourceNode {
     const peak = Math.max(FLOOR, note.volume * volume);
     const end = at + note.attack + note.sustain + note.decay;
     const gain = context.createGain();
@@ -56,6 +76,8 @@ export class WebAudioOutput implements SoundOutput {
     source.connect(gain);
     source.start(at);
     source.stop(end);
+    source.addEventListener('ended', () => gain.disconnect());
+    return source;
   }
 
   private source(context: AudioContext, note: SynthNote, at: number, end: number): AudioScheduledSourceNode {
