@@ -10,6 +10,7 @@ import { boxesTheme } from '../../src/themes/boxes/index.ts';
 import { officeTheme } from '../../src/themes/office/index.ts';
 import { Lab, oom } from '../support/lab.ts';
 import { RecordingSoundOutput } from '../support/recording-sound-output.ts';
+import { timersFor } from '../support/timers.ts';
 import { expectSaneSound } from '../support/sane-sound.ts';
 
 const EFFECT_NAMES: readonly EffectName[] = [
@@ -22,6 +23,10 @@ const EFFECT_NAMES: readonly EffectName[] = [
   'workloadRemoved',
   'backupStarted',
   'backupFinished',
+  'snore',
+  'streak',
+  'smoko',
+  'hatTrick',
 ];
 
 /** A Soundboard over a real Engine with a Lab's cast on stage, a fake clock and a fake `later`. */
@@ -200,9 +205,9 @@ describe('the Alarm ducking stage effects', () => {
       { channel: 'effect', level: ALARM_DUCK },
       { channel: 'ambient', level: ALARM_DUCK },
     ]);
-    expect(timers).toHaveLength(1);
-    expect(timers[0]?.ms).toBeCloseTo(alarmSeconds * 1000);
-    timers[0]?.callback();
+    const restore = timersFor(timers, alarmSeconds);
+    expect(restore).toHaveLength(1);
+    restore[0]?.callback();
     expect(output.levels.slice(-2)).toEqual([
       { channel: 'effect', level: 1 },
       { channel: 'ambient', level: 1 },
@@ -215,10 +220,11 @@ describe('the Alarm ducking stage effects', () => {
     for (let i = 0; i < 2; i++) {
       feed(lab.snapshot([oom('lab-test-api-develop')]));
     }
-    expect(timers).toHaveLength(2);
-    timers[0]?.callback();
+    const restores = timersFor(timers, alarmSeconds);
+    expect(restores).toHaveLength(2);
+    restores[0]?.callback();
     expect(output.levels.every((change) => change.level === ALARM_DUCK)).toBe(true);
-    timers[1]?.callback();
+    restores[1]?.callback();
     expect(output.levels.slice(-2).map((change) => change.level)).toEqual([1, 1]);
   });
 

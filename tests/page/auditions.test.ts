@@ -23,6 +23,11 @@ describe.each(THEMES.map((theme) => [theme.id, theme] as const))('the auditions 
     expect([...listed].sort()).toEqual(Object.keys(theme.soundscape?.effects ?? {}).sort());
   });
 
+  it('lists the easter eggs', () => {
+    const listed = all.flatMap((each) => (each.kind === 'effect' ? [each.effect] : []));
+    expect(listed).toEqual(expect.arrayContaining(['snore', 'streak', 'smoko', 'hatTrick']));
+  });
+
   it('lists one sample line per distinct Voice that has a line', () => {
     const voices = all.flatMap((each) => (each.kind === 'voice' ? [each] : []));
     const ids = voices.map((each) => each.voice.id);

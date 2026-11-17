@@ -22,16 +22,42 @@ export type EffectSink = (sound: SynthSound, placement: Placement) => void;
 /** Everything from the Engine the effects need. The real `Engine` satisfies it, as it does `SoundSource`. */
 export type EffectSource = Pick<SoundSource, 'bus' | 'theme' | 'characters' | 'layout'>;
 
-const CENTRE: Placement = { volume: 1, pan: 0 };
+/** Dead centre and full strength: where an effect sounds when it has no character to come from. */
+export const CENTRE: Placement = { volume: 1, pan: 0 };
 
 /** Pan from x across the stage width, quieter per floor away from the ground; centred and full for a stranger. */
-function placement(character: CharacterView | undefined, width: number): Placement {
+export function placement(character: CharacterView | undefined, width: number): Placement {
   if (character === undefined) return CENTRE;
   const pan = (character.x / width) * 2 - 1;
   return {
     pan: Math.min(1, Math.max(-1, pan)),
     volume: FLOOR_ATTENUATION ** Math.abs(character.floor - GROUND_FLOOR),
   };
+}
+
+/**
+ * A workload's character is its own id, or `id#n` once a deploy has cast a newcomer. Prefer a visible
+ * one, and of those the latest.
+ */
+export function findCharacter(characters: readonly CharacterView[], id: string): CharacterView | undefined {
+  const matches = characters.filter((character) => character.id === id || character.id.startsWith(`${id}#`));
+  return matches.findLast((character) => character.visible) ?? matches.at(-1);
+}
+
+/** Lets each effect through at most once per `EFFECT_THROTTLE_MS` on the injected clock. */
+export class EffectThrottle {
+  private readonly lastPlayed = new Map<EffectName, number>();
+
+  constructor(private readonly now: () => number) {}
+
+  /** Whether `name` may sound now; if so, it is counted as having sounded. */
+  allow(name: EffectName): boolean {
+    const now = this.now();
+    const last = this.lastPlayed.get(name);
+    if (last !== undefined && now - last < EFFECT_THROTTLE_MS) return false;
+    this.lastPlayed.set(name, now);
+    return true;
+  }
 }
 
 /**
@@ -42,13 +68,14 @@ function placement(character: CharacterView | undefined, width: number): Placeme
  */
 export class StageEffects {
   private readonly unsubscribe: readonly (() => void)[];
-  private readonly lastPlayed = new Map<EffectName, number>();
+  private readonly throttle: EffectThrottle;
 
   constructor(
     private readonly source: EffectSource,
     private readonly sink: EffectSink,
-    private readonly now: () => number,
+    now: () => number,
   ) {
+    this.throttle = new EffectThrottle(now);
     const { bus } = source;
     this.unsubscribe = [
       bus.subscribe('deploy', (event) => {
@@ -88,21 +115,11 @@ export class StageEffects {
   private effect(name: EffectName, locate: () => CharacterView | undefined): void {
     const sound = this.source.theme.soundscape?.effects?.[name];
     if (sound === undefined) return;
-    const now = this.now();
-    const last = this.lastPlayed.get(name);
-    if (last !== undefined && now - last < EFFECT_THROTTLE_MS) return;
-    this.lastPlayed.set(name, now);
+    if (!this.throttle.allow(name)) return;
     this.sink(sound, placement(locate(), this.source.layout.width));
   }
 
-  /**
-   * A workload's character is its own id, or `id#n` once a deploy has cast a newcomer. Prefer a visible
-   * one, and of those the latest.
-   */
   private find(id: string): CharacterView | undefined {
-    const matches = this.source
-      .characters()
-      .filter((character) => character.id === id || character.id.startsWith(`${id}#`));
-    return matches.findLast((character) => character.visible) ?? matches.at(-1);
+    return findCharacter(this.source.characters(), id);
   }
 }

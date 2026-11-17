@@ -8,6 +8,7 @@ import { SPEECH_GAP_MS, SPEECH_QUEUE_MAX, SPEECH_STALE_MS, SpeechQueue } from '.
 import type { SpokenLine } from '../../src/page/audio/speech-output.ts';
 import { PITCH_SPREAD, RATE_SPREAD, spokenLine, voiceFor } from '../../src/page/audio/voice-casting.ts';
 import { pickVoice, watchdogMs } from '../../src/page/audio/web-speech-output.ts';
+import { timersFor } from '../support/timers.ts';
 import { boxesTheme } from '../../src/themes/boxes/index.ts';
 import { FOUNDERS } from '../../src/themes/office/founders.ts';
 import { SOUNDSCAPE } from '../../src/themes/office/soundscape.ts';
@@ -308,6 +309,7 @@ function listen(theme: Theme) {
 }
 
 describe('the Soundboard speaking', () => {
+  const alarmSeconds = soundSeconds(officeTheme.soundscape?.alarm ?? { notes: [] });
   it('gives no voice to a hidden speaker, which has no bubble', () => {
     const engine = new Engine(officeTheme, { random: seededRandom(7) });
     engine.accept(new Lab().snapshot());
@@ -424,7 +426,7 @@ describe('the Soundboard speaking', () => {
     // The Alarm cut the line off, so only the Alarm duck is left on the bed.
     expect(speech.current).toBeUndefined();
     expect(output.levels.at(-1)).toEqual({ channel: 'ambient', level: ALARM_DUCK });
-    timers.at(-1)?.callback();
+    timersFor(timers, alarmSeconds)[0]?.callback();
     expect(output.levels.at(-1)).toEqual({ channel: 'ambient', level: 1 });
   });
 
@@ -443,9 +445,9 @@ describe('the Soundboard speaking', () => {
     say(worker, 'during the alarm');
     expect(speech.texts).toEqual(['before']);
 
-    const restore = timers.at(-1);
-    expect(restore?.ms).toBeCloseTo(soundSeconds(officeTheme.soundscape?.alarm ?? { notes: [] }) * 1000);
-    restore?.callback();
+    const restore = timersFor(timers, alarmSeconds);
+    expect(restore).toHaveLength(1);
+    restore[0]?.callback();
     expect(speech.texts).toEqual(['before', 'during the alarm']);
   });
 });

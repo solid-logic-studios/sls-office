@@ -153,7 +153,8 @@ describe('the ambient bed under an Alarm', () => {
       { channel: 'ambient', level: ALARM_DUCK },
     ]);
     office.output.levels.length = 0;
-    for (const restore of office.timers) restore();
+    // A copy: the snore loop re-arms itself on `later` as it fires.
+    for (const restore of office.timers.splice(0)) restore();
     expect(office.output.levels).toEqual([
       { channel: 'effect', level: 1 },
       { channel: 'ambient', level: 1 },

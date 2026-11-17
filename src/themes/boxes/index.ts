@@ -379,6 +379,25 @@ const SOUNDSCAPE: Soundscape = {
     deployStarted: {
       notes: [{ wave: 'square', startHz: 440, endHz: 440, attack: 0.01, sustain: 0.06, decay: 0.04, volume: 0.12 }],
     },
+    snore: {
+      notes: [{ wave: 'noise', startHz: 440, endHz: 440, attack: 0.3, sustain: 0.3, decay: 0.3, volume: 0.05 }],
+    },
+    streak: {
+      notes: [
+        { wave: 'square', startHz: 440, endHz: 440, attack: 0.01, sustain: 0.1, decay: 0.04, volume: 0.12, gap: 0.03 },
+        { wave: 'square', startHz: 660, endHz: 660, attack: 0.01, sustain: 0.2, decay: 0.1, volume: 0.12 },
+      ],
+    },
+    smoko: {
+      notes: [{ wave: 'sine', startHz: 1200, endHz: 1500, attack: 0.1, sustain: 0.5, decay: 0.2, volume: 0.05 }],
+    },
+    hatTrick: {
+      notes: [
+        { wave: 'square', startHz: 550, endHz: 550, attack: 0.01, sustain: 0.05, decay: 0.03, volume: 0.12, gap: 0.03 },
+        { wave: 'square', startHz: 550, endHz: 550, attack: 0.01, sustain: 0.05, decay: 0.03, volume: 0.12, gap: 0.03 },
+        { wave: 'square', startHz: 880, endHz: 880, attack: 0.01, sustain: 0.15, decay: 0.1, volume: 0.12 },
+      ],
+    },
   },
   alarm: {
     notes: [

@@ -80,7 +80,6 @@ const clipSpeech = new ClipSpeechOutput({
   baseUrl: VOICES_URL,
 });
 void loadVoiceManifest(fetch, `${VOICES_URL}manifest.json`).then((manifest) => clipSpeech.useManifest(manifest));
-const soundboard = new Soundboard(engine, audio, { speech: clipSpeech, hour, quietHours: parseQuietHours(query) });
 
 /** Even reading `localStorage` can throw (blocked site data), so it is fetched inside a try. */
 function browserStorage(): MuteStorage | null {
@@ -92,6 +91,15 @@ function browserStorage(): MuteStorage | null {
 }
 
 const storage = browserStorage();
+
+const soundboard = new Soundboard(engine, audio, {
+  speech: clipSpeech,
+  hour,
+  quietHours: parseQuietHours(query),
+  // The Simulator's synthetic Alarms must not reset the real streak, so `?sim` keeps its own in memory.
+  storage: simulated ? null : storage,
+});
+
 const diary = new OfficeDiary(engine.bus, () => Date.now());
 const standup = new Standup(engine, soundboard, diary, new StandupSchedule(storage));
 soundboard.muted = initialMuted(query, storage);

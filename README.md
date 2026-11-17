@@ -142,6 +142,10 @@ At 09:00 local, once a day, a founder (a different one each day) walks to the fr
 of the Office log: deploys, rollbacks, faults, backups, and the busiest and calmest rooms. It is skipped when muted
 or in quiet hours, and a reload the same morning does not repeat it; the `?sim` Sound panel has a Standup now button.
 
+A few small surprises are tucked in, all quiet effects that follow mute and quiet hours: a fainted character
+snores until it recovers, a long run of days with no Alarm earns a jingle, and the kettle goes on at morning tea.
+The rest you can find in `?sim`, where the Sound panel plays each of them.
+
 ## Contributing
 
 See [`CLAUDE.md`](CLAUDE.md) (canonical), [`AGENTS.md`](AGENTS.md) and [`CONTEXT.md`](CONTEXT.md).
