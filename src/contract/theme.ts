@@ -281,6 +281,38 @@ export interface LegendEntry {
   label: string;
 }
 
+/* --------------------------------------------------------------------- sound */
+
+export type Wave = 'square' | 'triangle' | 'sawtooth' | 'sine' | 'noise';
+
+/** One synthesised note. Times are in seconds, frequencies in Hz and volume is 0 to 1. */
+export interface SynthNote {
+  wave: Wave;
+  /** The pitch at the start of the note; it glides to `endHz` over the note. */
+  startHz: number;
+  endHz: number;
+  /** Seconds to rise to full volume. */
+  attack: number;
+  /** Seconds held at full volume. */
+  sustain: number;
+  /** Seconds to fade out. */
+  decay: number;
+  volume: number;
+  /** Silence after this note before the next. */
+  gap?: number;
+}
+
+/** A sound made from notes played one after another. No audio files (ADR 0004). */
+export interface SynthSound {
+  notes: readonly SynthNote[];
+}
+
+/** What a Theme sounds like. Data only; the page Soundboard plays it (ADR 0004). Grows in later phases. */
+export interface Soundscape {
+  /** Sounded when the lab breaks: an OOM kill, a VM down, a rolled-back deploy, a failed backup, a new critical finding. */
+  alarm: SynthSound;
+}
+
 /* --------------------------------------------------------------------- theme */
 
 export interface Theme {
@@ -304,4 +336,6 @@ export interface Theme {
   decor: { back: readonly DecorFn[]; props: readonly Prop[]; front: readonly DecorFn[] };
   hotspots: readonly Hotspot[];
   legend: readonly LegendEntry[];
+  /** What this Theme sounds like. A Theme without one is silent. */
+  soundscape?: Soundscape;
 }

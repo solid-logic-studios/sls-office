@@ -8,6 +8,7 @@ import { scoreAt } from '../../src/themes/office/scoreboard.ts';
 import { ROOF_SIGN } from '../../src/themes/office/shell.ts';
 import type { PaintCall } from '../support/recording-painter.ts';
 import { RecordingPainter } from '../support/recording-painter.ts';
+import { expectSaneAlarm } from '../support/sane-alarm.ts';
 
 /* ------------------------------------------------------------------ helpers */
 
@@ -428,5 +429,11 @@ describe('officeTheme hotspots', () => {
       expect(rect.x + rect.w).toBeLessThanOrEqual(officeTheme.layout.width);
       expect(rect.y + rect.h).toBeLessThanOrEqual(officeTheme.layout.height);
     }
+  });
+});
+
+describe('the Office soundscape', () => {
+  it('defines an Alarm of sane notes', () => {
+    expectSaneAlarm(officeTheme.soundscape?.alarm);
   });
 });
