@@ -6,6 +6,7 @@ import { HtmlAudioClipPlayer } from './page/audio/html-audio-clip-player.ts';
 import { WebAudioOutput } from './page/audio/web-audio-output.ts';
 import { OfficeDiary } from './page/audio/office-diary.ts';
 import { initialMuted, saveMuted, type MuteStorage } from './page/audio/mute-preference.ts';
+import { initialMusic, saveMusic } from './page/audio/music-preference.ts';
 import { parseQuietHours } from './page/audio/quiet-hours.ts';
 import { Soundboard } from './page/audio/soundboard.ts';
 import { Standup } from './page/audio/standup.ts';
@@ -19,6 +20,7 @@ import { isStale } from './page/freshness.ts';
 import { renderLegend } from './page/legend.ts';
 import { OfficeLog } from './page/office-log.ts';
 import { Poller } from './page/poller.ts';
+import { mountMusicButton } from './page/music-button.ts';
 import { mountSoundPanel } from './page/sound-panel.ts';
 import { mountSpeakerButton } from './page/speaker-button.ts';
 import { pollWhileVisible } from './page/visibility.ts';
@@ -118,6 +120,20 @@ mountSpeakerButton(element('sound', HTMLButtonElement), {
   unlock: () => audio.unlock(),
   onChange: (listener) => audio.onChange(listener),
   onToggle: (muted) => saveMuted(query, storage, muted),
+});
+soundboard.musicOn = initialMusic(storage);
+mountMusicButton(element('music', HTMLButtonElement), {
+  get on() {
+    return soundboard.musicOn;
+  },
+  set on(value: boolean) {
+    soundboard.musicOn = value;
+  },
+  get blocked() {
+    return audio.blocked;
+  },
+  unlock: () => audio.unlock(),
+  onToggle: (on) => saveMusic(storage, on),
 });
 
 const loop = new Loop(

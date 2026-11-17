@@ -1,4 +1,5 @@
 import type { PiperVoice, Soundscape, SynthNote, Voice } from '../../contract/theme.ts';
+import { D3_HZ, MUSIC } from './music.ts';
 import { VOCABULARY } from './vocabulary.ts';
 
 /** One half of the two-tone: a square wave that slides from `from` to `to`. */
@@ -120,10 +121,12 @@ export const SOUNDSCAPE: Soundscape = {
     // A dark, soft wash of air conditioning, like the next room over.
     room: { volume: 0.025, lowpassHz: 420 },
     // A low server drone that swells a little as the lab works harder.
-    hum: { wave: 'triangle', hz: 147, idle: 0.012, busy: 0.05 },
+    hum: { wave: 'triangle', hz: D3_HZ, idle: 0.012, busy: 0.05 },
     // Soft keyboard ticks: a lazy tap now and then when calm, a rattle when the workers are swamped.
     clatter: { key: { notes: [tick(0.05, 0)] }, calm: 0.4, frantic: 7 },
   },
+  // Lo-fi office radio, tuned to the hum's D (see music.ts). Off until the Music button is switched on.
+  music: MUSIC,
   effects: {
     // Gentle anticipation, about 0.33 s: two triangle steps up, then a slide that stops short of home.
     deployStarted: {

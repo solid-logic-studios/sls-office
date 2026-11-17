@@ -341,6 +341,50 @@ export interface AmbientBed {
   clatter: { key: SynthSound; calm: number; frantic: number };
 }
 
+/** One note of a music voice. `step` counts from the start of its section; a step is one division of a beat. */
+export interface MusicNote {
+  step: number;
+  /** How many steps the note is held for (before its release). At least 1. */
+  steps: number;
+  /** Pitch in Hz. A `noise` voice ignores it. */
+  hz: number;
+}
+
+/** How one voice of the music sounds. Times are in seconds, volume is 0 to 1. */
+export interface MusicVoice {
+  wave: Wave;
+  volume: number;
+  /** Seconds to rise to full volume. */
+  attack: number;
+  /** Seconds to fade out after the note is let go. Tails may overlap the next note. */
+  release: number;
+  /** The share of a note's length it is held for, 0 to 1: 1 is legato, 0.5 is staccato. */
+  gate: number;
+}
+
+/** A few bars of music: the notes each voice plays. A voice left out rests. */
+export interface MusicSection<V extends string = string> {
+  bars: number;
+  parts: Partial<Record<V, readonly MusicNote[]>>;
+}
+
+/**
+ * Procedural music (ADR 0004): voices, sections and the order the sections loop in. It plays on the
+ * `ambient` channel and its tempo follows lab load, from `calm` (idle) to `busy` (every VM flat out).
+ */
+export interface MusicScore<V extends string = string> {
+  /** Beats per minute at no load and at full load. */
+  bpm: { calm: number; busy: number };
+  stepsPerBeat: number;
+  stepsPerBar: number;
+  /** Master level for the whole score, 0 to 1 (normally 1; the one knob to turn it down by ear). */
+  volume: number;
+  voices: Readonly<Record<V, MusicVoice>>;
+  sections: readonly MusicSection<V>[];
+  /** Indexes into `sections`, played in order and then again from the top, forever. */
+  order: readonly number[];
+}
+
 /**
  * A pre-rendered Piper voice for a Voice (ADR 0004). The image renders each line a Voice can say once at
  * build time; a Voice without one is never rendered and always uses `speechSynthesis`.
@@ -433,6 +477,8 @@ export interface Soundscape {
   vocabulary?: Vocabulary;
   /** The ambient bed. A Theme without one has no background. */
   ambient?: AmbientBed;
+  /** Optional background music, off until switched on. A Theme without it has none. */
+  music?: MusicScore;
   /** Stage effects, panned by where they happen. A happening without one stays silent. */
   effects?: Partial<Record<EffectName, SynthSound>>;
   /** Sounded when the lab breaks: an OOM kill, a VM down, a rolled-back deploy, a failed backup, a new critical finding. */

@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Spoken status: tap an empty part of the stage and a founder says how many rooms are up and down, who is worst off and any critical findings, stitched from each Theme's fixed vocabulary of Piper clips, with `speechSynthesis` for anything outside it (#33).
 - Standup: at 09:00 local, once a day, a founder (a different one each day) walks to the front and sums up the last 24 hours of the Office log (deploys, rollbacks, faults, backups, the busiest and calmest rooms) in their own Voice. It is skipped when muted or in quiet hours, and a reload does not repeat it; the `?sim` Sound panel has a Standup now button (#34).
 - Audio: easter eggs, all quiet effects ranked below the Alarm: a fainted character snores until it recovers, an uptime streak (7, 30, 100 and 365 days with no Alarm) earns a jingle once per milestone, a kettle comes to the boil at 10:30 (smoko), and three healthy deploys in a row are a hat-trick; each follows the effect throttle, mute and quiet hours, and the `?sim` Sound panel can play them (#35)
+- Audio: procedural chiptune music, a Theme's optional `soundscape.music` (voices, sections and an order that loops forever); a Music button beside the speaker button turns it on (off by default, remembered per browser), its tempo follows lab load from 68 to 96 BPM at bar lines, and it is silent when muted and in quiet hours (#36)
 
 ## [0.2.1] - 17 November 2026
 
