@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Speech bubbles are spoken aloud through the browser's `speechSynthesis`, each character in its Part's Voice (founders have their own) with a little per-character variation. One line at a time, at most one every 8 seconds, stale lines dropped, and the ambient bed ducks while someone talks. The Alarm interrupts speech and holds it back, and Mute now cuts off a line mid-sentence (#28).
 - The image speaks in a natural Piper voice: every line a character can say is rendered at build time (Piper is pinned by version and SHA-256, and a voice must be public domain or CC BY and trained from scratch) and played from a clip, with the browser's `speechSynthesis` as the fallback for `pnpm dev` and any line without a clip. Each character keeps its small pitch variation, and the Alarm and Mute cut a clip off like any other line (#29).
 - Each Office Part and founder has its own Piper voice (one pinned LibriTTS model, a speaker per character, so the guard and the courier no longer sound alike), and tricky lines are spoken naturally: symbols and initialisms are read as words, trailing ellipses dropped and some slang respelt, through a Theme's `spoken` overrides while the bubbles stay as written (#30).
+- Quiet hours, 22:00 to 07:00 local by default and set with `?quiet=22-7` (`?quiet=0-0` turns them off): Alarms still sound at half volume, and the ambient bed, effects, speech, Reminders and All-clears stay silent until they end (#31).
 
 ## [0.2.1] - 17 November 2026
 

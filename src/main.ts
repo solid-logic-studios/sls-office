@@ -5,6 +5,7 @@ import { ClipSpeechOutput } from './page/audio/clip-speech-output.ts';
 import { HtmlAudioClipPlayer } from './page/audio/html-audio-clip-player.ts';
 import { WebAudioOutput } from './page/audio/web-audio-output.ts';
 import { initialMuted, saveMuted, type MuteStorage } from './page/audio/mute-preference.ts';
+import { parseQuietHours } from './page/audio/quiet-hours.ts';
 import { Soundboard } from './page/audio/soundboard.ts';
 import { loadVoiceManifest } from './page/audio/voice-manifest.ts';
 import { WebSpeechOutput } from './page/audio/web-speech-output.ts';
@@ -74,7 +75,7 @@ const clipSpeech = new ClipSpeechOutput({
   baseUrl: VOICES_URL,
 });
 void loadVoiceManifest(fetch, `${VOICES_URL}manifest.json`).then((manifest) => clipSpeech.useManifest(manifest));
-const soundboard = new Soundboard(engine, audio, { speech: clipSpeech });
+const soundboard = new Soundboard(engine, audio, { speech: clipSpeech, hour, quietHours: parseQuietHours(query) });
 
 /** Even reading `localStorage` can throw (blocked site data), so it is fetched inside a try. */
 function browserStorage(): MuteStorage | null {
