@@ -4,7 +4,10 @@ import type { CharacterView } from '../../engine/engine.ts';
 import type { EventBus } from '../../engine/event-bus.ts';
 import { ambientMix, busyness, labLoad } from './ambient-mix.ts';
 import { soundSeconds, type AmbientMix, type PlayOptions, type SoundOutput } from './sound-output.ts';
+import type { SpeechOutput } from './speech-output.ts';
+import { SpeechQueue } from './speech-queue.ts';
 import { StageEffects } from './stage-effects.ts';
+import { spokenLine, voiceFor } from './voice-casting.ts';
 
 /** The part of the Engine the Soundboard listens to. The real `Engine` satisfies it. */
 export interface SoundSource {
@@ -20,10 +23,21 @@ export interface SoundboardOptions {
   now?: () => number;
   /** Runs `callback` after `ms`. Injected so tests can fire it by hand; defaults to `setTimeout`. */
   later?: (callback: () => void, ms: number) => void;
+  /** Where spoken lines go. Defaults to silence, so a Soundboard without one keeps every line to its bubble. */
+  speech?: SpeechOutput;
 }
 
 /** The effect and ambient channels' level while an Alarm sounds, so the Alarm cuts through. */
 export const ALARM_DUCK = 0.25;
+
+/** The ambient channel's level while a line is spoken, so the speaker can be heard. */
+export const SPEECH_DUCK = 0.5;
+
+/** A `SpeechOutput` that says nothing: every line ends at once. */
+const SILENT_SPEECH: SpeechOutput = {
+  speak: (_line, onEnd) => onEnd(),
+  stop: () => undefined,
+};
 
 /** The Soundscape's Alarm-channel sounds. */
 type AlarmCue = 'alarm' | 'reminder' | 'allClear';
@@ -39,13 +53,15 @@ export const REMINDER_MS = 10 * 60 * 1000;
  * Soundscape; the Engine stays silent. It sounds the Alarm, the Reminder and the All-clear (channel
  * `alarm`), at most one per Snapshot, in that order of priority. Stage effects (channel `effect`) come
  * from `StageEffects`, and the ambient bed (channel `ambient`) follows the lab's load and the workers'
- * moods; both are ducked while an Alarm sounds.
+ * moods; both are ducked while an Alarm sounds. Speech (the `speech` event on the bus) goes through a
+ * `SpeechQueue` to the `SpeechOutput`: it ducks the bed, and an Alarm cuts it off and holds it back.
  */
 export class Soundboard {
   private readonly unsubscribe: readonly (() => void)[];
   private readonly now: () => number;
   private readonly later: (callback: () => void, ms: number) => void;
   private readonly effects: StageEffects;
+  private readonly speech: SpeechQueue;
   private alarmPending = false;
   private allClearPending = false;
   /** `null` until the first Snapshot, so an already open finding on page load is not an edge. */
@@ -56,6 +72,8 @@ export class Soundboard {
   private isMuted = false;
   /** True while an Alarm is sounding, so the lower channels are ducked. */
   private alarmSounding = false;
+  /** True while a line is being spoken, so the bed is ducked. */
+  private speaking = false;
   /** Counts Alarms, so only the latest one's timer restores the levels. */
   private duckGeneration = 0;
   /** The bed and mix last worked out from a Snapshot, so unmuting can bring the bed straight back. */
@@ -70,6 +88,14 @@ export class Soundboard {
   ) {
     this.now = options.now ?? (() => performance.now());
     this.later = options.later ?? ((callback, ms) => void setTimeout(callback, ms));
+    this.speech = new SpeechQueue(options.speech ?? SILENT_SPEECH, {
+      now: this.now,
+      later: this.later,
+      onSpeaking: (speaking) => {
+        this.speaking = speaking;
+        this.applyLevels();
+      },
+    });
     this.effects = new StageEffects(source, (sound, placement) => this.playEffect(sound, placement), this.now);
     const arm = (): void => {
       this.alarmPending = true;
@@ -87,10 +113,11 @@ export class Soundboard {
       bus.subscribe('vm-up', () => {
         this.allClearPending = true;
       }),
+      bus.subscribe('speech', (event) => this.say(event.speakerId, event.text)),
     ];
   }
 
-  /** While muted nothing plays, and a sound that falls due meanwhile is lost, not queued. Muting cuts off what is playing. */
+  /** While muted nothing plays, and a sound or line that falls due meanwhile is lost, not queued. Muting cuts off what is playing, a spoken line included. */
   get muted(): boolean {
     return this.isMuted;
   }
@@ -100,6 +127,7 @@ export class Soundboard {
     if (value) {
       this.output.stop('alarm');
       this.output.stop('effect');
+      this.speech.interrupt();
       this.switchBed(null);
     } else if (this.lastAmbient !== null) {
       this.switchBed(this.lastAmbient);
@@ -130,6 +158,7 @@ export class Soundboard {
   dispose(): void {
     for (const stop of this.unsubscribe) stop();
     this.effects.dispose();
+    this.speech.interrupt();
     this.switchBed(null);
     // A duck restore still pending finds itself stale and does nothing.
     this.duckGeneration += 1;
@@ -181,14 +210,29 @@ export class Soundboard {
     if (name === 'alarm') this.duckForAlarm(sound);
   }
 
+  /** Voices a line of speech in the speaker's Voice, if the Theme has Voices and the Soundboard is not muted. */
+  private say(speakerId: string, text: string): void {
+    const voices = this.source.theme.soundscape?.voices;
+    if (this.isMuted || voices === undefined) return;
+    const speaker = this.source.characters().find((character) => character.id === speakerId);
+    // A hidden speaker gets no bubble, so it gets no voice either.
+    if (speaker?.visible === false) return;
+    this.speech.enqueue(spokenLine(text, voiceFor(voices, speaker), speakerId));
+  }
+
   private playEffect(sound: SynthSound, placement: Pick<PlayOptions, 'volume' | 'pan'>): void {
     if (this.isMuted) return;
     this.output.play(sound, { channel: 'effect', ...placement });
   }
 
-  /** Lowers the lower channels for the Alarm's length. A later Alarm takes over the restore, so the first never cuts it short. */
+  /**
+   * Lowers the lower channels and silences speech for the Alarm's length. A later Alarm takes over the
+   * restore, so the first never cuts it short.
+   */
   private duckForAlarm(alarm: SynthSound): void {
     this.alarmSounding = true;
+    this.speech.interrupt();
+    this.speech.hold(true);
     this.applyLevels();
     this.duckGeneration += 1;
     const generation = this.duckGeneration;
@@ -197,15 +241,17 @@ export class Soundboard {
         if (generation !== this.duckGeneration) return;
         this.alarmSounding = false;
         this.applyLevels();
+        this.speech.hold(false);
       },
       soundSeconds(alarm) * 1000,
     );
   }
 
-  /** The one place the ducked channels' levels are worked out from state. Speech joins here in a later phase. */
+  /** The one place the ducked channels' levels are worked out from state. The bed takes the lower of the Alarm's and speech's ducks. */
   private applyLevels(): void {
-    const level = this.alarmSounding ? ALARM_DUCK : FULL_LEVEL;
-    this.output.setLevel('effect', level);
-    this.output.setLevel('ambient', level);
+    const alarmLevel = this.alarmSounding ? ALARM_DUCK : FULL_LEVEL;
+    const speechLevel = this.speaking ? SPEECH_DUCK : FULL_LEVEL;
+    this.output.setLevel('effect', alarmLevel);
+    this.output.setLevel('ambient', Math.min(alarmLevel, speechLevel));
   }
 }

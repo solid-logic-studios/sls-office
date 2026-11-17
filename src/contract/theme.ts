@@ -335,8 +335,31 @@ export interface AmbientBed {
   clatter: { key: SynthSound; calm: number; frantic: number };
 }
 
+/**
+ * How a character sounds when its lines are spoken (ADR 0004). `pitch` (0 to 2) and `rate` (0.5 to 2)
+ * are relative to normal (1); the Soundboard nudges both a little per character, so two workers sound
+ * related but distinct.
+ */
+export interface Voice {
+  /** Stable name for this Voice, unique within the Theme. Later phases key pre-rendered clips by it. */
+  id: string;
+  pitch: number;
+  rate: number;
+  /** BCP 47 language the browser voice should match, for example `en-AU`. */
+  lang: string;
+}
+
+/** Who speaks how: a Voice per founder (by founder id), else per Part, else the default. */
+export interface Voices {
+  default: Voice;
+  parts?: Partial<Record<Part, Voice>>;
+  founders?: Readonly<Record<string, Voice>>;
+}
+
 /** What a Theme sounds like. Data only; the page Soundboard plays it (ADR 0004). Grows in later phases. */
 export interface Soundscape {
+  /** The Voices its characters speak with. A Theme without them keeps its lines to bubbles. */
+  voices?: Voices;
   /** The ambient bed. A Theme without one has no background. */
   ambient?: AmbientBed;
   /** Stage effects, panned by where they happen. A happening without one stays silent. */

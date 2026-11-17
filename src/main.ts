@@ -5,6 +5,7 @@ import { Loop } from './engine/loop.ts';
 import { WebAudioOutput } from './page/audio/web-audio-output.ts';
 import { initialMuted, saveMuted, type MuteStorage } from './page/audio/mute-preference.ts';
 import { Soundboard } from './page/audio/soundboard.ts';
+import { WebSpeechOutput } from './page/audio/web-speech-output.ts';
 import { localHour } from './page/clock.ts';
 import { mountControlRoom } from './page/control-room.ts';
 import { isStale } from './page/freshness.ts';
@@ -63,7 +64,7 @@ engine.bus.subscribe('log', (event) => log.add(event.text, new Date()));
 
 const audio = new WebAudioOutput();
 audio.unlockOnGesture(document);
-const soundboard = new Soundboard(engine, audio);
+const soundboard = new Soundboard(engine, audio, { speech: new WebSpeechOutput() });
 
 /** Even reading `localStorage` can throw (blocked site data), so it is fetched inside a try. */
 function browserStorage(): MuteStorage | null {
