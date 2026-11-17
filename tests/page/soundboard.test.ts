@@ -244,12 +244,15 @@ describe.each(THEMES)('the Soundboard Reminder and All-clear under the $name the
     expect(office.output.played.map((play) => play.sound)).toEqual([reminder]);
   });
 
-  it('does not reset the Reminder clock for an Alarm while crit stays open', () => {
+  it('restarts the Reminder clock on an Alarm while crit stays open', () => {
     const { lab, office } = critOpen();
     office.advance(6);
     office.feed(lab.snapshot([oom('lab-test-api-develop')]));
     expect(office.output.played.map((play) => play.sound)).toEqual([alarm]);
-    office.advance(4);
+    office.advance(9);
+    office.feed(lab.snapshot());
+    expect(office.output.played.map((play) => play.sound)).toEqual([alarm]);
+    office.advance(1);
     office.feed(lab.snapshot());
     expect(office.output.played.map((play) => play.sound)).toEqual([alarm, reminder]);
   });

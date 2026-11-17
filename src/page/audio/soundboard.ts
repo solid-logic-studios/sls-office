@@ -71,7 +71,7 @@ export class Soundboard {
     const allClearDue = this.allClearPending || (previous !== null && previous > 0 && crit === 0);
     this.alarmPending = false;
     this.allClearPending = false;
-    const reminderDue = this.reminderFallsDue(previous === null, critRose, crit);
+    const reminderDue = this.advanceReminderClock(crit, previous === null || alarmDue);
 
     if (alarmDue) this.play('alarm');
     else if (allClearDue) this.play('allClear');
@@ -82,11 +82,14 @@ export class Soundboard {
     for (const stop of this.unsubscribe) stop();
   }
 
-  /** Advances the Reminder clock and says whether a Reminder is owed now, whatever else sounds. */
-  private reminderFallsDue(first: boolean, critRose: boolean, crit: number): boolean {
+  /**
+   * Advances the Reminder clock and says whether a Reminder falls due now. The clock restarts on the
+   * first Snapshot and on every Alarm, so a Reminder never follows hard on an Alarm.
+   */
+  private advanceReminderClock(crit: number, restart: boolean): boolean {
     if (crit === 0) return false;
     const now = this.now();
-    if (first || critRose) {
+    if (restart) {
       this.reminderSince = now;
       return false;
     }
