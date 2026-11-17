@@ -43,4 +43,12 @@ describe('musicClick', () => {
     expect(did.unlocked).toBe(1);
     expect(fake.on).toBe(true);
   });
+
+  it('only unlocks, leaving the music on, when it was saved on and the browser is holding audio back', () => {
+    const { fake, did } = controls(true, true);
+    musicClick(fake);
+    expect(did.unlocked).toBe(1);
+    expect(fake.on).toBe(true);
+    expect(did.saved).toEqual([]);
+  });
 });

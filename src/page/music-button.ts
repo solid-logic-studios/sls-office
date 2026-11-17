@@ -21,9 +21,15 @@ export interface MusicControls {
   onToggle(on: boolean): void;
 }
 
-/** Every tap toggles the music and saves it; a tap is a gesture, so it also unlocks audio while blocked. */
+/**
+ * A tap while blocked unlocks audio; it toggles only when the music was off, so music already chosen (and saved)
+ * starts playing rather than being switched off. Any other tap toggles the music and saves it.
+ */
 export function musicClick(controls: MusicControls): void {
-  if (controls.blocked) controls.unlock();
+  if (controls.blocked) {
+    controls.unlock();
+    if (controls.on) return;
+  }
   controls.on = !controls.on;
   controls.onToggle(controls.on);
 }
