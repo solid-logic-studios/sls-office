@@ -1,5 +1,5 @@
 import { assertNever } from '../../assert-never.ts';
-import type { Founder as FounderData } from '../../contract/theme.ts';
+import type { Founder as FounderData, Spot } from '../../contract/theme.ts';
 import type { World } from '../world.ts';
 import { Character, type CharacterInit } from './character.ts';
 import type { DeskWorker } from './desk-worker.ts';
@@ -9,6 +9,8 @@ const REPLY_SECONDS = 1.3;
 const CHECK_IN_SECONDS = 3.5;
 /** Stands this far left of the worker's seat. */
 const STAND_OFF = 11;
+/** How long a founder holds the floor at the front once the Standup starts, before heading home. */
+export const STANDUP_SECONDS = 25;
 
 type Errand =
   | { kind: 'desk'; until: number }
@@ -16,6 +18,8 @@ type Errand =
   | { kind: 'break'; until: number }
   | { kind: 'to-worker'; worker: DeskWorker }
   | { kind: 'check-in'; worker: DeskWorker; replyAt: number | null; until: number }
+  | { kind: 'to-standup' }
+  | { kind: 'standup'; until: number }
   | { kind: 'to-desk' };
 
 /** Types at the desk; now and then checks in on a seated worker or takes a break. Never in the Snapshot. */
@@ -35,6 +39,19 @@ export class Founder extends Character {
   override chatter(): string | undefined {
     const { lines } = this.founder;
     return this.line(this.world.findings.crit > 0 ? lines.alarm : lines.idle);
+  }
+
+  /**
+   * Drops whatever it is doing, releasing any break spot, and walks to `front`. On arrival it publishes
+   * `standup`, holds the floor for `STANDUP_SECONDS`, then heads home. Refused (`false`) while a Standup
+   * is already under way.
+   */
+  callStandup(front: Spot): boolean {
+    if (this.errand.kind === 'to-standup' || this.errand.kind === 'standup') return false;
+    this.world.breakSpots.release(this.id);
+    this.goTo(front);
+    this.errand = { kind: 'to-standup' };
+    return true;
   }
 
   protected behave(): void {
@@ -72,6 +89,15 @@ export class Founder extends Character {
           this.world.bus.publish({ kind: 'check-in', fromId: this.id, toId: errand.worker.id });
           errand.replyAt = null;
         }
+        if (now >= errand.until) this.headBack();
+        return;
+      case 'to-standup':
+        this.face(1);
+        this.setActivity('stand');
+        this.world.bus.publish({ kind: 'standup', founderId: this.id });
+        this.errand = { kind: 'standup', until: now + STANDUP_SECONDS };
+        return;
+      case 'standup':
         if (now >= errand.until) this.headBack();
         return;
       case 'to-desk':

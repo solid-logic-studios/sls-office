@@ -323,6 +323,12 @@ const VOCABULARY: Vocabulary = {
     fainted: 'has fainted',
     absent: 'is away',
   },
+  rooms: {
+    ci: 'the c i box',
+    data: 'the data box',
+    compute: 'the compute box',
+    deploy: 'the deploy box',
+  },
   phrases: {
     roomUp: 'room up',
     roomsUp: 'rooms up',
@@ -331,6 +337,20 @@ const VOCABULARY: Vocabulary = {
     allCalm: 'all calm',
     criticalFinding: 'critical finding',
     criticalFindings: 'critical findings',
+    goodMorning: 'good morning',
+    lastDay: 'in the last day',
+    deploy: 'deploy',
+    deploys: 'deploys',
+    rollback: 'rollback',
+    rollbacks: 'rollbacks',
+    fault: 'fault',
+    faults: 'faults',
+    backupsSafe: 'backups safe',
+    backupFailed: 'backup failed',
+    backupsFailed: 'backups failed',
+    busiest: 'the busiest room was',
+    calmest: 'the calmest room was',
+    quietDay: 'a quiet day',
   },
 };
 

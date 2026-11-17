@@ -4,9 +4,12 @@ import { Loop } from './engine/loop.ts';
 import { ClipSpeechOutput } from './page/audio/clip-speech-output.ts';
 import { HtmlAudioClipPlayer } from './page/audio/html-audio-clip-player.ts';
 import { WebAudioOutput } from './page/audio/web-audio-output.ts';
+import { OfficeDiary } from './page/audio/office-diary.ts';
 import { initialMuted, saveMuted, type MuteStorage } from './page/audio/mute-preference.ts';
 import { parseQuietHours } from './page/audio/quiet-hours.ts';
 import { Soundboard } from './page/audio/soundboard.ts';
+import { Standup } from './page/audio/standup.ts';
+import { StandupSchedule } from './page/audio/standup-schedule.ts';
 import { initialVolume, saveVolume } from './page/audio/volume-preference.ts';
 import { loadVoiceManifest } from './page/audio/voice-manifest.ts';
 import { WebSpeechOutput } from './page/audio/web-speech-output.ts';
@@ -89,6 +92,8 @@ function browserStorage(): MuteStorage | null {
 }
 
 const storage = browserStorage();
+const diary = new OfficeDiary(engine.bus, () => Date.now());
+const standup = new Standup(engine, soundboard, diary, new StandupSchedule(storage));
 soundboard.muted = initialMuted(query, storage);
 /** The saved volume applies everywhere; only the slider that sets it is `?sim`-only. */
 soundboard.volume = initialVolume(storage);
@@ -181,6 +186,8 @@ function show(snapshot: Snapshot | null): void {
   }
   engine.accept(snapshot);
   soundboard.endSnapshot(snapshot);
+  diary.noteSnapshot(snapshot);
+  standup.check(new Date());
   strip.update(engine.findings, hour());
   updateRoster(engine.roster());
   refreshControls();
@@ -194,6 +201,9 @@ function snapshotSource(): HttpSnapshotSource | Simulator {
   soundPanel = mountSoundPanel({
     theme: engine.theme,
     play: (audition) => soundboard.audition(audition),
+    onStandup: () => {
+      standup.run(new Date());
+    },
     volume: soundboard.volume,
     onVolume: (level) => {
       soundboard.volume = level;

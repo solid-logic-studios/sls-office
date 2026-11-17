@@ -6,6 +6,7 @@ import { BreakSpots } from './break-spots.ts';
 import { Bubbles } from './bubbles.ts';
 import { Cast } from './cast.ts';
 import type { Character } from './characters/character.ts';
+import { Founder } from './characters/founder.ts';
 import { Effects } from './effects.ts';
 import type { EventBus } from './event-bus.ts';
 import { MoodMachine, vitalsOf } from './mood.ts';
@@ -131,6 +132,14 @@ export class Stage implements World {
 
   characters(): readonly Character[] {
     return this.cast.list();
+  }
+
+  /** Sends the founder to the middle of the ground floor to speak. `false` for no such founder, or a busy one. */
+  callStandup(founderId: string): boolean {
+    const founder = this.cast.byId(founderId);
+    const floor = this.theme.layout.floors[0];
+    if (!(founder instanceof Founder) || floor === undefined) return false;
+    return founder.callStandup({ x: (floor.minX + floor.maxX) / 2, floor: 0 });
   }
 
   dispose(): void {

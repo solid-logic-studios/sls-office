@@ -63,12 +63,15 @@ describe('voiceLines asks no Voice for a line it can never say', () => {
   it('gives the founders none of the cue lines', () => {
     const founderVoices = officeTheme.founders.map((founder) => voices?.founders?.[founder.id]?.id ?? '');
     const cueTexts = Object.values(officeTheme.lines.cue).flat();
+    // An Announcement is said in a founder's Voice, so a cue line that is also a vocabulary phrase is rendered.
+    const phrases = Object.values(officeTheme.soundscape?.vocabulary?.phrases ?? {});
     for (const id of founderVoices) {
       for (const text of cueTexts) {
         const alsoFounderLine = officeTheme.founders.some((founder) =>
           [...founder.lines.idle, ...founder.lines.checkIn, ...founder.lines.alarm].includes(text),
         );
-        if (!alsoFounderLine) expect(keys.has(keyOf(id, text, heard)), `${id}: ${text}`).toBe(false);
+        const alsoPhrase = phrases.includes(text.toLowerCase());
+        if (!alsoFounderLine && !alsoPhrase) expect(keys.has(keyOf(id, text, heard)), `${id}: ${text}`).toBe(false);
       }
     }
   });

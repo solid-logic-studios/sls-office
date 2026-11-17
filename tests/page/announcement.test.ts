@@ -172,15 +172,28 @@ describe('SpeechQueue.announce', () => {
     expect(output.texts).toEqual(['one', 'all calm', 'two']);
   });
 
-  it('keeps only the newest waiting Announcement', () => {
+  it('says different Announcements in order, one after the other', () => {
     const { output, speech } = queue();
     speech.enqueue(plain('one'));
     speech.announce(announcement('first'));
     speech.announce(announcement('second'));
     output.finish();
-    expect(output.texts).toEqual(['one', 'second']);
+    expect(output.texts).toEqual(['one', 'first']);
     output.finish();
-    expect(output.texts).toEqual(['one', 'second']);
+    expect(output.texts).toEqual(['one', 'first', 'second']);
+  });
+
+  it('drops a repeat of a waiting Announcement, and any beyond the limit', () => {
+    const { output, speech } = queue();
+    speech.enqueue(plain('one'));
+    speech.announce(announcement('first'));
+    speech.announce(announcement('first'));
+    speech.announce(announcement('second'));
+    speech.announce(announcement('third'));
+    output.finish();
+    output.finish();
+    output.finish();
+    expect(output.texts).toEqual(['one', 'first', 'second']);
   });
 
   it('waits while held rather than being dropped', () => {
@@ -308,6 +321,7 @@ describe.each(THEMES)('the $name theme vocabulary', (theme) => {
           ...vocabulary.numbers,
           ...Object.values(vocabulary.parts),
           ...Object.values(vocabulary.moods),
+          ...Object.values(vocabulary.rooms),
           ...Object.values(vocabulary.phrases),
         ];
 
