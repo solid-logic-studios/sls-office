@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The page stops polling `snapshot.json` while its tab is hidden and polls again at once when shown, so a forgotten background tab no longer keeps the lab collector awake (#15).
 - A deploy scene now waits up to 200 s for its verdict (was 30 s), so a `rolled-back` or slow `healthy` verdict that arrives minutes after `started` plays its scene instead of being absorbed (#17).
 
 ## [0.2.0] - 16 November 2026
