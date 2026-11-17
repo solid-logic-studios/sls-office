@@ -2,6 +2,8 @@ import type { Snapshot } from './contract/snapshot.ts';
 import type { Theme } from './contract/theme.ts';
 import { Engine } from './engine/engine.ts';
 import { Loop } from './engine/loop.ts';
+import { WebAudioOutput } from './page/audio/web-audio-output.ts';
+import { Soundboard } from './page/audio/soundboard.ts';
 import { localHour } from './page/clock.ts';
 import { mountControlRoom } from './page/control-room.ts';
 import { isStale } from './page/freshness.ts';
@@ -56,6 +58,10 @@ let awake = false;
 waking.textContent = WAKING_TEXT;
 renderLegend(legend, firstTheme.legend);
 engine.bus.subscribe('log', (event) => log.add(event.text, new Date()));
+
+const audio = new WebAudioOutput();
+audio.unlockOnGesture(document);
+const soundboard = new Soundboard(engine, audio);
 
 const loop = new Loop(
   (callback) => window.requestAnimationFrame(callback),
@@ -120,6 +126,7 @@ function show(snapshot: Snapshot | null): void {
     return;
   }
   engine.accept(snapshot);
+  soundboard.endSnapshot();
   strip.update(engine.findings, hour());
   updateRoster(engine.roster());
   refreshControls();

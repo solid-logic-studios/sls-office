@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import type { Vm, VmRole, Workload } from '../../src/contract/snapshot.ts';
 import type { Cue, LabSubject, Mood, Part, PlaceView, SceneStatus, StageView } from '../../src/contract/theme.ts';
 import { boxesTheme } from '../../src/themes/boxes/index.ts';
+import { officeTheme } from '../../src/themes/office/index.ts';
 import { RecordingPainter } from '../support/recording-painter.ts';
+import { expectSaneAlarm } from '../support/sane-alarm.ts';
 
 const CUES: Record<Cue, true> = {
   delivery: true,
@@ -272,5 +274,15 @@ describe('boxes theme art', () => {
         }
       }
     }
+  });
+});
+
+describe('the boxes soundscape', () => {
+  it('defines an Alarm of sane notes', () => {
+    expectSaneAlarm(boxesTheme.soundscape?.alarm);
+  });
+
+  it('sounds different from the Office', () => {
+    expect(boxesTheme.soundscape?.alarm).not.toEqual(officeTheme.soundscape?.alarm);
   });
 });

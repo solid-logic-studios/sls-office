@@ -18,6 +18,7 @@ import type {
   Place,
   PlaceArt,
   Room,
+  Soundscape,
   Theme,
 } from '../../contract/theme.ts';
 
@@ -300,6 +301,16 @@ const LEGEND: readonly LegendEntry[] = CAST_PARTS.map((part) => ({
   label: PART_LABELS[part],
 }));
 
+/** A plain two-beep Alarm, to match the plain theme. */
+const SOUNDSCAPE: Soundscape = {
+  alarm: {
+    notes: [
+      { wave: 'square', startHz: 660, endHz: 660, attack: 0.01, sustain: 0.18, decay: 0.05, volume: 0.4, gap: 0.12 },
+      { wave: 'square', startHz: 660, endHz: 660, attack: 0.01, sustain: 0.18, decay: 0.05, volume: 0.4 },
+    ],
+  },
+};
+
 export const boxesTheme: Theme = {
   id: 'boxes',
   name: 'Boxes',
@@ -315,4 +326,5 @@ export const boxesTheme: Theme = {
   decor: { back: [background, floor, rooms], props: [], front: [] },
   hotspots: [],
   legend: LEGEND,
+  soundscape: SOUNDSCAPE,
 };

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The Office sounds an Alarm when the lab breaks (an OOM kill, a VM down, a rolled-back deploy, a failed backup, or the first critical finding), synthesised in the browser with no audio files. Where the browser blocks autoplay it stays silent until the first click or key press (#23).
+
 ## [0.2.1] - 17 November 2026
 
 ### Fixed
