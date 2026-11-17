@@ -1,8 +1,8 @@
 import { expect } from 'vitest';
 import type { SynthSound } from '../../src/contract/theme.ts';
 
-/** Asserts an Alarm has at least one note and every value is in range. */
-export function expectSaneAlarm(sound: SynthSound | undefined): void {
+/** Asserts a sound has at least one note and every value is in range. */
+export function expectSaneSound(sound: SynthSound | undefined): void {
   expect(sound).toBeDefined();
   expect(sound?.notes.length).toBeGreaterThan(0);
   for (const note of sound?.notes ?? []) {

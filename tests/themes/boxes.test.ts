@@ -4,7 +4,7 @@ import type { Cue, LabSubject, Mood, Part, PlaceView, SceneStatus, StageView } f
 import { boxesTheme } from '../../src/themes/boxes/index.ts';
 import { officeTheme } from '../../src/themes/office/index.ts';
 import { RecordingPainter } from '../support/recording-painter.ts';
-import { expectSaneAlarm } from '../support/sane-alarm.ts';
+import { expectSaneSound } from '../support/sane-sound.ts';
 
 const CUES: Record<Cue, true> = {
   delivery: true,
@@ -278,11 +278,22 @@ describe('boxes theme art', () => {
 });
 
 describe('the boxes soundscape', () => {
-  it('defines an Alarm of sane notes', () => {
-    expectSaneAlarm(boxesTheme.soundscape?.alarm);
+  it('defines an Alarm, Reminder and All-clear of sane notes', () => {
+    expectSaneSound(boxesTheme.soundscape?.alarm);
+    expectSaneSound(boxesTheme.soundscape?.reminder);
+    expectSaneSound(boxesTheme.soundscape?.allClear);
+  });
+
+  it('sounds its three sounds differently', () => {
+    const { alarm, reminder, allClear } = boxesTheme.soundscape ?? {};
+    expect(alarm).not.toEqual(reminder);
+    expect(alarm).not.toEqual(allClear);
+    expect(reminder).not.toEqual(allClear);
   });
 
   it('sounds different from the Office', () => {
     expect(boxesTheme.soundscape?.alarm).not.toEqual(officeTheme.soundscape?.alarm);
+    expect(boxesTheme.soundscape?.reminder).not.toEqual(officeTheme.soundscape?.reminder);
+    expect(boxesTheme.soundscape?.allClear).not.toEqual(officeTheme.soundscape?.allClear);
   });
 });

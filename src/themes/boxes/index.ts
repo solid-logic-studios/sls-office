@@ -301,12 +301,21 @@ const LEGEND: readonly LegendEntry[] = CAST_PARTS.map((part) => ({
   label: PART_LABELS[part],
 }));
 
-/** A plain two-beep Alarm, to match the plain theme. */
+/** Plain beeps to match the plain theme: a two-beep Alarm, one soft Reminder, two rising All-clear beeps. */
 const SOUNDSCAPE: Soundscape = {
   alarm: {
     notes: [
       { wave: 'square', startHz: 660, endHz: 660, attack: 0.01, sustain: 0.18, decay: 0.05, volume: 0.4, gap: 0.12 },
       { wave: 'square', startHz: 660, endHz: 660, attack: 0.01, sustain: 0.18, decay: 0.05, volume: 0.4 },
+    ],
+  },
+  reminder: {
+    notes: [{ wave: 'sine', startHz: 330, endHz: 330, attack: 0.02, sustain: 0.2, decay: 0.1, volume: 0.15 }],
+  },
+  allClear: {
+    notes: [
+      { wave: 'square', startHz: 440, endHz: 440, attack: 0.01, sustain: 0.1, decay: 0.04, volume: 0.3, gap: 0.05 },
+      { wave: 'square', startHz: 660, endHz: 660, attack: 0.01, sustain: 0.14, decay: 0.05, volume: 0.3 },
     ],
   },
 };
