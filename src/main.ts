@@ -96,7 +96,8 @@ const soundboard = new Soundboard(engine, audio, {
   speech: clipSpeech,
   hour,
   quietHours: parseQuietHours(query),
-  storage,
+  // The Simulator's synthetic Alarms must not reset the real streak, so `?sim` keeps its own in memory.
+  storage: simulated ? null : storage,
 });
 
 const diary = new OfficeDiary(engine.bus, () => Date.now());

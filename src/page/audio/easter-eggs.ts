@@ -1,5 +1,6 @@
 import type { EffectName, SynthSound } from '../../contract/theme.ts';
 import type { CharacterView } from '../../engine/engine.ts';
+import { FAINT_SECONDS } from '../../engine/mood.ts';
 import type { MuteStorage } from './mute-preference.ts';
 import {
   CENTRE,
@@ -13,11 +14,20 @@ import {
 /** While a character is fainted, it snores this often. */
 export const SNORE_EVERY_MS = 3000;
 
+/**
+ * Snores in one faint, enough to cover the Engine's faint length (2). Recovery only happens as the Engine
+ * animates, so a paused page or a stale Snapshot must not leave a character snoring for ever.
+ */
+export const SNORES_PER_FAINT = Math.ceil((FAINT_SECONDS * 1000) / SNORE_EVERY_MS);
+
 /** Days with no Alarm that earn the streak jingle, once each, lowest first. */
 export const UPTIME_MILESTONES_DAYS: readonly number[] = [7, 30, 100, 365];
 
 /** Morning tea: the local hour, as a fraction, at which the kettle goes on (10:30). */
 export const SMOKO_HOUR = 10.5;
+
+/** The most the clock may move between two Snapshots for the kettle to go on: a gap (an outage, a hidden tab) is no smoko. */
+export const SMOKO_MAX_STEP_HOURS = 0.25;
 
 /** Healthy deploys in a row that make a hat-trick. */
 export const HAT_TRICK_DEPLOYS = 3;
@@ -27,6 +37,12 @@ export const CALM_SINCE_KEY = 'sls-office.calmSince';
 
 /** The highest streak milestone, in days, already celebrated in this streak. */
 export const STREAK_CELEBRATED_KEY = 'sls-office.streakCelebrated';
+
+/**
+ * A clock earlier than this (1 November 2026, before the streak shipped) is wrong, as on a Pi that has not yet
+ * reached NTP, so it neither starts nor celebrates a streak.
+ */
+export const STREAK_EPOCH_MS = Date.UTC(2026, 10, 1);
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -53,6 +69,9 @@ export class EasterEggs {
   private readonly unsubscribe: readonly (() => void)[];
   private readonly throttle: EffectThrottle;
   private snoring = false;
+  /** The character whose faint the snore count belongs to, and the snores heard in it. */
+  private sleeperId: string | null = null;
+  private snores = 0;
   private disposed = false;
   private previousHour: number | null = null;
   private healthyRun = 0;
@@ -83,7 +102,8 @@ export class EasterEggs {
   /** Starts the streak over: the Soundboard sounded a real Alarm. */
   alarmed(): void {
     this.load();
-    this.calmSince = this.options.wallNow();
+    const now = this.options.wallNow();
+    this.calmSince = now >= STREAK_EPOCH_MS ? now : null;
     this.celebrated = 0;
     this.save();
   }
@@ -106,20 +126,32 @@ export class EasterEggs {
     return this.source.characters().find((character) => character.visible && character.mood === 'fainted');
   }
 
-  /** Begins the snore loop if someone is fainted and it is not already running. */
+  /** Begins the snore loop for a faint not already snored out; a recovery makes the next faint a new one. */
   private startSnoring(): void {
-    if (this.snoring || this.sleeper() === undefined) return;
+    const sleeper = this.sleeper();
+    if (sleeper === undefined) this.sleeperId = null;
+    if (this.snoring || sleeper === undefined || sleeper.id === this.sleeperId) return;
     this.snoring = true;
     this.snore();
   }
 
-  /** Snores once from the sleeper and comes back, or ends the loop when nobody is fainted any more. */
+  /** Snores once from the sleeper and comes back, until they recover or the faint's snores are used up. */
   private snore(): void {
     const sleeper = this.sleeper();
     if (this.disposed || sleeper === undefined) {
       this.snoring = false;
+      this.sleeperId = null;
       return;
     }
+    if (sleeper.id !== this.sleeperId) {
+      this.sleeperId = sleeper.id;
+      this.snores = 0;
+    }
+    if (this.snores >= SNORES_PER_FAINT) {
+      this.snoring = false;
+      return;
+    }
+    this.snores += 1;
     this.play('snore', () => sleeper);
     this.options.later(() => this.snore(), SNORE_EVERY_MS);
   }
@@ -134,12 +166,14 @@ export class EasterEggs {
   /** Plays the jingle when a new milestone is reached, and counts it celebrated even if it could not sound. */
   private checkStreak(): void {
     this.load();
-    const calmSince = this.calmSince ?? this.options.wallNow();
+    const now = this.options.wallNow();
+    if (now < STREAK_EPOCH_MS) return;
+    const calmSince = this.calmSince ?? now;
     if (this.calmSince === null) {
       this.calmSince = calmSince;
       this.save();
     }
-    const days = Math.floor((this.options.wallNow() - calmSince) / DAY_MS);
+    const days = Math.floor((now - calmSince) / DAY_MS);
     const milestone = UPTIME_MILESTONES_DAYS.findLast((each) => each <= days);
     if (milestone === undefined || milestone <= this.celebrated) return;
     this.celebrated = milestone;
@@ -152,14 +186,15 @@ export class EasterEggs {
     const hour = this.options.hour();
     const previous = this.previousHour;
     this.previousHour = hour;
-    if (previous !== null && previous < SMOKO_HOUR && SMOKO_HOUR <= hour) this.play('smoko');
+    if (previous === null || hour - previous > SMOKO_MAX_STEP_HOURS) return;
+    if (previous < SMOKO_HOUR && SMOKO_HOUR <= hour) this.play('smoko');
   }
 
   private load(): void {
     if (this.loaded) return;
     this.loaded = true;
     const since = Number(this.read(CALM_SINCE_KEY));
-    this.calmSince = Number.isFinite(since) && since > 0 ? since : null;
+    this.calmSince = Number.isFinite(since) && since >= STREAK_EPOCH_MS ? since : null;
     const celebrated = Number(this.read(STREAK_CELEBRATED_KEY));
     this.celebrated = Number.isFinite(celebrated) && celebrated > 0 ? celebrated : 0;
   }

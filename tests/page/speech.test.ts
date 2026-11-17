@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { SNORE_EVERY_MS } from '../../src/page/audio/easter-eggs.ts';
 import type { Part, Theme, Voice, Voices } from '../../src/contract/theme.ts';
 import { Engine } from '../../src/engine/engine.ts';
 import { seededRandom } from '../../src/engine/random.ts';
@@ -9,6 +8,7 @@ import { SPEECH_GAP_MS, SPEECH_QUEUE_MAX, SPEECH_STALE_MS, SpeechQueue } from '.
 import type { SpokenLine } from '../../src/page/audio/speech-output.ts';
 import { PITCH_SPREAD, RATE_SPREAD, spokenLine, voiceFor } from '../../src/page/audio/voice-casting.ts';
 import { pickVoice, watchdogMs } from '../../src/page/audio/web-speech-output.ts';
+import { timersFor } from '../support/timers.ts';
 import { boxesTheme } from '../../src/themes/boxes/index.ts';
 import { FOUNDERS } from '../../src/themes/office/founders.ts';
 import { SOUNDSCAPE } from '../../src/themes/office/soundscape.ts';
@@ -147,8 +147,7 @@ describe('SpeechQueue', () => {
     const speaking: boolean[] = [];
     const speech = new SpeechQueue(output, {
       now: () => clock.ms,
-      // The easter eggs' snore loop waits on `later` too, and these tests are about the Alarm's timers.
-      later: (callback, ms) => ms === SNORE_EVERY_MS || timers.push({ callback, ms }),
+      later: (callback, ms) => timers.push({ callback, ms }),
       onSpeaking: (value) => speaking.push(value),
     });
     const advance = (ms: number): void => {
@@ -296,8 +295,7 @@ function listen(theme: Theme) {
   const timers: { callback: () => void; ms: number }[] = [];
   const soundboard = new Soundboard(engine, output, {
     now: () => clock.ms,
-    // The easter eggs' snore loop waits on `later` too, and these tests are about the Alarm's timers.
-    later: (callback, ms) => ms === SNORE_EVERY_MS || timers.push({ callback, ms }),
+    later: (callback, ms) => timers.push({ callback, ms }),
     speech,
   });
   const lab = new Lab();
@@ -311,6 +309,7 @@ function listen(theme: Theme) {
 }
 
 describe('the Soundboard speaking', () => {
+  const alarmSeconds = soundSeconds(officeTheme.soundscape?.alarm ?? { notes: [] });
   it('gives no voice to a hidden speaker, which has no bubble', () => {
     const engine = new Engine(officeTheme, { random: seededRandom(7) });
     engine.accept(new Lab().snapshot());
@@ -427,7 +426,7 @@ describe('the Soundboard speaking', () => {
     // The Alarm cut the line off, so only the Alarm duck is left on the bed.
     expect(speech.current).toBeUndefined();
     expect(output.levels.at(-1)).toEqual({ channel: 'ambient', level: ALARM_DUCK });
-    timers.at(-1)?.callback();
+    timersFor(timers, alarmSeconds)[0]?.callback();
     expect(output.levels.at(-1)).toEqual({ channel: 'ambient', level: 1 });
   });
 
@@ -446,9 +445,9 @@ describe('the Soundboard speaking', () => {
     say(worker, 'during the alarm');
     expect(speech.texts).toEqual(['before']);
 
-    const restore = timers.at(-1);
-    expect(restore?.ms).toBeCloseTo(soundSeconds(officeTheme.soundscape?.alarm ?? { notes: [] }) * 1000);
-    restore?.callback();
+    const restore = timersFor(timers, alarmSeconds);
+    expect(restore).toHaveLength(1);
+    restore[0]?.callback();
     expect(speech.texts).toEqual(['before', 'during the alarm']);
   });
 });

@@ -79,8 +79,7 @@ export const REMINDER_MS = 10 * 60 * 1000;
  * (the `speech` event on the bus) goes through a `SpeechQueue` to the `SpeechOutput`: it ducks the bed, and
  * an Alarm cuts it off and holds it back. During quiet hours only the Alarm sounds, at half volume; the bed,
  * effects, speech, Reminder and All-clear stay silent until they end. The master `volume` scales every
- * channel, and `audition` plays any one sound on
- * request for the `?sim` Sound panel.
+ * channel, and `audition` plays any one sound on request for the `?sim` Sound panel.
  */
 export class Soundboard {
   private readonly unsubscribe: readonly (() => void)[];

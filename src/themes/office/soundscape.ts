@@ -182,9 +182,9 @@ export const SOUNDSCAPE: Soundscape = {
     snore: {
       notes: [
         hiss([0.3, 0.1, 0.1], 0.05),
-        glide('triangle', 90, 70, [0.1, 0.25, 0.1], 0.12, 0.2),
+        glide('triangle', 150, 110, [0.1, 0.25, 0.1], 0.12, 0.2),
         hiss([0.1, 0.05, 0.25], 0.03),
-        glide('triangle', 75, 60, [0.05, 0.1, 0.2], 0.07),
+        glide('triangle', 125, 100, [0.05, 0.1, 0.2], 0.07),
       ],
     },
     // An uptime fanfare, about 1 s: four rising notes in D, the last held.

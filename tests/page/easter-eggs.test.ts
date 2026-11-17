@@ -6,6 +6,8 @@ import { DEFAULT_QUIET_HOURS } from '../../src/page/audio/quiet-hours.ts';
 import {
   CALM_SINCE_KEY,
   SNORE_EVERY_MS,
+  SNORES_PER_FAINT,
+  STREAK_EPOCH_MS,
   STREAK_CELEBRATED_KEY,
   UPTIME_MILESTONES_DAYS,
 } from '../../src/page/audio/easter-eggs.ts';
@@ -17,6 +19,8 @@ import { Lab, SITE_IDS, oom, run } from '../support/lab.ts';
 import { RecordingSoundOutput } from '../support/recording-sound-output.ts';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+/** A little after the streak epoch, so the clock is believable. */
+const START = STREAK_EPOCH_MS + 16 * DAY_MS;
 const FAINTED = 'lab-test-api-develop';
 const SITE = SITE_IDS[0] ?? '';
 
@@ -50,7 +54,7 @@ interface Clocks {
 function listen(options: { hour?: number; storage?: MuteStorage | null; clocks?: Clocks } = {}) {
   const engine = new Engine(officeTheme, { random: seededRandom(7) });
   const output = new RecordingSoundOutput();
-  const clocks = options.clocks ?? { ms: 0, hour: options.hour ?? 12, wall: 1_000_000_000_000 };
+  const clocks = options.clocks ?? { ms: 0, hour: options.hour ?? 12, wall: START };
   const timers: { callback: () => void; ms: number }[] = [];
   const soundboard = new Soundboard(engine, output, {
     now: () => clocks.ms,
@@ -96,6 +100,30 @@ describe('the snore', () => {
     office.fire();
     expect(office.heard('snore')).toHaveLength(1);
     expect(office.snoreTimers()).toHaveLength(0);
+  });
+
+  it('stops after a few snores when the Engine never animates, and stays stopped', () => {
+    const office = listen();
+    office.feed([oom(FAINTED)]);
+    for (let i = 0; i < 20; i += 1) {
+      office.clocks.ms += SNORE_EVERY_MS;
+      office.fire();
+    }
+    expect(office.heard('snore')).toHaveLength(SNORES_PER_FAINT);
+    expect(office.snoreTimers()).toHaveLength(0);
+    office.feed();
+    expect(office.snoreTimers()).toHaveLength(0);
+  });
+
+  it('starts a new episode once the character has recovered and faints again', () => {
+    const office = listen();
+    office.feed([oom(FAINTED)]);
+    run(office.engine, 10);
+    office.fire();
+    office.feed();
+    office.clocks.ms += EFFECT_THROTTLE_MS;
+    office.feed([oom(FAINTED)]);
+    expect(office.heard('snore')).toHaveLength(2);
   });
 
   it('keeps a single loop across Snapshots', () => {
@@ -158,7 +186,7 @@ describe('the uptime streak', () => {
 
   it('is not lost, nor repeated, by a reload', () => {
     const storage = new MemoryStorage();
-    const clocks: Clocks = { ms: 0, hour: 12, wall: 1_000_000_000_000 };
+    const clocks: Clocks = { ms: 0, hour: 12, wall: START };
     const first = listen({ storage, clocks });
     first.feed();
     clocks.wall += week;
@@ -173,7 +201,7 @@ describe('the uptime streak', () => {
     clocks.ms += EFFECT_THROTTLE_MS;
     second.feed();
     expect(second.heard('streak')).toHaveLength(1);
-    expect(storage.getItem(CALM_SINCE_KEY)).toBe('1000000000000');
+    expect(storage.getItem(CALM_SINCE_KEY)).toBe(String(START));
   });
 
   it('keeps going when storage throws', () => {
@@ -223,6 +251,35 @@ describe('smoko', () => {
     office.clocks.hour = 11;
     office.feed();
     expect(office.heard('smoko')).toEqual([]);
+  });
+});
+
+describe('smoko after a gap', () => {
+  it('does not sound hours late when the clock jumps past 10:30 between Snapshots', () => {
+    const office = listen({ hour: 10 });
+    office.feed();
+    office.clocks.hour = 15;
+    office.feed();
+    expect(office.heard('smoko')).toEqual([]);
+  });
+});
+
+describe('the streak epoch', () => {
+  it('ignores a saved calmSince from before the epoch', () => {
+    const storage = new MemoryStorage();
+    storage.setItem(CALM_SINCE_KEY, String(Date.UTC(1970, 0, 2)));
+    const office = listen({ storage });
+    office.feed();
+    expect(office.heard('streak')).toEqual([]);
+    expect(storage.getItem(CALM_SINCE_KEY)).toBe(String(START));
+  });
+
+  it('never celebrates while the clock itself is before the epoch', () => {
+    const office = listen({ clocks: { ms: 0, hour: 12, wall: Date.UTC(1970, 0, 1) } });
+    office.feed();
+    office.clocks.wall += 400 * DAY_MS;
+    office.feed();
+    expect(office.heard('streak')).toEqual([]);
   });
 });
 
