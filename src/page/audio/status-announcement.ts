@@ -14,7 +14,7 @@ export interface StatusView {
 const TROUBLED: readonly Mood[] = ['fainted', 'swamped', 'stressed'];
 
 /** A count in words, or in digits once it is past the vocabulary (the fallback says those). */
-function numberWord(vocabulary: Vocabulary, count: number): string {
+export function numberWord(vocabulary: Vocabulary, count: number): string {
   return vocabulary.numbers[count] ?? String(count);
 }
 

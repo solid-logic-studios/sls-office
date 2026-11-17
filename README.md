@@ -138,6 +138,10 @@ apply to the buttons unless that switch is on.
 Tap an empty part of the stage to hear the lab's status: a founder says how many rooms are up and down, who is
 worst off and any critical findings. Taps on characters, rooms and hotspots show their tooltips as before.
 
+At 09:00 local, once a day, a founder (a different one each day) walks to the front and sums up the last 24 hours
+of the Office log: deploys, rollbacks, faults, backups, and the busiest and calmest rooms. It is skipped when muted
+or in quiet hours, and a reload the same morning does not repeat it; the `?sim` Sound panel has a Standup now button.
+
 ## Contributing
 
 See [`CLAUDE.md`](CLAUDE.md) (canonical), [`AGENTS.md`](AGENTS.md) and [`CONTEXT.md`](CONTEXT.md).

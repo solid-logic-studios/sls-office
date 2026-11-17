@@ -375,7 +375,27 @@ export interface Voices {
 
 /** Stock phrases an Announcement strings together. */
 export type AnnouncementPhrase =
-  'roomUp' | 'roomsUp' | 'roomDown' | 'roomsDown' | 'allCalm' | 'criticalFinding' | 'criticalFindings';
+  | 'roomUp'
+  | 'roomsUp'
+  | 'roomDown'
+  | 'roomsDown'
+  | 'allCalm'
+  | 'criticalFinding'
+  | 'criticalFindings'
+  | 'goodMorning'
+  | 'lastDay'
+  | 'deploy'
+  | 'deploys'
+  | 'rollback'
+  | 'rollbacks'
+  | 'fault'
+  | 'faults'
+  | 'backupsSafe'
+  | 'backupFailed'
+  | 'backupsFailed'
+  | 'busiest'
+  | 'calmest'
+  | 'quietDay';
 
 /**
  * The fixed words an Announcement is stitched from (ADR 0004), each pre-rendered per announcing Voice.
@@ -388,6 +408,8 @@ export interface Vocabulary {
   parts: Readonly<Partial<Record<Part, string>>>;
   /** What follows a Part's name for each Mood: 'is swamped'. */
   moods: Readonly<Record<Mood, string>>;
+  /** How the Office names each VM's room in an Announcement, by the VM's role: 'the c i room'. */
+  rooms: Readonly<Record<VmRole, string>>;
   phrases: Readonly<Record<AnnouncementPhrase, string>>;
 }
 

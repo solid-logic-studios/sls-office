@@ -75,8 +75,14 @@ function founderVoice(voices: Voices, founder: Founder): Voice {
 }
 
 /** Every string an Announcement can be stitched from. */
-function vocabularyWords({ numbers, parts, moods, phrases }: Vocabulary): string[] {
-  return [...numbers, ...Object.values(parts), ...Object.values(moods), ...Object.values(phrases)];
+function vocabularyWords({ numbers, parts, moods, rooms, phrases }: Vocabulary): string[] {
+  return [
+    ...numbers,
+    ...Object.values(parts),
+    ...Object.values(moods),
+    ...Object.values(rooms),
+    ...Object.values(phrases),
+  ];
 }
 
 /**

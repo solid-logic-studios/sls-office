@@ -73,6 +73,15 @@ export class Engine {
     this.stage.endSnapshot();
   }
 
+  /**
+   * Calls the founder with this id to the front of the ground floor for the Standup. It publishes `standup` on
+   * the bus once the founder arrives and stays about 25 seconds. Nothing is spoken here: the page listens.
+   * Returns `false`, doing nothing, for an unknown id or a founder already on its way to or giving a Standup.
+   */
+  callStandup(founderId: string): boolean {
+    return this.stage.callStandup(founderId);
+  }
+
   /** Local time of day, 0 to 24. */
   setHour(hour: number): void {
     this.hour = hour;

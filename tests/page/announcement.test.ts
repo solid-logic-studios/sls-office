@@ -308,6 +308,7 @@ describe.each(THEMES)('the $name theme vocabulary', (theme) => {
           ...vocabulary.numbers,
           ...Object.values(vocabulary.parts),
           ...Object.values(vocabulary.moods),
+          ...Object.values(vocabulary.rooms),
           ...Object.values(vocabulary.phrases),
         ];
 

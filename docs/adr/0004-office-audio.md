@@ -160,3 +160,11 @@ the decisions above, they supersede them.
 - **The status** is the rooms up, the rooms down if any, the visible non-founder character worst off (fainted,
   then swamped, then stressed) or "all calm", and the critical findings if any. A tap on empty stage speaks it:
   a tap on anything the Engine gives a tooltip keeps its meaning, and a drag to pan fires no click.
+- **The Standup** is at 09:00 local, once a day. The page calls `Engine.callStandup(founderId)`: that founder
+  leaves its errand, walks to the middle of the ground floor, and on arrival the bus publishes `standup`; the Engine
+  stays silent. The founder holds the floor for 25 s, then heads home. The Announcement is composed on that event
+  from the Office diary (last 24 hours of deploys, rollbacks, faults, backups, and the busiest and calmest rooms by
+  mean CPU) and said in that founder's Voice. The founder rotates by local day. The diary is in memory, so a reload
+  starts a fresh one. The day is marked done (in `localStorage`, and in memory) as soon as the Standup falls due,
+  so one that cannot be spoken (muted, quiet hours, no founders or vocabulary) is skipped for the day, not retried,
+  and a reload does not repeat it. A Vocabulary also names each room by role (`rooms`).

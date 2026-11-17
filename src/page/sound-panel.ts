@@ -7,6 +7,8 @@ export interface SoundPanelControls {
   theme: Theme;
   /** Plays one sound, as the Soundboard does (so mute and quiet hours still apply). */
   play(audition: Audition): void;
+  /** Calls the morning Standup now, without waiting for 09:00 (mute and quiet hours still apply). */
+  onStandup?: () => void;
   /** The master volume to show, 0 to 1. */
   volume: number;
   onVolume(level: number): void;
@@ -45,9 +47,12 @@ export function mountSoundPanel(controls: SoundPanelControls): { element: HTMLEl
   ignoreLabel.prepend(ignore);
   ignore.addEventListener('change', () => controls.onIgnoreQuietHours(ignore.checked));
 
+  const standup = controls.onStandup;
+  const extras = standup === undefined ? [] : [button('Standup now', undefined, () => standup())];
+
   const volume = make('div', 'time');
   volume.append(labelFor(slider, 'Volume'), slider, readout);
 
   render(controls.theme);
-  return { element: group('Sound', buttons, volume, ignoreLabel), setTheme: render };
+  return { element: group('Sound', buttons, ...extras, volume, ignoreLabel), setTheme: render };
 }

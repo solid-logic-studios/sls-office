@@ -237,22 +237,41 @@ export class Soundboard {
 
   /**
    * Speaks the lab's status in the announcing founder's Voice (ADR 0004): rooms up and down, who is worst
-   * off and any critical findings, stitched from the Theme's vocabulary. It waits for the line being said
-   * but skips the gap, and says nothing before the first Snapshot, without a vocabulary or Voices, or while
-   * muted or in quiet hours.
+   * off and any critical findings, stitched from the Theme's vocabulary. It says nothing before the first
+   * Snapshot or without a vocabulary, and otherwise follows `announce`.
    */
   announceStatus(): void {
-    const { theme } = this.source;
-    const vocabulary = theme.soundscape?.vocabulary;
-    const voice = announcerVoice(theme);
+    const vocabulary = this.source.theme.soundscape?.vocabulary;
     const snapshot = this.lastSnapshot;
-    if (vocabulary === undefined || voice === undefined || snapshot === null || !this.mayPlay('speech')) return;
-    const pieces = statusAnnouncement(vocabulary, {
-      vmsUp: snapshot.vms.filter((vm) => vm.up).length,
-      vmsDown: snapshot.vms.filter((vm) => !vm.up).length,
-      characters: this.source.characters(),
-      findings: this.source.findings,
-    });
+    if (vocabulary === undefined || snapshot === null) return;
+    this.announce(
+      statusAnnouncement(vocabulary, {
+        vmsUp: snapshot.vms.filter((vm) => vm.up).length,
+        vmsDown: snapshot.vms.filter((vm) => !vm.up).length,
+        characters: this.source.characters(),
+        findings: this.source.findings,
+      }),
+    );
+  }
+
+  /** Whether a spoken line may sound now: neither muted nor in quiet hours. The Standup asks before it calls anyone. */
+  get maySpeak(): boolean {
+    return this.mayPlay('speech');
+  }
+
+  /**
+   * Says an Announcement's pieces in a Voice: the founder `speakerId`'s own, else the announcing founder's
+   * (the Theme's first, or its default Voice). It waits for the line being said but skips the gap, and says
+   * nothing without Voices or while muted or in quiet hours.
+   */
+  announce(pieces: readonly string[], speakerId?: string): void {
+    const { theme } = this.source;
+    const voices = theme.soundscape?.voices;
+    const voice =
+      speakerId === undefined || voices === undefined
+        ? announcerVoice(theme)
+        : voiceFor(voices, { id: speakerId, part: 'founder' });
+    if (voice === undefined || !this.mayPlay('speech')) return;
     this.speech.announce({ text: pieces.join(' '), pieces, voice, pitch: voice.pitch, rate: voice.rate });
   }
 
