@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The Office sounds an Alarm when the lab breaks (an OOM kill, a VM down, a rolled-back deploy, a failed backup, or the first critical finding), synthesised in the browser with no audio files. Where the browser blocks autoplay it stays silent until the first click or key press (#23).
 - A speaker button beside Pause mutes the Office. The choice is remembered per browser, `?mute` starts a screen silent without saving, and the button reads "Tap to enable" while the browser blocks audio. The README explains the Chromium autoplay flag for the Pi kiosk (#24).
+- A soft Reminder sounds every 10 minutes while a critical finding stays open, and an All-clear sounds when a VM comes back or the last critical finding closes (#25).
 
 ## [0.2.1] - 17 November 2026
 

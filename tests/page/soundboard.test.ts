@@ -16,12 +16,16 @@ const THEMES: readonly Theme[] = [officeTheme, boxesTheme];
 function listen(theme: Theme) {
   const engine = new Engine(theme, { random: seededRandom(7) });
   const output = new RecordingSoundOutput();
-  const soundboard = new Soundboard(engine, output);
+  const clock = { ms: 0 };
+  const soundboard = new Soundboard(engine, output, { now: () => clock.ms });
+  const advance = (minutes: number): void => {
+    clock.ms += minutes * 60 * 1000;
+  };
   const feed = (snapshot: Snapshot): void => {
     engine.accept(snapshot);
     soundboard.endSnapshot();
   };
-  return { engine, output, soundboard, feed };
+  return { engine, output, soundboard, feed, advance };
 }
 
 /** The Simulator with nothing happening on its own, played a Snapshot a second like `?sim`. */
@@ -115,7 +119,11 @@ describe.each(THEMES)('the Soundboard under the $name theme', (theme) => {
     office.feed(lab.snapshot());
     lab.findings = { ok: 9, warn: 0, crit: 2 };
     office.feed(lab.snapshot());
-    expect(office.output.played).toHaveLength(2);
+    expect(office.output.played.map((play) => play.sound)).toEqual([
+      theme.soundscape?.alarm,
+      theme.soundscape?.allClear,
+      theme.soundscape?.alarm,
+    ]);
   });
 
   it('does not sound on the first Snapshot, even with crit already above 0', () => {
@@ -170,6 +178,147 @@ describe.each(THEMES)('the Soundboard under the $name theme', (theme) => {
     office.feed(lab.snapshot());
     office.soundboard.dispose();
     office.feed(lab.snapshot([oom('lab-test-api-develop')]));
+    expect(office.output.played).toHaveLength(0);
+  });
+});
+
+describe.each(THEMES)('the Soundboard Reminder and All-clear under the $name theme', (theme) => {
+  const { alarm, reminder, allClear } = theme.soundscape ?? {};
+  const vmUpEvent = { kind: 'vm-up', subject: 'sls-ci', at: '' } as const;
+
+  /** A page that has seen a calm lab and then a critical finding open, at minute 0. */
+  function critOpen() {
+    const lab = new Lab();
+    const office = listen(theme);
+    office.feed(lab.snapshot());
+    lab.findings = { ok: 9, warn: 0, crit: 1 };
+    office.feed(lab.snapshot());
+    office.output.clear();
+    return { lab, office };
+  }
+
+  it('sounds the Reminder at 10 minutes and again at 20, not before', () => {
+    const { lab, office } = critOpen();
+    office.advance(9.98);
+    office.feed(lab.snapshot());
+    expect(office.output.played).toHaveLength(0);
+
+    office.advance(0.02);
+    office.feed(lab.snapshot());
+    expect(office.output.played).toHaveLength(1);
+    expect(office.output.played[0]?.sound).toBe(reminder);
+    expect(office.output.played[0]?.options).toEqual({ volume: 1, pan: 0 });
+
+    office.advance(9.98);
+    office.feed(lab.snapshot());
+    expect(office.output.played).toHaveLength(1);
+    office.advance(0.02);
+    office.feed(lab.snapshot());
+    expect(office.output.played).toHaveLength(2);
+    expect(office.output.played[1]?.sound).toBe(reminder);
+  });
+
+  it('stops the Reminder when crit returns to 0', () => {
+    const { lab, office } = critOpen();
+    lab.findings = { ok: 10, warn: 0, crit: 0 };
+    office.feed(lab.snapshot());
+    office.output.clear();
+    for (let i = 0; i < 6; i++) {
+      office.advance(5);
+      office.feed(lab.snapshot());
+    }
+    expect(office.output.played).toHaveLength(0);
+  });
+
+  it('reminds 10 minutes after a page opened on an open finding, with no Alarm', () => {
+    const lab = new Lab();
+    lab.findings = { ok: 8, warn: 0, crit: 2 };
+    const office = listen(theme);
+    office.feed(lab.snapshot());
+    expect(office.output.played).toHaveLength(0);
+    office.advance(9.98);
+    office.feed(lab.snapshot());
+    expect(office.output.played).toHaveLength(0);
+    office.advance(0.02);
+    office.feed(lab.snapshot());
+    expect(office.output.played.map((play) => play.sound)).toEqual([reminder]);
+  });
+
+  it('restarts the Reminder clock on an Alarm while crit stays open', () => {
+    const { lab, office } = critOpen();
+    office.advance(6);
+    office.feed(lab.snapshot([oom('lab-test-api-develop')]));
+    expect(office.output.played.map((play) => play.sound)).toEqual([alarm]);
+    office.advance(9);
+    office.feed(lab.snapshot());
+    expect(office.output.played.map((play) => play.sound)).toEqual([alarm]);
+    office.advance(1);
+    office.feed(lab.snapshot());
+    expect(office.output.played.map((play) => play.sound)).toEqual([alarm, reminder]);
+  });
+
+  it('sounds one All-clear when a VM comes back through the Simulator', () => {
+    const office = simulate(theme);
+    office.send({ kind: 'set-up', vmId: 'sls-data', up: false });
+    office.play(1);
+    expect(office.output.played.map((play) => play.sound)).toContain(alarm);
+    office.output.clear();
+
+    office.send({ kind: 'set-up', vmId: 'sls-data', up: true });
+    office.play(1);
+    expect(office.output.played).toHaveLength(1);
+    expect(office.output.played[0]?.sound).toBe(allClear);
+    expect(office.output.played[0]?.options).toEqual({ volume: 1, pan: 0 });
+  });
+
+  it('sounds the All-clear when crit falls to 0, and not on the first Snapshot', () => {
+    const lab = new Lab();
+    lab.findings = { ok: 8, warn: 0, crit: 2 };
+    const office = listen(theme);
+    office.feed(lab.snapshot());
+    expect(office.output.played).toHaveLength(0);
+
+    lab.findings = { ok: 10, warn: 0, crit: 0 };
+    office.feed(lab.snapshot());
+    office.feed(lab.snapshot());
+    expect(office.output.played.map((play) => play.sound)).toEqual([allClear]);
+  });
+
+  it('does not sound the All-clear on a first Snapshot with crit at 0', () => {
+    const office = listen(theme);
+    office.feed(new Lab().snapshot());
+    expect(office.output.played).toHaveLength(0);
+  });
+
+  it('lets the Alarm win over the All-clear in the same Snapshot', () => {
+    const lab = new Lab();
+    const office = listen(theme);
+    office.feed(lab.snapshot());
+    office.feed(lab.snapshot([vmUpEvent, oom('lab-test-api-develop')]));
+    expect(office.output.played.map((play) => play.sound)).toEqual([alarm]);
+  });
+
+  it('drops a Reminder that falls due beside an All-clear, and does not owe it', () => {
+    const { lab, office } = critOpen();
+    office.advance(10);
+    office.feed(lab.snapshot([vmUpEvent]));
+    expect(office.output.played.map((play) => play.sound)).toEqual([allClear]);
+    office.advance(5);
+    office.feed(lab.snapshot());
+    expect(office.output.played).toHaveLength(1);
+  });
+
+  it('sounds no Reminder or All-clear while muted, and replays nothing on unmute', () => {
+    const { lab, office } = critOpen();
+    office.soundboard.muted = true;
+    office.advance(10);
+    office.feed(lab.snapshot());
+    lab.findings = { ok: 10, warn: 0, crit: 0 };
+    office.feed(lab.snapshot([vmUpEvent]));
+    office.soundboard.muted = false;
+    office.feed(lab.snapshot());
+    office.advance(30);
+    office.feed(lab.snapshot());
     expect(office.output.played).toHaveLength(0);
   });
 });

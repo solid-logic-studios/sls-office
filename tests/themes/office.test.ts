@@ -8,7 +8,7 @@ import { scoreAt } from '../../src/themes/office/scoreboard.ts';
 import { ROOF_SIGN } from '../../src/themes/office/shell.ts';
 import type { PaintCall } from '../support/recording-painter.ts';
 import { RecordingPainter } from '../support/recording-painter.ts';
-import { expectSaneAlarm } from '../support/sane-alarm.ts';
+import { expectSaneSound } from '../support/sane-sound.ts';
 
 /* ------------------------------------------------------------------ helpers */
 
@@ -433,7 +433,16 @@ describe('officeTheme hotspots', () => {
 });
 
 describe('the Office soundscape', () => {
-  it('defines an Alarm of sane notes', () => {
-    expectSaneAlarm(officeTheme.soundscape?.alarm);
+  it('defines an Alarm, Reminder and All-clear of sane notes', () => {
+    expectSaneSound(officeTheme.soundscape?.alarm);
+    expectSaneSound(officeTheme.soundscape?.reminder);
+    expectSaneSound(officeTheme.soundscape?.allClear);
+  });
+
+  it('sounds its three sounds differently', () => {
+    const { alarm, reminder, allClear } = officeTheme.soundscape ?? {};
+    expect(alarm).not.toEqual(reminder);
+    expect(alarm).not.toEqual(allClear);
+    expect(reminder).not.toEqual(allClear);
   });
 });

@@ -311,6 +311,10 @@ export interface SynthSound {
 export interface Soundscape {
   /** Sounded when the lab breaks: an OOM kill, a VM down, a rolled-back deploy, a failed backup, a new critical finding. */
   alarm: SynthSound;
+  /** Sounded softly every 10 minutes while a critical finding stays open, after the Alarm. */
+  reminder: SynthSound;
+  /** Sounded when a VM comes back up or the last critical finding closes. */
+  allClear: SynthSound;
 }
 
 /* --------------------------------------------------------------------- theme */
