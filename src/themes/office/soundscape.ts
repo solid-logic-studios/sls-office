@@ -1,4 +1,4 @@
-import type { Soundscape, SynthNote, Voice } from '../../contract/theme.ts';
+import type { PiperVoice, Soundscape, SynthNote, Voice } from '../../contract/theme.ts';
 
 /** One half of the two-tone: a square wave that slides from `from` to `to`. */
 function beep(from: number, to: number, gap = 0.04): SynthNote {
@@ -32,9 +32,12 @@ function tick(volume: number, gap: number): SynthNote {
   return hiss([0.002, 0.004, 0.025], volume, gap);
 }
 
-/** An Australian-English Voice; `id` is its name and what a later phase keys a pre-rendered clip by. */
+/** Every Voice is rendered with this Piper model and speaker (VCTK p303) for now; recasting a Part is a one-line change. */
+const PIPER_VOICE: PiperVoice = { model: 'en_GB-vctk-medium', speaker: 99 };
+
+/** An Australian-English Voice; `id` is its name and what keys its pre-rendered clips. */
 function voice(id: string, pitch: number, rate: number): Voice {
-  return { id, pitch, rate, lang: 'en-AU' };
+  return { id, pitch, rate, lang: 'en-AU', piper: PIPER_VOICE };
 }
 
 /** The Office's sounds. The Alarm: three rising and falling pairs, about 1.2 s, chiptune but not shrill. */

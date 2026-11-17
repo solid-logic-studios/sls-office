@@ -39,8 +39,26 @@ the Office; `src/themes/boxes/` is the smallest working Theme.
 | `pnpm test`         | `vitest run`                                                    |
 | `pnpm build`        | `vite build`, then writes `dist/schema/snapshot.v1.schema.json` |
 | `pnpm schema`       | Regenerate the JSON Schema from the Snapshot types              |
+| `pnpm voice-lines`  | Write the list of spoken lines the image renders                |
 | `pnpm format`       | Apply Prettier                                                  |
 | `pnpm format:check` | Prettier check (CI gate)                                        |
+
+## Voices
+
+The image speaks in a natural voice. At build time a `voices` stage renders every line a character can say
+with [Piper](https://github.com/rhasspy/piper) into small Ogg Opus clips under `/srv/office/voices` (with a
+manifest and an `ATTRIBUTION.txt`), and the page plays a clip when it has one. Piper and each voice model are
+pinned in [`voices/models.json`](voices/README.md) by version and SHA-256, and Piper is not in the image.
+`pnpm dev` has no clips, so it speaks through the browser's `speechSynthesis`, as does any line without a clip.
+
+To render a few clips locally, download the Piper release for your machine and a model from `voices/models.json`
+(`node scripts/fetch-voices.ts --out models` checks the hashes), install `opus-tools`, then:
+
+```bash
+pnpm voice-lines dist-voices/voice-lines.json
+node scripts/render-voices.ts --piper path/to/piper --models models \
+  --lines dist-voices/voice-lines.json --out dist-voices/clips --limit 5
+```
 
 ## Snapshot contract
 

@@ -336,17 +336,34 @@ export interface AmbientBed {
 }
 
 /**
+ * A pre-rendered Piper voice for a Voice (ADR 0004). The image renders each line a Voice can say once at
+ * build time; a Voice without one is never rendered and always uses `speechSynthesis`.
+ *
+ * A clip is rendered at the model's own pace scaled by the Voice's `rate` (Piper's `length_scale` is the
+ * model's default divided by `rate`). The Voice's `pitch` only
+ * steers `speechSynthesis`: Piper cannot shift pitch, so the model (and speaker) chosen is the pitch.
+ */
+export interface PiperVoice {
+  /** An entry in `voices/models.json`, for example `en_GB-vctk-medium`. */
+  model: string;
+  /** The speaker id in a multi-speaker model. Omit for a single-speaker model. */
+  speaker?: number;
+}
+
+/**
  * How a character sounds when its lines are spoken (ADR 0004). `pitch` (0 to 2) and `rate` (0.5 to 2)
  * are relative to normal (1); the Soundboard nudges both a little per character, so two workers sound
  * related but distinct.
  */
 export interface Voice {
-  /** Stable name for this Voice, unique within the Theme. Later phases key pre-rendered clips by it. */
+  /** Stable name for this Voice, unique within the Theme. It keys the pre-rendered clips, so renaming one re-renders them. */
   id: string;
   pitch: number;
   rate: number;
   /** BCP 47 language the browser voice should match, for example `en-AU`. */
   lang: string;
+  /** The Piper voice that renders this Voice's clips. Without it the Voice always uses `speechSynthesis`. */
+  piper?: PiperVoice;
 }
 
 /** Who speaks how: a Voice per founder (by founder id), else per Part, else the default. */

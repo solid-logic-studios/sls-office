@@ -2,9 +2,12 @@ import type { Snapshot } from './contract/snapshot.ts';
 import type { Theme } from './contract/theme.ts';
 import { Engine } from './engine/engine.ts';
 import { Loop } from './engine/loop.ts';
+import { ClipSpeechOutput } from './page/audio/clip-speech-output.ts';
+import { HtmlAudioClipPlayer } from './page/audio/html-audio-clip-player.ts';
 import { WebAudioOutput } from './page/audio/web-audio-output.ts';
 import { initialMuted, saveMuted, type MuteStorage } from './page/audio/mute-preference.ts';
 import { Soundboard } from './page/audio/soundboard.ts';
+import { loadVoiceManifest } from './page/audio/voice-manifest.ts';
 import { WebSpeechOutput } from './page/audio/web-speech-output.ts';
 import { localHour } from './page/clock.ts';
 import { mountControlRoom } from './page/control-room.ts';
@@ -64,7 +67,14 @@ engine.bus.subscribe('log', (event) => log.add(event.text, new Date()));
 
 const audio = new WebAudioOutput();
 audio.unlockOnGesture(document);
-const soundboard = new Soundboard(engine, audio, { speech: new WebSpeechOutput() });
+/** The image holds Piper clips under `voices/`; where there are none (`pnpm dev`) every line is spoken by the browser. */
+const clipSpeech = new ClipSpeechOutput({
+  player: new HtmlAudioClipPlayer(),
+  fallback: new WebSpeechOutput(),
+  baseUrl: 'voices/',
+});
+void loadVoiceManifest(fetch, 'voices/manifest.json').then((manifest) => clipSpeech.useManifest(manifest));
+const soundboard = new Soundboard(engine, audio, { speech: clipSpeech });
 
 /** Even reading `localStorage` can throw (blocked site data), so it is fetched inside a try. */
 function browserStorage(): MuteStorage | null {

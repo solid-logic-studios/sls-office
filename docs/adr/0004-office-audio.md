@@ -111,3 +111,18 @@ Sound effects and music:
   hotspot keeps its current meaning and only a tap on empty stage speaks.
 - `speechSynthesis` fallback sounds different on every device, which is accepted for dev and for
   anything outside the vocabulary.
+
+## Amendment (Phase 3, 17 November 2026)
+
+Piper is wired in, as the decisions above say, with these specifics.
+
+- **Piper 2023.11.14-2** (MIT) runs in the `voices` Dockerfile stage on the build host only; the binary is
+  never shipped. The release and each voice model are pinned in `voices/models.json` by URL, SHA-256,
+  licence, dataset and attribution, and the Dockerfile's per-architecture hashes must match it (a test checks).
+- **A clip is keyed by Voice id and spoken text**, a 64-bit hash written as 16 hex characters. The spoken
+  text is the line lower-cased. The per-character pitch and rate nudge is not part of the key.
+- **The Voice's pitch steers only `speechSynthesis`.** Piper cannot shift pitch, so the model (and speaker)
+  is the pitch, and a clip is rendered at the model's own pace scaled by the Voice's rate (`length_scale` is the model's
+  `inference.length_scale` divided by `rate`). The per-character
+  pitch nudge becomes the clip's `playbackRate` (pitch-preserving off), kept within 0.8 to 1.25.
+- **Clips are Ogg Opus** at 24 kbit/s, which is plenty for speech and keeps the image small.
