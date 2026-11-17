@@ -65,8 +65,9 @@ export const REMINDER_MS = 10 * 60 * 1000;
  * `alarm`), at most one per Snapshot, in that order of priority. Stage effects (channel `effect`) come
  * from `StageEffects`, and the ambient bed (channel `ambient`) follows the lab's load and the workers'
  * moods; both are ducked while an Alarm sounds. Speech (the `speech` event on the bus) goes through a
- * `SpeechQueue` to the `SpeechOutput`: it ducks the bed, and an Alarm cuts it off and holds it back. During quiet hours only
- * the Alarm sounds, at half volume; the bed, effects, speech, Reminder and All-clear stay silent until they end.
+ * `SpeechQueue` to the `SpeechOutput`: it ducks the bed, and an Alarm cuts it off and holds it back. During
+ * quiet hours only the Alarm sounds, at half volume; the bed, effects, speech, Reminder and All-clear stay
+ * silent until they end.
  */
 export class Soundboard {
   private readonly unsubscribe: readonly (() => void)[];
@@ -221,7 +222,7 @@ export class Soundboard {
     return !this.quiet || sounding === 'alarm';
   }
 
-  /** Works out the bed's mix from the Snapshot and the cast, and sends it unless muted or quiet. A Theme without a bed has none. */
+  /** Works out the bed's mix from the Snapshot and the cast, and sends it unless muted or quiet. No bed, none. */
   private followLab(snapshot: Snapshot): void {
     const bed = this.source.theme.soundscape?.ambient;
     this.lastAmbient =
@@ -242,7 +243,7 @@ export class Soundboard {
     }
   }
 
-  /** The one place an Alarm-channel sound plays: silent while muted, in quiet hours (bar the Alarm, at half volume) or when the Theme has no Soundscape. */
+  /** The one place an Alarm-channel sound plays: silent while muted, and in quiet hours bar the Alarm (half volume). */
   private play(name: AlarmCue): void {
     if (!this.mayPlay(name)) return;
     const sound = this.source.theme.soundscape?.[name];
@@ -252,7 +253,7 @@ export class Soundboard {
     if (name === 'alarm') this.duckForAlarm(sound);
   }
 
-  /** Voices a line of speech in the speaker's Voice, if the Theme has Voices and the Soundboard may speak (not muted, not quiet hours). */
+  /** Voices a line in the speaker's Voice, if the Theme has Voices and it is neither muted nor quiet hours. */
   private say(speakerId: string, text: string): void {
     const voices = this.source.theme.soundscape?.voices;
     if (!this.mayPlay('speech') || voices === undefined) return;
