@@ -40,9 +40,8 @@ function clamp(value: number, low: number, high: number): number {
  * engines spell capitals out letter by letter).
  */
 export function spokenText(text: string, spoken?: Readonly<Record<string, string>>): string {
-  return spoken !== undefined && Object.hasOwn(spoken, text)
-    ? (spoken[text] ?? text.toLowerCase())
-    : text.toLowerCase();
+  const override = spoken !== undefined && Object.hasOwn(spoken, text) ? spoken[text] : undefined;
+  return override ?? text.toLowerCase();
 }
 
 /**

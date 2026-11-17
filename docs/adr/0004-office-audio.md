@@ -132,7 +132,7 @@ supersede them.
   words said instead (symbols, initialisms, digits, ellipses). `spokenText` applies it in one place and the clip
   key hashes the spoken words as given, so the build and the page agree; bubbles are never changed.
 - **A clip is keyed by Voice id and spoken text**, a 64-bit hash written as 16 hex characters. The spoken
-  text is the line lower-cased. The per-character pitch and rate nudge is not part of the key.
+  text is the Theme's `spoken` override, else the line lower-cased. The per-character pitch and rate nudge is not part of the key.
 - **The Voice's pitch steers only `speechSynthesis`.** Piper cannot shift pitch, so the model (and speaker) is
   the pitch, and a clip is rendered at the model's own pace scaled by the Voice's rate (`length_scale` is the
   model's `inference.length_scale` divided by `rate`). The per-character pitch nudge, the line's pitch minus

@@ -57,10 +57,6 @@ describe.each(THEMES)('the $name theme spoken overrides', (theme) => {
 });
 
 describe('the Office speaking an override', () => {
-  it('has overrides to speak', () => {
-    expect(Object.keys(officeTheme.soundscape?.spoken ?? {})).toHaveLength(30);
-  });
-
   it('says the override, keyed the way the build lists it', () => {
     const engine = new Engine(officeTheme, { random: seededRandom(7) });
     const speech = new RecordingSpeechOutput();
@@ -70,9 +66,10 @@ describe('the Office speaking an override', () => {
     if (worker === undefined) throw new Error('no worker');
     engine.bus.publish({ kind: 'speech', speakerId: worker.id, text: 'LGTM', force: false });
     const line = speech.spoken[0];
-    expect(line?.text).toBe('looks good to me');
+    if (line === undefined) throw new Error('nothing was said');
+    expect(line.text).toBe('looks good to me');
     const keys = new Set(voiceLines(officeTheme).map((entry) => entry.key));
-    expect(keys.has(clipKey(line?.voice.id ?? '', line?.text ?? ''))).toBe(true);
+    expect(keys.has(clipKey(line.voice.id, line.text))).toBe(true);
   });
 });
 

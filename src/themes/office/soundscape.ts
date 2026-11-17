@@ -71,7 +71,6 @@ const SPOKEN: Readonly<Record<string, string>> = {
   'GET /HEALTH': 'get slash health',
   'POST /SCORES': 'post slash scores',
   'GET /WP-LOGIN': 'get slash w p login',
-  'ROUTING YOU NOW': 'rooting you now',
   '#ALERTS IS RINGING!': 'the alerts channel is ringing!',
   'THAT NVME HAS UNTIL JANUARY': 'that n v m e has until january',
   'DAD JOKE LOADING...': 'dad joke loading',
