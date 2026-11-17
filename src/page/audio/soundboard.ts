@@ -1,8 +1,8 @@
 import type { Findings } from '../../contract/snapshot.ts';
-import type { Layout, Soundscape, SynthSound, Theme } from '../../contract/theme.ts';
+import type { Layout, SynthSound, Theme } from '../../contract/theme.ts';
 import type { CharacterView } from '../../engine/engine.ts';
 import type { EventBus } from '../../engine/event-bus.ts';
-import type { PlayOptions, SoundOutput } from './sound-output.ts';
+import { soundSeconds, type PlayOptions, type SoundOutput } from './sound-output.ts';
 import { StageEffects } from './stage-effects.ts';
 
 /** The part of the Engine the Soundboard listens to. The real `Engine` satisfies it. */
@@ -23,12 +23,10 @@ export interface SoundboardOptions {
 
 /** The effect channel's level while an Alarm sounds, so the Alarm cuts through the stage noise. */
 export const ALARM_DUCK = 0.25;
-const FULL_LEVEL = 1;
 
-/** How long a sound lasts, in seconds: every note's attack, sustain, decay and trailing gap added up. */
-export function soundSeconds(sound: SynthSound): number {
-  return sound.notes.reduce((total, note) => total + note.attack + note.sustain + note.decay + (note.gap ?? 0), 0);
-}
+/** The Soundscape's Alarm-channel sounds. */
+type AlarmCue = 'alarm' | 'reminder' | 'allClear';
+const FULL_LEVEL = 1;
 
 /** How long a critical finding stays open before the Reminder sounds, and between Reminders. */
 export const REMINDER_MS = 10 * 60 * 1000;
@@ -114,6 +112,8 @@ export class Soundboard {
   dispose(): void {
     for (const stop of this.unsubscribe) stop();
     this.effects.dispose();
+    // A duck restore still pending finds itself stale and does nothing.
+    this.duckGeneration += 1;
   }
 
   /**
@@ -133,7 +133,7 @@ export class Soundboard {
   }
 
   /** The one place an Alarm-channel sound plays: silent while muted or when the Theme has no Soundscape. */
-  private play(name: Exclude<keyof Soundscape, 'effects'>): void {
+  private play(name: AlarmCue): void {
     if (this.isMuted) return;
     const sound = this.source.theme.soundscape?.[name];
     if (sound === undefined) return;

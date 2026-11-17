@@ -1,5 +1,5 @@
 import type { SynthNote, SynthSound } from '../../contract/theme.ts';
-import type { Channel, PlayOptions, SoundOutput } from './sound-output.ts';
+import { noteSeconds, type Channel, type PlayOptions, type SoundOutput } from './sound-output.ts';
 
 /** An exponential ramp cannot reach 0, so envelopes fall to this instead. */
 const FLOOR = 0.0001;
@@ -9,6 +9,16 @@ const LEVEL_GLIDE = 0.03;
 /** Time constant (seconds) of the fade a stopped sound takes, and how long after it the source is cut. */
 const STOP_FADE = 0.01;
 const STOP_AFTER = 0.06;
+
+/**
+ * Drops whatever was scheduled on `param` from `now` on but keeps its current value. A bare
+ * `cancelScheduledValues` mid-ramp would snap back to the ramp's starting value and click.
+ */
+function holdAt(param: AudioParam, now: number): void {
+  const { value } = param;
+  param.cancelScheduledValues(now);
+  param.setValueAtTime(value, now);
+}
 
 /** One scheduled note, kept so `stop` can fade and cut it. */
 interface LiveNote {
@@ -75,7 +85,7 @@ export class WebAudioOutput implements SoundOutput {
     let last: AudioScheduledSourceNode | null = null;
     for (const note of sound.notes) {
       last = this.schedule(context, panner, channel, note, at, volume);
-      at += note.attack + note.sustain + note.decay + (note.gap ?? 0);
+      at += noteSeconds(note);
     }
     // Free the graph once the sound has finished, so an all-day kiosk does not accumulate nodes.
     if (last === null) panner.disconnect();
@@ -86,8 +96,9 @@ export class WebAudioOutput implements SoundOutput {
     const { context } = this;
     if (context === null) return;
     const { gain } = this.channelGain(context, channel);
-    gain.cancelScheduledValues(context.currentTime);
-    gain.setTargetAtTime(level, context.currentTime, LEVEL_GLIDE);
+    const now = context.currentTime;
+    holdAt(gain, now);
+    gain.setTargetAtTime(level, now, LEVEL_GLIDE);
   }
 
   /** Fades every note on the channel out over a few milliseconds, then cuts it, so a stop never clicks. */
@@ -97,7 +108,7 @@ export class WebAudioOutput implements SoundOutput {
     if (context === null || notes === undefined) return;
     const now = context.currentTime;
     for (const { source, gain } of notes) {
-      gain.gain.cancelScheduledValues(now);
+      holdAt(gain.gain, now);
       gain.gain.setTargetAtTime(0, now, STOP_FADE);
       source.stop(now + STOP_AFTER);
     }

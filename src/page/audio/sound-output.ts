@@ -1,4 +1,14 @@
-import type { SynthSound } from '../../contract/theme.ts';
+import type { SynthNote, SynthSound } from '../../contract/theme.ts';
+
+/** How long a note takes, in seconds, including the silence after it. */
+export function noteSeconds(note: SynthNote): number {
+  return note.attack + note.sustain + note.decay + (note.gap ?? 0);
+}
+
+/** How long a sound lasts, in seconds: its notes one after another. */
+export function soundSeconds(sound: SynthSound): number {
+  return sound.notes.reduce((total, note) => total + noteSeconds(note), 0);
+}
 
 /**
  * The ranked Web Audio channels (ADR 0004): an Alarm outranks an effect. Each has its own level, so one
