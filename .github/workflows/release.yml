@@ -10,6 +10,13 @@ on:
         description: The release tag to publish, vX.Y.Z
         required: true
         type: string
+  # Recovery: republish an existing tag whose release run failed (Actions > Release > Run workflow).
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: The existing release tag to publish, vX.Y.Z
+        required: true
+        type: string
 permissions:
   contents: write
   packages: write

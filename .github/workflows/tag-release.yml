@@ -21,13 +21,29 @@ jobs:
       tag: ${{ steps.tag.outputs.tag }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          # The parent too, to tell a version bump from any other package.json change (Dependabot).
+          fetch-depth: 2
       - id: tag
         name: Tag a new version
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           version="$(node -p "require('./package.json').version")"
+          before="$(git show HEAD^:package.json | node -p "JSON.parse(require('fs').readFileSync(0, 'utf8')).version")"
           tag="v${version}"
+          if [ "${version}" = "${before}" ]; then
+            echo "This commit does not change the version (${version}): nothing to release."
+            exit 0
+          fi
           if git ls-remote --exit-code --tags origin "refs/tags/${tag}" >/dev/null; then
-            echo "${tag} already exists: nothing to release."
+            # A re-run after a failed release: the tag is there but the Release is not, so publish again.
+            if gh release view "${tag}" >/dev/null 2>&1; then
+              echo "${tag} is already released: nothing to do."
+            else
+              echo "${tag} is tagged but not released: publishing it."
+              echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+            fi
             exit 0
           fi
           if ! grep -q "^## \[${version}\]" CHANGELOG.md; then

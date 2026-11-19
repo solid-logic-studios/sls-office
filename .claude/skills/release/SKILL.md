@@ -32,9 +32,9 @@ Read `## [Unreleased]` in `CHANGELOG.md`. **If it has no entries, stop**: there 
   - anything breaking (a `### Removed` entry, or an entry that says it breaks the Snapshot contract,
     the image's mount or run contract, or a URL parameter): **ask the user**. Pre-1.0 this is a minor
     bump by convention, but it is their call.
-  - any `### Added` entry, or any additive Snapshot contract change (ADR 0002 allows those only in a
-    minor): **minor**.
-  - only `### Fixed`, `### Changed`, `### Security` or `### Deprecated`: **patch**.
+  - any `### Added` or `### Deprecated` entry (SemVer makes a deprecation a minor), or any additive
+    Snapshot contract change (ADR 0002 allows those only in a minor): **minor**.
+  - only `### Fixed`, `### Changed` or `### Security`: **patch**.
 - State the version and the reason in one line, then carry on. No need to wait for a reply unless
   the version came from the breaking-change rule.
 
@@ -80,9 +80,13 @@ Only when the user says it is merged:
 - `gh run list --workflow tag-release.yml -L 1` and watch that run (`gh run watch <id> --exit-status`,
   in the background).
 - Confirm the result: `gh release view vX.Y.Z --json tagName,url,assets` and the image tags.
-- If the run failed, read its log and report. Fallback, only on the user's go-ahead: fix forward, or
-  push the tag by hand (`git tag -a vX.Y.Z -m vX.Y.Z <merge sha> && git push origin vX.Y.Z`), which
-  triggers `release.yml` directly.
+- If the run failed, read its log and report. Recovery, only on the user's go-ahead:
+  - The tag was pushed but the publish failed: **re-run the run** (failed jobs or all). The tag job
+    sees the tag with no Release and publishes again. Or run `release.yml` by hand:
+    `gh workflow run release.yml -f tag=vX.Y.Z`.
+  - No tag was made (the tag job failed or was cancelled): fix forward, or push the tag by hand on
+    the release PR's merge commit (`git tag -a vX.Y.Z -m vX.Y.Z <merge sha> && git push origin vX.Y.Z`),
+    which starts `release.yml` directly.
 
 ## Guardrails
 
