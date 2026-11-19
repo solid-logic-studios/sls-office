@@ -1,18 +1,23 @@
-import type { DecorFn } from '../../contract/theme.ts';
+import type { Painter } from '../../contract/painter.ts';
+import type { DecorFn, LiftView } from '../../contract/theme.ts';
 import { pen } from '../office/pen.ts';
 import { FLOOR, FLOOR_NAMES, SHAFT, STOREYS, band, storeyTop } from './geometry.ts';
 
 /**
  * The lift: a shaft at the right of every storey, a landing with doors, a lamp and the floor's
- * name on each, and the car. The Engine reports the walk line the car stands at (`liftCarY`): it
- * follows the rider while anyone rides and stays where the last ride ended, and is `null` before
- * the first ride (the car waits in the lobby). In use the car is lit, with the cables moving and
- * every lamp amber, and the doors twitch on the landing the car is at; the rider is drawn over
- * the car by the Engine. Idle, the car stands shut at the floor it last stopped at.
+ * name on each, and the one car the Engine runs. The Engine reports the car as `lift`: the walk
+ * line it is at (`y`), whether its doors are open and the floors with someone waiting (`calls`).
+ * The car is drawn wherever `y` is. It is lit while anyone waits or rides (`liftInUse`) and shows
+ * only a shut gold cap when idle and empty. While its doors are open a gap shows in the car and in
+ * the landing doors of the floor it stands at; the other landings stay shut. A landing's lamp is
+ * amber while someone waits there and green otherwise. The cables run only while the car travels.
+ * The riders are drawn over the car by the Engine.
  */
 
 const CAR = { w: 16, h: 24 } as const;
 const CAR_X = SHAFT.x + (SHAFT.w - CAR.w) / 2;
+
+const DOOR_GAP = 4;
 
 const LAMP = { idle: '#5fcf7a', busy: '#f2c230' } as const;
 
@@ -34,36 +39,46 @@ function nearestFloor(walkY: number): number {
   return nearest;
 }
 
-export const paintLift: DecorFn = (painter, { now, liftInUse, liftCarY }) => {
+/** True while the car travels: the lift is in use, its doors are shut and it is between landings. */
+const isMoving = (liftInUse: boolean, { y, doorsOpen }: LiftView): boolean => {
+  if (!liftInUse || doorsOpen) return false;
+  for (let floor = 0; floor < STOREYS; floor++) if (band(floor).walk === y) return false;
+  return true;
+};
+
+/** The dark gap down the middle of a pair of doors whose top is at `top`. */
+const gap = (painter: Painter, top: number): void =>
+  pen(painter).R('#2a2533', CAR_X + CAR.w / 2 - DOOR_GAP, top, DOOR_GAP * 2, CAR.h);
+
+export const paintLift: DecorFn = (painter, { now, liftInUse, lift }) => {
   const { R, T } = pen(painter);
   const top = storeyTop(STOREYS - 1);
   const bottom = band(FLOOR.basement).front;
-  const carY = liftCarY ?? band(FLOOR.lobby).walk;
-  const atFloor = nearestFloor(carY);
+  const atFloor = nearestFloor(lift.y);
   // The shaft and its cables.
   R('#1c1926', SHAFT.x, top, SHAFT.w, bottom - top);
   for (const x of [SHAFT.x + 5, SHAFT.x + SHAFT.w - 6]) R('#2c2838', x, top, 1, bottom - top);
-  if (liftInUse) {
+  if (isMoving(liftInUse, lift)) {
     for (let y = top + Math.floor((now * 40) % 8); y < bottom; y += 8) R('#55506a', SHAFT.x + 5, y, 1, 2);
   }
   for (let floor = 0; floor < STOREYS; floor++) {
     const b = band(floor);
-    // Landing, door frame and doors. The doors twitch only where the car is, while the lift is in use.
+    // Landing, door frame and doors. The doors open only where the car stands, while its doors are open.
     R('#6b6880', SHAFT.x, b.back, SHAFT.w, b.front - b.back);
     R('#8d8aa0', SHAFT.x, b.back, SHAFT.w, 1);
     R('#55506a', CAR_X - 1, carTop(floor) - 1, CAR.w + 2, CAR.h + 1);
     R('#8d94a0', CAR_X, carTop(floor), CAR.w, CAR.h);
-    const gap = liftInUse && floor === atFloor ? 1 + (Math.floor(now * 4) % 3) : 0;
-    R('#2a2533', CAR_X + CAR.w / 2 - gap - 0.5, carTop(floor), 1 + gap * 2, CAR.h);
-    R(liftInUse ? LAMP.busy : LAMP.idle, CAR_X + CAR.w / 2 - 2, carTop(floor) - 4, 4, 1);
+    if (lift.doorsOpen && floor === atFloor) gap(painter, carTop(floor));
+    R(lift.calls.has(floor) ? LAMP.busy : LAMP.idle, CAR_X + CAR.w / 2 - 2, carTop(floor) - 4, 4, 1);
     T(FLOOR_NAMES[floor] ?? '', SHAFT.x + SHAFT.w / 2, b.ceil + 8, '#c9c3d6', 'centre');
   }
   // The car.
-  const y = carTopAt(carY);
+  const y = carTopAt(lift.y);
   if (!liftInUse) {
     R('#c9a14a', CAR_X, y, CAR.w, 2);
     return;
   }
   R('#c9a14a', CAR_X - 1, y - 1, CAR.w + 2, CAR.h + 2);
   R('#fff2c4', CAR_X, y, CAR.w, CAR.h);
+  if (lift.doorsOpen) gap(painter, y);
 };

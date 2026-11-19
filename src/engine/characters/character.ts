@@ -80,7 +80,7 @@ export abstract class Character implements StageNode {
     this.look = init.look;
     this.subject = init.subject;
     this.home = init.home;
-    this.walker = new Walker(world.theme.layout, init.start, world.random.int(LANES));
+    this.walker = new Walker(world.theme.layout, init.start, world.random.int(LANES), world.lift);
     this.phase = world.random.range(0, 50);
     this.lastMood = this.moods.mood;
   }
@@ -125,9 +125,14 @@ export abstract class Character implements StageNode {
     return this.walker.inLift;
   }
 
-  /** The walk line the lift is at while this character rides it (no lane offset), else `null`. */
-  get liftLineY(): number | null {
-    return this.walker.liftLineY;
+  /** At a lift landing, waiting for the car. */
+  get waitingForLift(): boolean {
+    return this.walker.waitingForLift;
+  }
+
+  /** Pixels above the walk line it stands at. */
+  get lane(): number {
+    return this.walker.lane;
   }
 
   get seated(): boolean {
@@ -144,7 +149,7 @@ export abstract class Character implements StageNode {
 
   get pose(): Pose {
     if (this.lastMood === 'fainted') return 'faint';
-    if (this.walker.moving) return this.walker.inLift ? 'stand' : 'walk';
+    if (this.walker.moving) return this.walker.inLift || this.walker.waitingForLift ? 'stand' : 'walk';
     return this.activity;
   }
 
@@ -199,6 +204,11 @@ export abstract class Character implements StageNode {
   vanish(): void {
     if (this.visible) this.world.effects.puff(this.x, this.y - PUFF_LIFT);
     this.gone = true;
+  }
+
+  /** Off the stage for good (the cast is dropping it): it leaves the lift at once, so the car does not wait for it. */
+  dispose(): void {
+    this.walker.halt();
   }
 
   /** Walks off stage through the entrance, and is gone when it gets there. */
@@ -292,12 +302,8 @@ export abstract class Character implements StageNode {
 
   update(dt: number): void {
     this.refreshMood();
-    if (!this.visible) return;
-    if (this.lastMood === 'fainted') {
-      // A rider who faints mid-ride still finishes the ride (stop() lets it), then stays put.
-      if (this.walker.inLift) this.walker.step(dt);
-      return;
-    }
+    // A rider who faints mid-ride stays in the car (stop() lets the ride finish) and the lift lets it off.
+    if (!this.visible || this.lastMood === 'fainted') return;
     this.walker.step(dt);
     if (this.walkingOut) {
       if (!this.walker.moving) this.gone = true;
@@ -376,7 +382,7 @@ export abstract class Character implements StageNode {
 
   private hide(announce: boolean): void {
     if (announce && this.shown) this.world.effects.puff(this.x, this.y - PUFF_LIFT);
-    this.walker.stop();
+    this.walker.halt();
     this.shown = false;
     if (this.walkingOut) this.gone = true;
     this.onInterrupted();

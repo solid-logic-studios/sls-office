@@ -115,15 +115,21 @@ that drift.
   basement. It works, in an odd room. Putting it in the lobby needs a contract change (an optional
   front spot), which is out of scope here.
 
-## Amendment: the lift car's position (November 2026)
+## Amendment: one shared lift (November 2026, #68)
 
-The Tower's lift car used to sweep the shaft on its own whenever anyone rode, unrelated to the
-rider. The Engine now says where the car is.
+The lift used to be a stage effect: a rider slid up a bare shaft on its own route. The Engine now
+owns one `Lift` that every rider shares.
 
-- **`StageView.liftCarY`** is additive: the walk line (`Floor.walkY`) the car stands at. It follows
-  the first rider (cast order) while anyone rides; once nobody does it parks at the floor nearest
-  where the last ride left it; `null` until the first ride. `liftInUse` is unchanged. A ride already
-  under way always finishes before a new route starts, so a redirected rider never jumps floors. Themes that do not draw a car (the Office, the boxes)
-  ignore it.
-- **A ride takes `LIFT_SECONDS` per floor travelled**, not a flat time. The Office's rides are all
-  one floor (it has two), so its timing is unchanged; the Tower's longer rides now take longer.
+- **Collective control.** The car travels at `LIFT_SECONDS` (0.9 s) per floor and stops with its
+  doors open for `DWELL_SECONDS` (0.6 s) to let riders off and on. It keeps its direction while any
+  call or destination lies ahead, then reverses, and idles where it is. It holds `CAPACITY` (3).
+- **Riders wait, then ride.** A rider queues at its landing, boards when the car stops there going
+  its way, rides inside the car and steps off at its floor. A redirect mid-ride finishes the ride
+  first, so nobody jumps floors. A ride takes longer the further it goes.
+- **`StageView.lift`** (`y`, `doorsOpen`, `calls`) is additive and replaces the interim
+  `liftCarY`: the walk line the car is at, whether its doors are open, and the floors with someone
+  waiting. **`liftInUse`** now means anyone is waiting or riding.
+- **The Tower** draws the car at `lift.y`, opens the car and landing doors on the car's floor while
+  `doorsOpen`, lights a landing lamp amber for each floor in `calls` and runs the cables only while
+  the car travels. **The Office** has no new art, and its riders now wait for the car.
+- **Known limits:** one car and one shaft, so a busy lab queues at the landing.

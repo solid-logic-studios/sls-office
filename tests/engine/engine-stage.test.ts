@@ -194,7 +194,7 @@ describe('Engine drawing', () => {
       hour: 21.5,
       vaultOpen: false,
       liftInUse: false,
-      liftCarY: null,
+      lift: { doorsOpen: false, calls: new Set() },
       host: { name: 'sls-host' },
     });
     expect(views[0]?.now).toBeCloseTo(1);

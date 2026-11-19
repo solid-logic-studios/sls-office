@@ -5,6 +5,7 @@ import type { Bubbles } from './bubbles.ts';
 import type { Cast } from './cast.ts';
 import type { Effects } from './effects.ts';
 import type { EventBus } from './event-bus.ts';
+import type { Lift } from './lift.ts';
 import type { Random } from './random.ts';
 import type { SetPieces } from './set-pieces.ts';
 
@@ -28,4 +29,6 @@ export interface World extends Clock {
   readonly bubbles: Bubbles;
   readonly breakSpots: BreakSpots;
   readonly setPieces: SetPieces;
+  /** The one lift car every rider shares. */
+  readonly lift: Lift;
 }
