@@ -23,7 +23,7 @@ const flashing = (now: number): boolean => Math.floor(now * 5) % 2 === 1;
 const pad2 = (n: number): string => String(n).padStart(2, '0');
 
 /** Red when it is above 90, amber above 75, otherwise green. */
-const loadColour = (v: number): string => (v > 90 ? '#ff6b5e' : v > 75 ? '#f0b840' : '#5fcf7a');
+export const loadColour = (v: number): string => (v > 90 ? '#ff6b5e' : v > 75 ? '#f0b840' : '#5fcf7a');
 
 const paintPlant: DecorFn = (painter, { now }) => {
   const { R } = pen(painter);

@@ -20,7 +20,7 @@ import { SENSOR_ORDER, TEMP_SENSORS, readingOf } from './temps.ts';
 
 /** Hover text for the set dressing. The Engine handles rooms and characters; the Theme handles the walls. */
 
-const HEALTH_WORDS: Readonly<Record<Health, { status: string; severity: Severity }>> = {
+export const HEALTH_WORDS: Readonly<Record<Health, { status: string; severity: Severity }>> = {
   healthy: { status: 'Healthy', severity: 'ok' },
   starting: { status: 'Starting', severity: 'warn' },
   unhealthy: { status: 'Unhealthy', severity: 'crit' },
@@ -53,7 +53,7 @@ function tempsSentence(temps: Temps | undefined): { text: string; hot: boolean }
   return { text: `. ${parts.join(', ')}`, hot: readings.some(({ reading }) => reading?.band === 'hot') };
 }
 
-function hostTip({ host }: StageView): Tip {
+export function hostTip({ host }: StageView): Tip {
   if (!host) return { title: 'Lab host', detail: HOST_DETAIL, status: 'Waiting on the first Snapshot', severity: 'ok' };
   const { text, hot } = tempsSentence(host.temps);
   return {
@@ -65,6 +65,20 @@ function hostTip({ host }: StageView): Tip {
     severity: hot ? 'crit' : 'warn',
   };
 }
+
+export const vaultTip = ({ vaultOpen }: StageView): Tip => ({
+  title: 'R2 vault',
+  detail:
+    'Off-site Cloudflare R2 bucket. Nightly at 02:30 the Archivist wheels over age-encrypted dumps and volume tars. 30-day bucket lock.',
+  status: vaultOpen ? 'Backup in progress' : 'Locked',
+  severity: 'ok',
+});
+
+export const postgresTip = (stage: StageView): Tip =>
+  cabinetTip(0, 'PostgreSQL 16', 'Filing cabinet on sls-data. One database and role per Site instance.', stage);
+
+export const mysqlTip = (stage: StageView): Tip =>
+  cabinetTip(1, 'MySQL 8.4', 'Filing cabinet on sls-data. WordPress sites file their posts here.', stage);
 
 export const HOTSPOTS: readonly Hotspot[] = [
   {
@@ -86,26 +100,9 @@ export const HOTSPOTS: readonly Hotspot[] = [
       severity: 'ok',
     }),
   },
-  {
-    rect: VAULT,
-    tip: ({ vaultOpen }) => ({
-      title: 'R2 vault',
-      detail:
-        'Off-site Cloudflare R2 bucket. Nightly at 02:30 the Archivist wheels over age-encrypted dumps and volume tars. 30-day bucket lock.',
-      status: vaultOpen ? 'Backup in progress' : 'Locked',
-      severity: 'ok',
-    }),
-  },
-  {
-    rect: POSTGRES_CABINET,
-    tip: (stage) =>
-      cabinetTip(0, 'PostgreSQL 16', 'Filing cabinet on sls-data. One database and role per Site instance.', stage),
-  },
-  {
-    rect: MYSQL_CABINET,
-    tip: (stage) =>
-      cabinetTip(1, 'MySQL 8.4', 'Filing cabinet on sls-data. WordPress sites file their posts here.', stage),
-  },
+  { rect: VAULT, tip: vaultTip },
+  { rect: POSTGRES_CABINET, tip: postgresTip },
+  { rect: MYSQL_CABINET, tip: mysqlTip },
   {
     rect: HEALTHCHECKS,
     tip: ({ findings }) => ({

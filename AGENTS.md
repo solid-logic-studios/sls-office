@@ -23,7 +23,8 @@ Apply in this order of precedence:
 The common recipes, plus any change that must touch several places at once.
 
 - **Add a Theme:** add a module under `src/themes/<id>/` that exports a `Theme`
-  (`src/contract/theme.ts`), importing only from `src/contract/`, then add it to `THEMES` in
+  (`src/contract/theme.ts`), importing only from `src/contract/` (or a sibling Theme's data, as
+  `src/themes/tower/` does from `office/`; see ADR 0003), then add it to `THEMES` in
   `src/themes/index.ts`. Copy `src/themes/boxes/` for the smallest working one. If it needs an Engine
   change, the contract is missing something: see
   [ADR 0003](docs/adr/0003-engine-and-theme-contract.md).
