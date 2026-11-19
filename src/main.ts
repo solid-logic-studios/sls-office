@@ -15,7 +15,7 @@ import { initialVolume, saveVolume } from './page/audio/volume-preference.ts';
 import { loadVoiceManifest } from './page/audio/voice-manifest.ts';
 import { WebSpeechOutput } from './page/audio/web-speech-output.ts';
 import { localHour } from './page/clock.ts';
-import { compact, COMPACT_QUERY } from './page/compact.ts';
+import { compactMedia, isCompact } from './page/compact.ts';
 import { placeControls } from './page/controls-sheet.ts';
 import { DetailSheet } from './page/detail-sheet.ts';
 import { sheetOf } from './page/sheet.ts';
@@ -66,10 +66,17 @@ const roster = element('roster', HTMLUListElement);
 const legend = element('legend', HTMLUListElement);
 const pause = element('pause', HTMLButtonElement);
 
+function themeLabel(): HTMLElement {
+  const label = element('theme', HTMLSelectElement).closest('label');
+  if (label === null) throw new Error('Missing the theme label');
+  return label;
+}
+
 const engine = new Engine(firstTheme, { random: Math.random });
 const stage = new StageCanvas(element('scroll', HTMLDivElement), canvas, engine.layout);
 const tooltip = new TooltipView(element('tip', HTMLDivElement), element('stage', HTMLElement));
-const strip = new StatusStrip(element('strip', HTMLDivElement));
+const stripEl = element('strip', HTMLDivElement);
+const strip = new StatusStrip(stripEl);
 const log = new OfficeLog(element('log', HTMLOListElement));
 
 /** The compact page chrome. Above 480 px CSS keeps it hidden and none of it is used. */
@@ -185,8 +192,8 @@ menu.addEventListener('click', () => {
   controlsSheet.open();
 });
 placeControls(
-  window.matchMedia(COMPACT_QUERY),
-  element('strip', HTMLDivElement),
+  compactMedia,
+  stripEl,
   element('controls-body', HTMLDivElement),
   [pause, element('sound', HTMLButtonElement), element('music', HTMLButtonElement), themeLabel()],
   () => {
@@ -195,16 +202,16 @@ placeControls(
   },
 );
 
-function themeLabel(): HTMLElement {
-  const label = element('theme', HTMLSelectElement).closest('label');
-  if (label === null) throw new Error('Missing the theme label');
-  return label;
-}
 element('zoom-in', HTMLButtonElement).addEventListener('click', () => stage.zoomIn());
 element('zoom-out', HTMLButtonElement).addEventListener('click', () => stage.zoomOut());
 
+// Entering compact leaves no hover to dismiss the tooltip, so it is hidden as the breakpoint is crossed.
+compactMedia.addEventListener('change', (event) => {
+  if (event.matches) tooltip.hide();
+});
+
 stage.onPoint((point) => {
-  if (compact) return;
+  if (isCompact()) return;
   const tip = point === null ? null : engine.tipAt(point.x, point.y);
   if (point === null || tip === null) tooltip.hide();
   else tooltip.show(tip, point);
@@ -212,7 +219,7 @@ stage.onPoint((point) => {
 
 /** A tap on empty stage speaks the status; anything with a tooltip (a character, hotspot or room) is unchanged. */
 stage.onTap((point) => {
-  if (compact) {
+  if (isCompact()) {
     // A finger is wider than a character, so a miss is retried on a small ring around the tap.
     const tip = probeWithSlop((x, y) => engine.tipAt(x, y), point.x, point.y, stage.cssPerArtPixel);
     if (tip !== null) {
@@ -319,6 +326,7 @@ function snapshotSource(): HttpSnapshotSource | Simulator {
   const controls = mountControlRoom(container, simulator, {
     onHour: (value) => {
       hourOverride = value;
+      bar.setClock(hour());
     },
     extra: [soundPanel.element],
   });

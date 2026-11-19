@@ -13,11 +13,8 @@ describe('troubleRows', () => {
     expect(troubleRows([], false)).toEqual({ rows: [], more: 0 });
   });
 
-  it('puts critical before warning, keeping order within each', () => {
-    const { rows } = troubleRows(
-      [issue('w1', 'warn'), issue('c1', 'crit'), issue('w2', 'warn'), issue('c2', 'crit')],
-      false,
-    );
+  it('keeps the order it is given, which verdictOf has already made critical first', () => {
+    const { rows } = troubleRows([issue('c1', 'crit'), issue('c2', 'crit'), issue('w1', 'warn')], false);
     expect(texts(rows)).toEqual(['c1', 'c2', 'w1']);
   });
 

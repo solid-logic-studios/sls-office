@@ -1,9 +1,8 @@
 import { formatHour } from './clock.ts';
-import type { Verdict } from './verdict.ts';
+import { plural, type Verdict } from './verdict.ts';
 
 /** What the bar knows about the Snapshot feed. `live` is a fresh Snapshot; the rest never show counts. */
 export type BarState =
-  | { kind: 'loading' }
   | { kind: 'live'; verdict: Verdict }
   | { kind: 'stale'; lastHeard: Date | null }
   | { kind: 'no-signal'; lastGood: Date | null };
@@ -17,22 +16,17 @@ export interface BarView {
   counts: readonly string[];
 }
 
-export const LOADING_TEXT = 'Waking the office…';
-
 /** Read from the Date directly: going through a fractional hour can floor 14:02 down to 14:01. */
 const clockTime = (when: Date): string =>
   `${String(when.getHours()).padStart(2, '0')}:${String(when.getMinutes()).padStart(2, '0')}`;
-const plural = (n: number, noun: string): string => `${n} ${noun}${n === 1 ? '' : 's'}`;
 
 const HEADLINES = { ok: 'ALL CALM', watch: 'WATCH', trouble: 'TROUBLE' } as const;
 const TONES = { ok: 'ok', watch: 'warn', trouble: 'crit' } as const;
 
 function countsOf(verdict: Verdict): string[] {
-  const counts = [
-    `VMs ${verdict.vmsUp}/${verdict.vmsTotal}`,
-    `Workloads ${verdict.workloadsHealthy}/${verdict.workloadsTotal}`,
-    `${verdict.crit}C ${verdict.warn}W`,
-  ];
+  const counts = [`VMs ${verdict.vmsUp}/${verdict.vmsTotal}`];
+  if (verdict.workloadsTotal > 0) counts.push(`Workloads ${verdict.workloadsHealthy}/${verdict.workloadsTotal}`);
+  counts.push(`Findings ${verdict.crit}C ${verdict.warn}W`);
   if (verdict.pods > 0) counts.push(plural(verdict.pods, 'pod'));
   return counts;
 }
@@ -40,8 +34,6 @@ function countsOf(verdict: Verdict): string[] {
 /** The bar's words and tone for each freshness state. Never hides trouble, even with no VMs reported. */
 export function barView(state: BarState): BarView {
   switch (state.kind) {
-    case 'loading':
-      return { headline: LOADING_TEXT, tone: 'neutral', counts: [] };
     case 'stale':
       return {
         headline: state.lastHeard === null ? 'STALE' : `STALE, last heard ${clockTime(state.lastHeard)}`,

@@ -22,7 +22,7 @@ describe('barView', () => {
     expect(barView({ kind: 'live', verdict: verdict() })).toEqual({
       headline: 'ALL CALM',
       tone: 'ok',
-      counts: ['VMs 4/4', 'Workloads 17/17', '0C 1W'],
+      counts: ['VMs 4/4', 'Workloads 17/17', 'Findings 0C 1W'],
     });
   });
 
@@ -42,8 +42,9 @@ describe('barView', () => {
     });
   });
 
-  it('is neutral and counts nothing while loading', () => {
-    expect(barView({ kind: 'loading' })).toEqual({ headline: 'Waking the office…', tone: 'neutral', counts: [] });
+  it('omits the workloads count when there are no workloads', () => {
+    const sparse = verdict({ workloadsHealthy: 0, workloadsTotal: 0 });
+    expect(barView({ kind: 'live', verdict: sparse }).counts).toEqual(['VMs 4/4', 'Findings 0C 1W']);
   });
 
   it('says stale with the last heard time and blanks the counts', () => {

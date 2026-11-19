@@ -3,9 +3,12 @@ export function localHour(now: Date): number {
   return now.getHours() + now.getMinutes() / 60;
 }
 
-/** A fractional hour as `HH:MM`, with the minutes floored. */
+const MINUTES_PER_DAY = 24 * 60;
+
+/** A fractional hour as `HH:MM`, rounded to the nearest minute (so 14 + 2/60 is 14:02) and wrapping 24:00 to 00:00. */
 export function formatHour(hour: number): string {
-  const whole = Math.floor(hour);
-  const minutes = Math.floor((hour - whole) * 60);
+  const total = Math.round(hour * 60) % MINUTES_PER_DAY;
+  const whole = Math.floor(total / 60);
+  const minutes = total % 60;
   return `${String(whole).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 }

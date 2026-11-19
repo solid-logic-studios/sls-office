@@ -21,8 +21,8 @@ export class DetailSheet {
 
   open(tip: Tip): void {
     const content = renderTip(tip);
-    // The first node is the title; it names the dialog (aria-labelledby).
-    content[0]?.setAttribute('id', TITLE_ID);
+    // The title names the dialog (aria-labelledby).
+    content.find((node) => node.tagName === 'H3')?.setAttribute('id', TITLE_ID);
     this.body.replaceChildren(...content);
     this.sheet.open();
   }

@@ -28,7 +28,7 @@ export interface Verdict {
   issues: readonly Issue[];
 }
 
-const plural = (n: number, noun: string): string => `${n} ${noun}${n === 1 ? '' : 's'}`;
+export const plural = (n: number, noun: string): string => `${n} ${noun}${n === 1 ? '' : 's'}`;
 
 function workloadDetail(vm: Vm, workload: Workload): string {
   switch (workload.kind) {
@@ -54,36 +54,18 @@ function issueFor(subject: LabSubject): Issue | null {
   const base = { cpu: source.cpu, mem: source.mem };
   const detail = isVm ? `${subject.vm.role} VM` : workloadDetail(subject.vm, subject.workload);
 
-  if (isVm && !subject.vm.up) {
-    return {
-      severity: 'crit',
-      text: `${name} is down`,
-      tip: { title: name, detail, ...base, status: 'offline', severity: 'crit' },
-    };
-  }
+  const issue = (severity: 'crit' | 'warn', text: string, status: string): Issue => ({
+    severity,
+    text,
+    tip: { title: name, detail, ...base, status, severity },
+  });
+
+  if (isVm && !subject.vm.up) return issue('crit', `${name} is down`, 'offline');
   const health = isVm ? null : healthOf(subject.workload);
-  if (health === 'unhealthy' || health === 'down') {
-    return {
-      severity: 'crit',
-      text: `${name} ${health}`,
-      tip: { title: name, detail, ...base, status: health, severity: 'crit' },
-    };
-  }
-  if (health === 'starting') {
-    return {
-      severity: 'warn',
-      text: `${name} starting`,
-      tip: { title: name, detail, ...base, status: health, severity: 'warn' },
-    };
-  }
+  if (health === 'unhealthy' || health === 'down') return issue('crit', `${name} ${health}`, health);
+  if (health === 'starting') return issue('warn', `${name} starting`, health);
   const mood = steadyMood(vitals);
-  if (mood === 'stressed' || mood === 'swamped') {
-    return {
-      severity: 'warn',
-      text: `${name} is ${mood}`,
-      tip: { title: name, detail, ...base, status: mood, severity: 'warn' },
-    };
-  }
+  if (mood === 'stressed' || mood === 'swamped') return issue('warn', `${name} is ${mood}`, mood);
   return null;
 }
 
@@ -150,7 +132,7 @@ export function verdictOf(snapshot: Snapshot): Verdict {
 function findingsIssue(snapshot: Snapshot, severity: 'crit' | 'warn', count: number): Issue {
   const { host } = snapshot;
   const word = severity === 'crit' ? 'critical' : 'warning';
-  const text = `${plural(count, `${word} finding`)}`;
+  const text = plural(count, `${word} finding`);
   return {
     severity,
     text,

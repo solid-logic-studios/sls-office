@@ -60,7 +60,7 @@ const SWAMPED = new SteadyState('swamped');
 const BREAK = new SteadyState('break');
 const ABSENT = new AbsentState();
 
-type SteadyMood = Exclude<Mood, 'fainted' | 'absent'>;
+export type SteadyMood = Exclude<Mood, 'fainted' | 'absent'>;
 
 /** The steady mood for a present character. A break holds until CPU climbs back to `BREAK_ENDS_AT_CPU`. */
 function classify(vitals: Vitals, onBreak: boolean): SteadyMood {
@@ -85,7 +85,7 @@ function resolve(vitals: Vitals, onBreak: boolean): MoodState {
  * The mood these vitals settle at, with no memory: `absent` when not present, else the steady rule
  * without break hysteresis. For callers that need a verdict on a bare VM or workload, not a character.
  */
-export function steadyMood(vitals: Vitals): Mood {
+export function steadyMood(vitals: Vitals): SteadyMood | 'absent' {
   return vitals.present ? classify(vitals, false) : 'absent';
 }
 

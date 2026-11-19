@@ -7,8 +7,14 @@ describe('formatHour', () => {
     expect(formatHour(2.5)).toBe('02:30');
   });
 
-  it('floors the minutes rather than rounding up to the next hour', () => {
+  it('rounds to the nearest minute, so floating error cannot lose one', () => {
+    expect(formatHour(14 + 2 / 60)).toBe('14:02');
     expect(formatHour(23.99)).toBe('23:59');
+  });
+
+  it('wraps a time that rounds up to midnight to 00:00', () => {
+    expect(formatHour(23 + 59.9 / 60)).toBe('00:00');
+    expect(formatHour(24)).toBe('00:00');
   });
 });
 

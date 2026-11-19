@@ -8,11 +8,10 @@ export interface TroubleRows {
   more: number;
 }
 
-/** Critical before warning (Snapshot order within each), capped at three unless expanded. */
+/** `issues` arrive already ordered (critical first, from `verdictOf`); capped at three unless expanded. */
 export function troubleRows(issues: readonly Issue[], expanded: boolean): TroubleRows {
-  const ordered = [...issues].sort((a, b) => Number(b.severity === 'crit') - Number(a.severity === 'crit'));
-  if (expanded || ordered.length <= MAX_TROUBLE_ROWS) return { rows: ordered, more: 0 };
-  return { rows: ordered.slice(0, MAX_TROUBLE_ROWS), more: ordered.length - MAX_TROUBLE_ROWS };
+  if (expanded || issues.length <= MAX_TROUBLE_ROWS) return { rows: issues, more: 0 };
+  return { rows: issues.slice(0, MAX_TROUBLE_ROWS), more: issues.length - MAX_TROUBLE_ROWS };
 }
 
 /** The rows under the verdict bar. Hidden when there is nothing to list. */
@@ -39,13 +38,13 @@ export class TroubleList {
     const key = JSON.stringify([rows.map((row) => [row.severity, row.text]), more, this.expanded]);
     if (key === this.shown) return;
     this.shown = key;
-    const items = rows.map((issue) => this.row(issue));
+    const items = rows.map((issue, index) => this.row(issue, index));
     if (more > 0) items.push(this.toggle(`+${more} more`));
     else if (this.expanded) items.push(this.toggle('Show fewer'));
     this.root.replaceChildren(...items);
   }
 
-  private row(issue: Issue): HTMLLIElement {
+  private row(issue: Issue, index: number): HTMLLIElement {
     const button = this.button('trow');
     button.dataset.severity = issue.severity;
     const dot = document.createElement('span');
@@ -55,7 +54,11 @@ export class TroubleList {
     text.className = 'ttext';
     text.textContent = issue.text;
     button.append(dot, text);
-    button.addEventListener('click', () => this.onSelect(issue));
+    // An unchanged row is not rebuilt, so the Issue is looked up at click time to show the latest figures.
+    button.addEventListener('click', () => {
+      const current = troubleRows(this.issues, this.expanded).rows[index];
+      if (current !== undefined) this.onSelect(current);
+    });
     return this.item(button);
   }
 
