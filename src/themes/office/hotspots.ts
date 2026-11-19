@@ -16,7 +16,7 @@ import {
   VAULT,
 } from './boards.ts';
 import { SPORT_NAMES, scoreAt } from './scoreboard.ts';
-import { tempBand, type TempSensor } from './temps.ts';
+import { SENSOR_ORDER, TEMP_SENSORS, readingOf } from './temps.ts';
 
 /** Hover text for the set dressing. The Engine handles rooms and characters; the Theme handles the walls. */
 
@@ -42,29 +42,28 @@ function cabinetTip(index: number, title: string, detail: string, stage: StageVi
 const HOST_DETAIL =
   'Lab host: the building itself. Proxmox VE 9.2 on an OptiPlex 7070 Micro. One NVMe is worn (acknowledged), replacement planned for January 2027.';
 
-const TEMP_NAMES: Readonly<Record<TempSensor, string>> = { cpu: 'CPU', chipset: 'chipset', nvme: 'NVMe' };
-
-/** The sentence spelling out the readings, and whether any present one is hot. */
-function tempsSentence(temps: Temps): { text: string; hot: boolean } {
-  const sensors = Object.keys(TEMP_NAMES) as TempSensor[];
-  const parts = sensors.map((sensor) => {
-    const reading = temps[sensor];
-    return typeof reading === 'number' ? `${TEMP_NAMES[sensor]} ${reading} °C` : `${TEMP_NAMES[sensor]} unreadable`;
-  });
-  const hot = sensors.some((sensor) => {
-    const reading = temps[sensor];
-    return typeof reading === 'number' && tempBand(sensor, reading) === 'hot';
-  });
-  return { text: parts.join(', '), hot };
+/** The sentence spelling out the readings, e.g. `. CPU 71 °C, chipset unreadable, NVMe 56 °C`; empty with no temps. */
+function tempsSentence(temps: Temps | undefined): { text: string; hot: boolean } {
+  if (!temps) return { text: '', hot: false };
+  const readings = SENSOR_ORDER.map((sensor) => ({
+    name: TEMP_SENSORS[sensor].name,
+    reading: readingOf(temps, sensor),
+  }));
+  const parts = readings.map(({ name, reading }) => (reading ? `${name} ${reading.celsius} °C` : `${name} unreadable`));
+  return { text: `. ${parts.join(', ')}`, hot: readings.some(({ reading }) => reading?.band === 'hot') };
 }
 
 function hostTip({ host }: StageView): Tip {
   if (!host) return { title: 'Lab host', detail: HOST_DETAIL, status: 'Waiting on the first Snapshot', severity: 'ok' };
-  const status = 'Running. NVMe SMART warning acknowledged';
-  const tip = { title: host.name, detail: HOST_DETAIL, cpu: host.cpu, mem: host.mem };
-  if (!host.temps) return { ...tip, status, severity: 'warn' };
   const { text, hot } = tempsSentence(host.temps);
-  return { ...tip, status: `${status}. ${text}`, severity: hot ? 'crit' : 'warn' };
+  return {
+    title: host.name,
+    detail: HOST_DETAIL,
+    cpu: host.cpu,
+    mem: host.mem,
+    status: `Running. NVMe SMART warning acknowledged${text}`,
+    severity: hot ? 'crit' : 'warn',
+  };
 }
 
 export const HOTSPOTS: readonly Hotspot[] = [

@@ -7,6 +7,7 @@
  * Conventions:
  * - Every `cpu` and `mem` is a percentage from 0 to 100. `mem` is the percentage of the memory
  *   allocated to that VM (or to the host, for `host.mem`).
+ * - Every temperature is in whole degrees Celsius, and `null` when the sensor was unreadable.
  * - Every timestamp is ISO 8601 (RFC 3339 date-time).
  */
 

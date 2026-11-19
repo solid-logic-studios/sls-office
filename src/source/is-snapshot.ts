@@ -93,8 +93,9 @@ function isEvent(value: unknown): value is LabEvent {
 /**
  * Lightweight runtime guard for the browser. It checks the structure the Engine and the Themes read:
  * the top-level shape, the host, its findings and its optional temps (each reading a number or null),
- * every VM and its role, every workload by kind, and every event by kind. Deliberately NOT checked: numeric ranges, the `health` vocabulary, timestamp
- * formats and extra properties. That is the generated JSON Schema's job (ajv is not shipped to the browser).
+ * every VM and its role, every workload by kind, and every event by kind. Deliberately NOT checked: numeric
+ * ranges, the `health` vocabulary, timestamp formats and extra properties. That is the generated JSON Schema's
+ * job (ajv is not shipped to the browser).
  */
 export function isSnapshot(value: unknown): value is Snapshot {
   return (

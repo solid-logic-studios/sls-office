@@ -401,6 +401,12 @@ describe('officeTheme signs', () => {
   });
 });
 
+function tipFor(title: string, view: StageView) {
+  const tip = officeTheme.hotspots.map((h) => h.tip(view)).find((t) => t.title === title);
+  if (!tip) throw new Error(`no hotspot titled ${title}`);
+  return tip;
+}
+
 describe('tempBand', () => {
   it.each<[TempSensor, number, TempBand]>([
     ['cpu', 69, 'cool'],
@@ -449,7 +455,7 @@ describe('officeTheme host temperatures', () => {
 
   it('draws a hot reading in the hot colour', () => {
     const painter = paintBack(hostWith({ cpu: 90, chipset: 67, nvme: 56 }));
-    expect(textCalls(painter, '90').map((c) => c.colour)).toEqual(['#ff6b5e']);
+    expect(textCalls(painter, '90').map((c) => c.colour)).toEqual([TEMP_COLOURS.hot]);
   });
 
   it('draws -- for a null or missing reading and never 0', () => {
@@ -466,6 +472,11 @@ describe('officeTheme host temperatures', () => {
     expect(textCalls(partial, '0')).toHaveLength(0);
   });
 
+  it('rounds a stray non-integer reading so it fits its column', () => {
+    const painter = paintBack(hostWith({ cpu: 71.6 }));
+    expect(textCalls(painter, '72').map((c) => c.colour)).toEqual([TEMP_COLOURS.warm]);
+  });
+
   it('draws no panel and keeps all 16 rack LED columns without temps', () => {
     const painter = paintBack(hostWith());
     expect(textCalls(painter, 'PCH')).toHaveLength(0);
@@ -473,23 +484,17 @@ describe('officeTheme host temperatures', () => {
     expect(ledCount(painter)).toBe(16);
   });
 
-  const hostStatus = (view: StageView): { status: string; severity: string } => {
-    const tip = officeTheme.hotspots.map((h) => h.tip(view)).find((t) => t.title === 'pve');
-    if (!tip) throw new Error('no host tip');
-    return tip;
-  };
-
   it('spells the readings out in the host tooltip', () => {
-    expect(hostStatus(hostWith({ cpu: 71, chipset: 67, nvme: 56 }))).toMatchObject({
+    expect(tipFor('pve', hostWith({ cpu: 71, chipset: 67, nvme: 56 }))).toMatchObject({
       status: expect.stringContaining('CPU 71 °C, chipset 67 °C, NVMe 56 °C'),
       severity: 'warn',
     });
-    expect(hostStatus(hostWith({ cpu: 71, chipset: null })).status).toContain('chipset unreadable, NVMe unreadable');
+    expect(tipFor('pve', hostWith({ cpu: 71, chipset: null })).status).toContain('chipset unreadable, NVMe unreadable');
   });
 
   it('turns the host tooltip critical when a reading is hot, and leaves it alone without temps', () => {
-    expect(hostStatus(hostWith({ cpu: 71, chipset: 67, nvme: 75 })).severity).toBe('crit');
-    expect(hostStatus(hostWith())).toMatchObject({
+    expect(tipFor('pve', hostWith({ cpu: 71, chipset: 67, nvme: 75 })).severity).toBe('crit');
+    expect(tipFor('pve', hostWith())).toMatchObject({
       status: 'Running. NVMe SMART warning acknowledged',
       severity: 'warn',
     });
@@ -497,12 +502,6 @@ describe('officeTheme host temperatures', () => {
 });
 
 describe('officeTheme hotspots', () => {
-  const tipFor = (title: string, view: StageView) => {
-    const tip = officeTheme.hotspots.map((h) => h.tip(view)).find((t) => t.title === title);
-    if (!tip) throw new Error(`no hotspot titled ${title}`);
-    return tip;
-  };
-
   it('reads each cabinet from the data VM engine workloads, in order', () => {
     const engines = [
       service('engine', 'postgres', { cpu: 12, mem: 34 }),
