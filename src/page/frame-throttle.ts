@@ -17,31 +17,32 @@ const TOLERANCE_MS = 4;
  */
 export function throttleFrames(inner: FramePair, intervalMs: number): FramePair {
   let lastMs: number | null = null;
-  let issued = 0;
-  /** The wrapper handle awaiting a frame, and the underlying handle that will deliver it. */
-  let pending: { readonly handle: number; underlying: number } | null = null;
+  /**
+   * `Loop` holds one request at a time, so one slot is enough. `handle` is the underlying handle of the
+   * first request, which is unique and stays the wrapper's handle; `underlying` follows each re-request.
+   */
+  let slot: { readonly handle: number; underlying: number } | null = null;
 
   const requestFrame: RequestFrame = (callback) => {
-    issued += 1;
-    const waiting = { handle: issued, underlying: 0 };
-    pending = waiting;
     const onFrame = (timeMs: number): void => {
       if (lastMs !== null && timeMs - lastMs < intervalMs - TOLERANCE_MS) {
-        waiting.underlying = inner.requestFrame(onFrame);
+        current.underlying = inner.requestFrame(onFrame);
         return;
       }
       lastMs = timeMs;
-      pending = null;
+      slot = null;
       callback(timeMs);
     };
-    waiting.underlying = inner.requestFrame(onFrame);
-    return waiting.handle;
+    const first = inner.requestFrame(onFrame);
+    const current = { handle: first, underlying: first };
+    slot = current;
+    return first;
   };
 
   const cancelFrame: CancelFrame = (handle) => {
-    if (pending === null || pending.handle !== handle) return;
-    inner.cancelFrame(pending.underlying);
-    pending = null;
+    if (slot === null || slot.handle !== handle) return;
+    inner.cancelFrame(slot.underlying);
+    slot = null;
   };
 
   return { requestFrame, cancelFrame };

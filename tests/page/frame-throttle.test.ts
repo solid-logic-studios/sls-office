@@ -39,13 +39,19 @@ function display(periodMs: number) {
 
 const INTERVAL_MS = 50;
 
+/** A fake display with a throttle over it. */
+function throttledDisplay(periodMs: number) {
+  const screen = display(periodMs);
+  const throttled = throttleFrames({ requestFrame: screen.request, cancelFrame: screen.cancel }, INTERVAL_MS);
+  return { screen, throttled };
+}
+
 describe.each([
   ['60 Hz', 1000 / 60],
   ['120 Hz', 1000 / 120],
 ])('the frame throttle on a %s display', (_name, periodMs) => {
   it('delivers about 20 frames a second', () => {
-    const screen = display(periodMs);
-    const throttled = throttleFrames({ requestFrame: screen.request, cancelFrame: screen.cancel }, INTERVAL_MS);
+    const { screen, throttled } = throttledDisplay(periodMs);
     let calls = 0;
     const onFrame = (): void => {
       calls += 1;
@@ -59,8 +65,7 @@ describe.each([
   });
 
   it('keeps a Loop dt summing to real time', () => {
-    const screen = display(periodMs);
-    const throttled = throttleFrames({ requestFrame: screen.request, cancelFrame: screen.cancel }, INTERVAL_MS);
+    const { screen, throttled } = throttledDisplay(periodMs);
     let total = 0;
     let frames = 0;
     const loop = new Loop(throttled.requestFrame, throttled.cancelFrame, (dt) => {
@@ -77,8 +82,7 @@ describe.each([
 
 describe('cancelling a throttled frame', () => {
   it('cancels whichever underlying frame is pending, so no further callback runs', () => {
-    const screen = display(1000 / 60);
-    const throttled = throttleFrames({ requestFrame: screen.request, cancelFrame: screen.cancel }, INTERVAL_MS);
+    const { screen, throttled } = throttledDisplay(1000 / 60);
     let calls = 0;
     let handle = 0;
     const onFrame = (): void => {
@@ -97,8 +101,7 @@ describe('cancelling a throttled frame', () => {
   });
 
   it('stops a Loop', () => {
-    const screen = display(1000 / 60);
-    const throttled = throttleFrames({ requestFrame: screen.request, cancelFrame: screen.cancel }, INTERVAL_MS);
+    const { screen, throttled } = throttledDisplay(1000 / 60);
     let frames = 0;
     const loop = new Loop(throttled.requestFrame, throttled.cancelFrame, () => {
       frames += 1;
@@ -109,5 +112,26 @@ describe('cancelling a throttled frame', () => {
     loop.stop();
     screen.run(1);
     expect(frames).toBe(before);
+  });
+
+  it('restarts a Loop after a long stop with no jump, back at about 20 frames a second', () => {
+    const { screen, throttled } = throttledDisplay(1000 / 60);
+    const dts: number[] = [];
+    const loop = new Loop(throttled.requestFrame, throttled.cancelFrame, (dt) => dts.push(dt));
+    loop.start();
+    screen.run(1);
+    loop.stop();
+    // The display keeps ticking for 5 s while the loop is stopped; nothing is delivered.
+    const stoppedAt = dts.length;
+    screen.run(6);
+    expect(dts.length).toBe(stoppedAt);
+    loop.start();
+    const before = dts.length;
+    const restartedAt = screen.run(7);
+    expect(dts[before]).toBe(0);
+    const resumed = dts.slice(before);
+    expect(Math.max(...resumed)).toBeLessThan(0.1);
+    expect(resumed.length / (restartedAt / 1000 - 6)).toBeGreaterThanOrEqual(19);
+    expect(resumed.length / (restartedAt / 1000 - 6)).toBeLessThanOrEqual(21);
   });
 });

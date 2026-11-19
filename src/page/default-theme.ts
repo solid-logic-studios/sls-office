@@ -16,6 +16,6 @@ export function chooseTheme(
   compact: boolean,
   defaults: ThemeDefaults,
 ): Theme {
-  const requested = requestedId === null ? undefined : themes.find((theme) => theme.id === requestedId);
+  const requested = themes.find((theme) => theme.id === requestedId);
   return requested ?? (compact ? defaults.compact : defaults.wide);
 }

@@ -14,7 +14,11 @@ function forcedMute(query: URLSearchParams): boolean {
  * Storage may be missing or may throw (private windows, blocked site data); either way it reads as
  * `defaultMuted`.
  */
-export function initialMuted(query: URLSearchParams, storage: MuteStorage | null, defaultMuted: boolean): boolean {
+export function initialMuted(
+  query: URLSearchParams,
+  storage: MuteStorage | null,
+  { defaultMuted }: { readonly defaultMuted: boolean },
+): boolean {
   if (forcedMute(query)) return true;
   try {
     const saved = storage?.getItem(MUTE_KEY);

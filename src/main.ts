@@ -15,6 +15,7 @@ import { initialVolume, saveVolume } from './page/audio/volume-preference.ts';
 import { loadVoiceManifest } from './page/audio/voice-manifest.ts';
 import { WebSpeechOutput } from './page/audio/web-speech-output.ts';
 import { chooseTheme } from './page/default-theme.ts';
+import { stopWhileOffScreen } from './page/offscreen-gate.ts';
 import { throttleFrames } from './page/frame-throttle.ts';
 import { localHour } from './page/clock.ts';
 import { compactMedia, isCompact } from './page/compact.ts';
@@ -64,8 +65,6 @@ const simulated = query.has('sim');
 /** Read once: rotating a phone later does not swap the Theme, the sound default or the frame rate. */
 const compactAtLoad = isCompact();
 const firstTheme = chooseTheme(THEMES, query.get('theme'), compactAtLoad, { wide: officeTheme, compact: towerTheme });
-/** A phone draws about 20 frames a second: the Office is slow-moving and it saves battery. */
-const COMPACT_FRAME_MS = 50;
 
 const canvas = element('office', HTMLCanvasElement);
 const waking = element('waking', HTMLParagraphElement);
@@ -138,7 +137,7 @@ const soundboard = new Soundboard(engine, audio, {
 
 const diary = new OfficeDiary(engine.bus, () => Date.now());
 const standup = new Standup(engine, soundboard, diary, new StandupSchedule(storage));
-soundboard.muted = initialMuted(query, storage, compactAtLoad);
+soundboard.muted = initialMuted(query, storage, { defaultMuted: compactAtLoad });
 /** The saved volume applies everywhere; only the slider that sets it is `?sim`-only. */
 soundboard.volume = initialVolume(storage);
 mountSpeakerButton(element('sound', HTMLButtonElement), {
@@ -170,13 +169,15 @@ mountMusicButton(element('music', HTMLButtonElement), {
   onToggle: (on) => saveMusic(storage, on),
 });
 
+/** A phone draws about 20 frames a second: the Office is slow-moving and it saves battery. */
+const COMPACT_FRAME_MS = 50;
 const browserFrames = {
   requestFrame: (callback: (timeMs: number) => void): number => window.requestAnimationFrame(callback),
   cancelFrame: (handle: number): void => window.cancelAnimationFrame(handle),
 };
-const frames = compactAtLoad ? throttleFrames(browserFrames, COMPACT_FRAME_MS) : browserFrames;
+const framePair = compactAtLoad ? throttleFrames(browserFrames, COMPACT_FRAME_MS) : browserFrames;
 
-const loop = new Loop(frames.requestFrame, frames.cancelFrame, (dt) => {
+const loop = new Loop(framePair.requestFrame, framePair.cancelFrame, (dt) => {
   if (!awake) return;
   engine.setHour(hour());
   engine.update(dt);
@@ -348,12 +349,10 @@ if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) setPaused(tru
 bar.setClock(hour());
 loop.start();
 
-/** Nothing is drawn while the canvas is scrolled out of view; polling, the bar and the list carry on. `start` resets the clock, so there is no jump. */
-if (typeof IntersectionObserver !== 'undefined') {
-  new IntersectionObserver((entries) => {
-    const latest = entries[entries.length - 1];
-    if (latest === undefined) return;
-    if (latest.isIntersecting) loop.start();
-    else loop.stop();
-  }).observe(canvas);
+/**
+ * On a phone nothing is drawn while the canvas is scrolled out of view (or hidden while the office wakes);
+ * polling, the bar and the list carry on. `start` resets the clock, so there is no jump.
+ */
+if (compactAtLoad && typeof IntersectionObserver !== 'undefined') {
+  stopWhileOffScreen(canvas, loop, (callback) => new IntersectionObserver(callback));
 }
