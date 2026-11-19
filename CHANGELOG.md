@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 19 November 2026
+
 ### Added
 
 - Compact page mode at 480 CSS px wide or less: a sticky verdict bar (all calm, watch or trouble, with VM and workload counts and the last heard time when stale), a trouble list, a bottom detail sheet in place of the hover tooltip (tap a character, hotspot or row, with a little slop for small characters), a controls sheet behind the menu button, and 44 px touch targets (#60).
@@ -71,7 +73,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Minimal VM moods page with a "Waking the office…" state when the snapshot is missing or stale.
 - Static image `ghcr.io/solid-logic-studios/sls-office` built by CI.
 
-[Unreleased]: https://github.com/solid-logic-studios/sls-office/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/solid-logic-studios/sls-office/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/solid-logic-studios/sls-office/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/solid-logic-studios/sls-office/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/solid-logic-studios/sls-office/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/solid-logic-studios/sls-office/compare/v0.2.0...v0.2.1
