@@ -11,6 +11,7 @@ import { Lab, oom } from '../support/lab.ts';
 import { RecordingClipPlayer } from '../support/recording-clip-player.ts';
 import { RecordingSoundOutput } from '../support/recording-sound-output.ts';
 import { RecordingSpeechOutput } from '../support/recording-speech-output.ts';
+import { MIDDAY } from '../support/midday.ts';
 
 const PIPER_VOICE: Voice = { id: 'v', pitch: 1.2, rate: 1, lang: 'en-AU', piper: { model: 'm' } };
 const PLAIN_VOICE: Voice = { id: 'plain', pitch: 1, rate: 1, lang: 'en-AU' };
@@ -125,6 +126,7 @@ describe('a Soundboard speaking through a ClipSpeechOutput', () => {
       now: () => clock.ms,
       later: (callback, ms) => timers.push({ callback, ms }),
       speech,
+      hour: MIDDAY,
     });
     const lab = new Lab();
     engine.accept(lab.snapshot());

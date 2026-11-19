@@ -11,6 +11,7 @@ import { officeTheme } from '../../src/themes/office/index.ts';
 import { Lab } from '../support/lab.ts';
 import { RecordingSoundOutput } from '../support/recording-sound-output.ts';
 import { RecordingSpeechOutput } from '../support/recording-speech-output.ts';
+import { MIDDAY } from '../support/midday.ts';
 
 /** Every bubble text the Theme can say: the line banks and each founder's lines. */
 function sayable(theme: Theme): Set<string> {
@@ -60,7 +61,7 @@ describe('the Office speaking an override', () => {
   it('says the override, keyed the way the build lists it', () => {
     const engine = new Engine(officeTheme, { random: seededRandom(7) });
     const speech = new RecordingSpeechOutput();
-    new Soundboard(engine, new RecordingSoundOutput(), { now: () => 0, later: () => undefined, speech });
+    new Soundboard(engine, new RecordingSoundOutput(), { now: () => 0, later: () => undefined, speech, hour: MIDDAY });
     engine.accept(new Lab().snapshot());
     const worker = engine.characters().find((character) => character.part === 'worker');
     if (worker === undefined) throw new Error('no worker');

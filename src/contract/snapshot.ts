@@ -7,6 +7,7 @@
  * Conventions:
  * - Every `cpu` and `mem` is a percentage from 0 to 100. `mem` is the percentage of the memory
  *   allocated to that VM (or to the host, for `host.mem`).
+ * - Every temperature is in whole degrees Celsius, and `null` when the sensor was unreadable.
  * - Every timestamp is ISO 8601 (RFC 3339 date-time).
  */
 
@@ -45,11 +46,29 @@ export interface Findings {
   crit: Count;
 }
 
+/**
+ * Whole degrees Celsius.
+ * @asType integer
+ */
+export type Celsius = number;
+
+/** Host sensor readings. A `null` reading was unreadable this tick; it is never shown as 0. */
+export interface Temps {
+  /** CPU package (x86_pkg_temp / coretemp). */
+  cpu?: Celsius | null;
+  /** Chipset, the PCH (pch_cannonlake). */
+  chipset?: Celsius | null;
+  /** The hottest NVMe composite. */
+  nvme?: Celsius | null;
+}
+
 export interface Host {
   name: string;
   cpu: Percent;
   mem: Percent;
   findings: Findings;
+  /** Absent from an older collector. */
+  temps?: Temps;
 }
 
 export interface SiteInstanceWorkload {

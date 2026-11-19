@@ -44,11 +44,17 @@ export class LabModel {
 
   host(): Host {
     const { data: d, compute: c, deploy: b, ci: i } = this;
+    const cpu = percent(clamp(((2 * d.cpu + 4 * c.cpu + 4 * b.cpu + 6 * i.cpu) / 16) * 0.85 + 4, 1, 100));
     return {
       name: 'pve',
-      cpu: percent(clamp(((2 * d.cpu + 4 * c.cpu + 4 * b.cpu + 6 * i.cpu) / 16) * 0.85 + 4, 1, 100)),
+      cpu,
       mem: percent(clamp(18 + ((2 * d.mem + 4 * c.mem + 4 * b.mem + 14 * i.mem) / 24) * 0.7, 1, 100)),
       findings: this.findings(),
+      temps: {
+        cpu: Math.round(45 + 0.45 * cpu),
+        chipset: Math.round(55 + 0.15 * cpu),
+        nvme: Math.round(40 + 0.2 * cpu),
+      },
     };
   }
 

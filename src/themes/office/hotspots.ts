@@ -1,4 +1,4 @@
-import type { Health, ServiceWorkload } from '../../contract/snapshot.ts';
+import type { Health, ServiceWorkload, Temps } from '../../contract/snapshot.ts';
 import type { Hotspot, Severity, StageView, Tip } from '../../contract/theme.ts';
 import {
   CLOUD_OFFICE,
@@ -16,6 +16,7 @@ import {
   VAULT,
 } from './boards.ts';
 import { SPORT_NAMES, scoreAt } from './scoreboard.ts';
+import { SENSOR_ORDER, TEMP_SENSORS, readingOf } from './temps.ts';
 
 /** Hover text for the set dressing. The Engine handles rooms and characters; the Theme handles the walls. */
 
@@ -41,15 +42,27 @@ function cabinetTip(index: number, title: string, detail: string, stage: StageVi
 const HOST_DETAIL =
   'Lab host: the building itself. Proxmox VE 9.2 on an OptiPlex 7070 Micro. One NVMe is worn (acknowledged), replacement planned for January 2027.';
 
+/** The sentence spelling out the readings, e.g. `. CPU 71 °C, chipset unreadable, NVMe 56 °C`; empty with no temps. */
+function tempsSentence(temps: Temps | undefined): { text: string; hot: boolean } {
+  if (!temps) return { text: '', hot: false };
+  const readings = SENSOR_ORDER.map((sensor) => ({
+    name: TEMP_SENSORS[sensor].name,
+    reading: readingOf(temps, sensor),
+  }));
+  const parts = readings.map(({ name, reading }) => (reading ? `${name} ${reading.celsius} °C` : `${name} unreadable`));
+  return { text: `. ${parts.join(', ')}`, hot: readings.some(({ reading }) => reading?.band === 'hot') };
+}
+
 function hostTip({ host }: StageView): Tip {
   if (!host) return { title: 'Lab host', detail: HOST_DETAIL, status: 'Waiting on the first Snapshot', severity: 'ok' };
+  const { text, hot } = tempsSentence(host.temps);
   return {
     title: host.name,
     detail: HOST_DETAIL,
     cpu: host.cpu,
     mem: host.mem,
-    status: 'Running. NVMe SMART warning acknowledged',
-    severity: 'warn',
+    status: `Running. NVMe SMART warning acknowledged${text}`,
+    severity: hot ? 'crit' : 'warn',
   };
 }
 

@@ -12,6 +12,7 @@ import { Lab, oom } from '../support/lab.ts';
 import { RecordingSoundOutput } from '../support/recording-sound-output.ts';
 import { timersFor } from '../support/timers.ts';
 import { expectSaneSound } from '../support/sane-sound.ts';
+import { MIDDAY } from '../support/midday.ts';
 
 const EFFECT_NAMES: readonly EffectName[] = [
   'deployStarted',
@@ -38,6 +39,7 @@ function listen(theme: Theme) {
   const soundboard = new Soundboard(engine, output, {
     now: () => clock.ms,
     later: (callback, ms) => timers.push({ callback, ms }),
+    hour: MIDDAY,
   });
   const lab = new Lab();
   engine.accept(lab.snapshot());

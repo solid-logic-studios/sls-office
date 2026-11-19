@@ -12,6 +12,7 @@ import { officeTheme } from '../../src/themes/office/index.ts';
 import { Lab } from '../support/lab.ts';
 import { RecordingSoundOutput } from '../support/recording-sound-output.ts';
 import { expectSaneSound } from '../support/sane-sound.ts';
+import { MIDDAY } from '../support/midday.ts';
 
 const BED: AmbientBed = {
   room: { volume: 0.02, lowpassHz: 400 },
@@ -29,7 +30,7 @@ function simulate(theme: Theme) {
   const engine = new Engine(theme, { random: seededRandom(7) });
   const output = new RecordingSoundOutput();
   const timers: (() => void)[] = [];
-  const soundboard = new Soundboard(engine, output, { later: (callback) => timers.push(callback) });
+  const soundboard = new Soundboard(engine, output, { later: (callback) => timers.push(callback), hour: MIDDAY });
   const play = (seconds: number): void => {
     for (let second = 0; second < seconds; second++) {
       simulator.advance(1);
@@ -215,6 +216,7 @@ describe('a Theme without a bed', () => {
         characters: () => engine.characters(),
       },
       output,
+      { hour: MIDDAY },
     );
     const lab = new Lab();
     const feed = (): void => {

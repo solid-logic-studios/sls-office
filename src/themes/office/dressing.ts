@@ -1,7 +1,10 @@
+import type { Painter } from '../../contract/painter.ts';
+import type { Temps } from '../../contract/snapshot.ts';
 import type { DecorFn, StageView } from '../../contract/theme.ts';
 import { indexesOf } from './break-spots.ts';
 import { clamp, lerp, pen } from './pen.ts';
 import { scoreAt } from './scoreboard.ts';
+import { SENSOR_ORDER, TEMP_COLOURS, TEMP_SENSORS, readingOf } from './temps.ts';
 
 /**
  * The animated set dressing: everything on the walls that moves or lights up. Each piece is a pure
@@ -136,11 +139,32 @@ const paintBasementHost: DecorFn = (painter, { now, host }) => {
   }
   R('#5fcf7a', 342, 257, 3, 3);
   R(Math.sin(now * 17) + Math.sin(now * 5.1) > 0.2 ? '#f0b840' : '#6a5514', 382, 257, 3, 3);
-  for (let i = 0; i < 16; i++) {
+  // The temperature panel takes the right of the strip, so the rack LEDs shrink to make room for it.
+  const temps = host?.temps;
+  const leds = temps ? LEDS_BESIDE_TEMPS : 16;
+  for (let i = 0; i < leds; i++) {
     R(Math.sin(now * 3 + i * 1.7) > 0 ? '#5fcf7a' : '#1f3a2a', 464 + i * 6, 253, 2, 2);
     R(Math.sin(now * 5 + i * 2.3) > 0.3 ? '#7fd0ff' : '#1f2f3f', 464 + i * 6, 259, 2, 2);
   }
+  if (temps) paintTemps(painter, temps);
 };
+
+/** Left edge of the temperature panel's first column; each column after it is 22 px further right. */
+const TEMPS_X = 496;
+const TEMPS_PITCH = 22;
+/** Rack LED columns (6 px apart from x 464) that still end left of `TEMPS_X`. */
+const LEDS_BESIDE_TEMPS = 5;
+
+function paintTemps(painter: Painter, temps: Temps): void {
+  const { T } = pen(painter);
+  SENSOR_ORDER.forEach((sensor, i) => {
+    const x = TEMPS_X + i * TEMPS_PITCH;
+    const reading = readingOf(temps, sensor);
+    T(TEMP_SENSORS[sensor].label, x, 258, TEMP_COLOURS.unknown);
+    if (reading) T(String(reading.celsius), x, 266, TEMP_COLOURS[reading.band]);
+    else T('--', x, 266, TEMP_COLOURS.unknown);
+  });
+}
 
 /** The R2 vault door: swung open while the keeper makes the backup run. */
 const paintVaultDoor: DecorFn = (painter, { vaultOpen }) => {
