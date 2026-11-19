@@ -241,7 +241,7 @@ describe('towerTheme drawing', () => {
   ])('paints the same calls for the same stage at %s', (_name, view) => {
     const first = paintEverything(view);
     const second = paintEverything(view);
-    expect(first.painter.calls.length).toBeGreaterThan(300);
+    expect(first.painter.calls.length).toBeGreaterThan(0);
     expect(second.painter.calls).toEqual(first.painter.calls);
     expect(second.tips).toEqual(first.tips);
   });

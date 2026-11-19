@@ -1,14 +1,17 @@
 import type { VmRole } from '../../contract/snapshot.ts';
 import type { BreakSpot, Floor, Layout, Room } from '../../contract/theme.ts';
 import { VM_BLURBS } from '../office/rooms.ts';
-import { MYSQL_CABINET, POSTGRES_CABINET, VAULT } from './boards.ts';
+import { COFFEE_COUNTER, MYSQL_CABINET, POSTGRES_CABINET, VAULT } from './boards.ts';
 import { FLOOR, HEIGHT, INSIDE, LIFT_X, SHAFT, SLOT, STOREYS, WIDTH, band } from './geometry.ts';
 import { desk, post } from './places.ts';
+
+/** Where visitors arrive from and leavers go back to: the street, just off stage to the left. */
+const OFF_STAGE = -12;
 
 /** Everyone walks the whole storey; the lobby also reaches the street off stage to the left. */
 const FLOORS: readonly Floor[] = Array.from({ length: STOREYS }, (_, floor) => ({
   walkY: band(floor).walk,
-  minX: floor === FLOOR.lobby ? -12 : INSIDE.left + 2,
+  minX: floor === FLOOR.lobby ? OFF_STAGE : INSIDE.left + 2,
   maxX: INSIDE.right - 2,
 }));
 
@@ -40,7 +43,7 @@ export const DESK_GAP_X = slotX(3);
 
 /** Index order matters: the stage reports busy spots by index. */
 const BREAK_SPOTS: readonly BreakSpot[] = [
-  { x: 135, floor: FLOOR.storey5, kind: 'coffee' },
+  { x: COFFEE_COUNTER.x + COFFEE_COUNTER.w / 2, floor: FLOOR.storey5, kind: 'coffee' },
   { x: DESK_GAP_X, floor: FLOOR.storey1, kind: 'cooler' },
   { x: DESK_GAP_X, floor: FLOOR.storey2, kind: 'plant' },
 ];
@@ -50,7 +53,7 @@ export const TOWER_LAYOUT: Layout = {
   height: HEIGHT,
   floors: FLOORS,
   liftX: LIFT_X,
-  entrance: { x: -12, floor: FLOOR.lobby },
+  entrance: { x: OFF_STAGE, floor: FLOOR.lobby },
   rooms: ROOMS,
   homes: {
     worker: workerDesks,

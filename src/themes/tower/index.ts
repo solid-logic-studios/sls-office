@@ -9,7 +9,7 @@ import { paintBuilding, paintNightTint } from './shell.ts';
 import { paintSky } from './sky.ts';
 
 /**
- * The Office's world as a narrow high-rise for a phone: the same cast, words and sound, one storey
+ * The Office's world as a narrow high-rise for a phone: the same cast, words and sound, a storey or two
  * per job, joined by one lift. Only the layout, the furniture's placing, the set and the Hotspots are its own.
  */
 export const towerTheme: Theme = {

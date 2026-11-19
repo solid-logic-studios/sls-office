@@ -1,17 +1,14 @@
-import type { ServiceWorkload } from '../../contract/snapshot.ts';
 import type { Hotspot, StageView, Tip } from '../../contract/theme.ts';
 import { HEALTH_WORDS, hostTip, mysqlTip, postgresTip, vaultTip } from '../office/hotspots.ts';
 import { FINDINGS_LAMP, MYSQL_CABINET, PLANT_ROOM, POSTGRES_CABINET, RUNNER_RACK, VAULT } from './boards.ts';
-import { findingsSeverity } from './dressing.ts';
+import { findingsSeverity, runnerOf } from './dressing.ts';
 
 /** Hover text for the set pieces. The Office's words where the piece is the Office's; the Engine does rooms and people. */
 
 const RUNNER_DETAIL = 'Build rack on sls-deploy: the runner that builds images, deploys and seeds lab Site instances.';
 
 function runnerTip({ vms }: StageView): Tip {
-  const runner = vms
-    .find((vm) => vm.role === 'deploy')
-    ?.workloads.find((w): w is ServiceWorkload => w.kind === 'runner');
+  const runner = runnerOf(vms);
   if (!runner) return { title: 'Deploy runner', detail: RUNNER_DETAIL, status: 'No reading yet', severity: 'ok' };
   const { status, severity } = HEALTH_WORDS[runner.health];
   return { title: runner.name, detail: RUNNER_DETAIL, cpu: runner.cpu, mem: runner.mem, status, severity };

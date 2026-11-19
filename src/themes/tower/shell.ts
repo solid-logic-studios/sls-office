@@ -3,7 +3,7 @@ import type { DecorFn, StageView } from '../../contract/theme.ts';
 import type { Pen } from '../office/pen.ts';
 import { pen } from '../office/pen.ts';
 import { nightFactor } from '../office/sky.ts';
-import { MYSQL_CABINET, POSTGRES_CABINET, ROOF_SIGN, RUNNER_RACK } from './boards.ts';
+import { CI_BOARD, COFFEE_COUNTER, MYSQL_CABINET, POSTGRES_CABINET, ROOF_SIGN, RUNNER_RACK } from './boards.ts';
 import { DOOR_HEIGHT, FLOOR, HEIGHT, INSIDE, ROOF, SHAFT, SHELL_X, STOREYS, WIDTH, band } from './geometry.ts';
 import { DESK_GAP_X, PARTITION_X } from './layout.ts';
 import { openToSky, paintWindow } from './sky.ts';
@@ -139,8 +139,9 @@ function paintWindows(painter: Painter, stage: StageView): void {
 
 function paintCoffeeCounter({ R }: Pen): void {
   const b = band(FLOOR.storey5);
-  R('#8a6442', 120, b.desk - 14, 30, 14);
-  R('#c9a777', 120, b.desk - 16, 30, 2);
+  const { x, w } = COFFEE_COUNTER;
+  R('#8a6442', x, b.desk - 14, w, 14);
+  R('#c9a777', x, b.desk - 16, w, 2);
   R('#2f3340', 124, b.desk - 30, 12, 14);
   R('#4a5062', 125, b.desk - 29, 10, 4);
   R('#e0523f', 126, b.desk - 23, 2, 2);
@@ -155,13 +156,13 @@ function paintCoffeeCounter({ R }: Pen): void {
 }
 
 function paintCiBoard({ R, T }: Pen): void {
-  const b = band(FLOOR.storey4);
-  R('#8a8f98', 128, b.ceil + 3, 54, 22);
-  R('#eef3f5', 129, b.ceil + 4, 52, 20);
-  T('CI QUEUE', 131, b.ceil + 12, '#586878');
-  R('#e0563f', 131, b.ceil + 15, 22, 2);
-  R('#3f8fd0', 131, b.ceil + 18, 34, 2);
-  R('#4aa86b', 131, b.ceil + 21, 14, 2);
+  const { x, y, w, h } = CI_BOARD;
+  R('#8a8f98', x, y, w, h);
+  R('#eef3f5', x + 1, y + 1, w - 2, h - 2);
+  T('CI QUEUE', x + 3, y + 9, '#586878');
+  R('#e0563f', x + 3, y + 12, 22, 2);
+  R('#3f8fd0', x + 3, y + 15, 34, 2);
+  R('#4aa86b', x + 3, y + 18, 14, 2);
 }
 
 function paintCabinet(

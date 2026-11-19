@@ -42,7 +42,7 @@ const paintDrawers: DecorFn = (painter, { openStores }) => {
   });
 };
 
-const runnerOf = (vms: readonly Vm[]): ServiceWorkload | undefined =>
+export const runnerOf = (vms: readonly Vm[]): ServiceWorkload | undefined =>
   vms.find((vm) => vm.role === 'deploy')?.workloads.find((w): w is ServiceWorkload => w.kind === 'runner');
 
 const RUNNER_LIGHTS = { healthy: '#5fcf7a', starting: '#f0b840', unhealthy: '#ff6b5e', down: '#ff6b5e' } as const;
