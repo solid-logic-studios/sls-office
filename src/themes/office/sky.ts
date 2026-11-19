@@ -23,17 +23,20 @@ const BANDS = 9;
 const mixRgb = (a: Rgb, b: Rgb, t: number): Rgb => [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
 const css = ([r, g, b]: Rgb): string => `rgb(${Math.floor(r)},${Math.floor(g)},${Math.floor(b)})`;
 
-function paintBands(painter: Painter, hour: number): void {
+/** The sky colour at `hour`, a share `t` of the way from the top of the sky (0) to the bottom (1). */
+export function skyColour(hour: number, t: number): string {
   let i = 0;
   while (i < KEYFRAMES.length - 2 && hour >= (KEYFRAMES[i + 1]?.[0] ?? 24)) i++;
   const from = KEYFRAMES[i];
   const to = KEYFRAMES[i + 1];
-  if (!from || !to) return;
-  const t = clamp((hour - from[0]) / (to[0] - from[0]), 0, 1);
-  const top = mixRgb(from[1], to[1], t);
-  const bottom = mixRgb(from[2], to[2], t);
+  if (!from || !to) return css([0, 0, 0]);
+  const k = clamp((hour - from[0]) / (to[0] - from[0]), 0, 1);
+  return css(mixRgb(mixRgb(from[1], to[1], k), mixRgb(from[2], to[2], k), t));
+}
+
+function paintBands(painter: Painter, hour: number): void {
   for (let band = 0; band < BANDS; band++) {
-    painter.rect(css(mixRgb(top, bottom, band / (BANDS - 1))), 0, band * 30, WIDTH, 30);
+    painter.rect(skyColour(hour, band / (BANDS - 1)), 0, band * 30, WIDTH, 30);
   }
 }
 

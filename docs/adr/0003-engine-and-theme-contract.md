@@ -97,3 +97,20 @@ Canvas text:
   #225, so the live Office shows the VM characters and the founders only. `?sim` shows everything.
 - The pixel font has capitals, digits and common punctuation only. Tooltips, the log and the rest
   of the page are DOM text in the page's own font.
+
+## Amendment: a Theme may reuse a sibling Theme's world (November 2026, #61)
+
+The Tower (`src/themes/tower/`) is the Office's world on a different layout. Copying the Office's
+cast, looks, founders, visitor, lines, legend, Soundscape and VM blurbs into it would be two copies
+that drift.
+
+- **A Theme imports from `src/contract/` and, where it reuses another Theme's world, from that
+  sibling Theme's modules.** The Tower imports those pieces (and some furniture art and helpers)
+  from `src/themes/office/`. Only the layout, places, decor and hotspots are its own.
+- The Engine rule is unchanged: nothing under `src/engine/` imports from `src/themes/`.
+- **A sibling import points one way.** The Office does not import from the Tower. When a third
+  Theme needs the same pieces, move them into a shared module under `src/themes/` rather than
+  importing a chain of siblings.
+- **Known quirk:** the Engine sends the Standup to `layout.floors[0]`, which is the Tower's
+  basement. It works, in an odd room. Putting it in the lobby needs a contract change (an optional
+  front spot), which is out of scope here.

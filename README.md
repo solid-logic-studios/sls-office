@@ -20,15 +20,17 @@ while it is missing or older than 60 seconds.
 
 Add `?sim` to the address to drive the Office from the Simulator instead. A control room appears
 under the stage with presets, load sliders and triggers for each scene (deploy, rollback, CI burst,
-backup, OOM, VM down). `?theme=boxes` picks the plain test theme; the theme picker in the header
-does the same.
+backup, OOM, VM down). `?theme=tower` picks the Tower, a narrow high-rise for a phone;
+`?theme=boxes` picks the plain test theme. The theme picker in the header does the same.
 
 ## Themes
 
 A Theme supplies the layout, the looks, the lines and the set dressing; the engine owns all the
 behaviour. The contract is `src/contract/theme.ts`, and
 [ADR 0003](docs/adr/0003-engine-and-theme-contract.md) records the rules. `src/themes/office/` is
-the Office; `src/themes/boxes/` is the smallest working Theme.
+the Office; `src/themes/tower/` is the same world re-laid out as a 212 px wide high-rise (a storey or two
+per job, joined by one lift) that fits a phone without a sideways pan; `src/themes/boxes/` is the
+smallest working Theme.
 
 ## Scripts
 
