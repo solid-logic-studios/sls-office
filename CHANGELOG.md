@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 19 November 2026
+
 ### Added
 
 - Snapshot `host.temps` (optional: `cpu`, `chipset` and `nvme` in whole degrees Celsius, `null` when unreadable; `v` stays 1, so a v0.3.0 Snapshot still validates). The Office basement shows them with cool, warm and hot bands, `--` when a reading is unreadable and nothing for an older collector, and the host tooltip spells them out (#56).
@@ -63,7 +65,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Minimal VM moods page with a "Waking the office…" state when the snapshot is missing or stale.
 - Static image `ghcr.io/solid-logic-studios/sls-office` built by CI.
 
-[Unreleased]: https://github.com/solid-logic-studios/sls-office/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/solid-logic-studios/sls-office/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/solid-logic-studios/sls-office/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/solid-logic-studios/sls-office/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/solid-logic-studios/sls-office/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/solid-logic-studios/sls-office/compare/v0.1.1...v0.2.0
