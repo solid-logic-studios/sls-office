@@ -108,8 +108,12 @@ done
 Edit the copy in place (do not replace it, as a bind mount follows the original file) and the moods
 change without a reload. The page goes back to "Waking the office…" 60 seconds after the last refresh.
 
-Tags published: `X.Y.Z` and `X.Y` from each `vX.Y.Z` release tag only (no `latest`). CI builds
-the image on every PR and push to `main` but never pushes it.
+Tags published: `X.Y.Z` and `X.Y` from each `vX.Y.Z` release tag, and `main` and `main-<short sha>`
+from every push to `main` (no `latest`). CI builds the image on every PR without pushing it. A merge to
+`main` is a deploy: the lab follows `:main` within a few minutes (infrastructure's `./lab office deploy`,
+run by `lab-office-deploy.timer`), so only merge what should go live. The lab refuses an image whose
+Snapshot schema differs from the collector's pinned copy, so a schema change needs the infrastructure
+side first.
 
 **GHCR visibility: public** (solid-logic-studios/infrastructure ADR-0018), so the Compute host
 pulls with no credential. Public cannot be undone, and anyone can pull every published version, so
@@ -164,7 +168,7 @@ next version from `CHANGELOG.md` `[Unreleased]`, bumps `package.json`, rolls the
 `chore(release): vX.Y.Z` PR. Merging that PR is the release: `tag-release.yml` sees a version on `main`
 with no tag, tags the merge commit `vX.Y.Z` and calls `release.yml`, which runs the gate, pushes
 `:X.Y.Z` and `:X.Y` to GHCR and creates the GitHub Release with the schema asset. Any other merge to
-`main` leaves the version alone and publishes nothing. Pushing a `vX.Y.Z` tag by hand still runs
+`main` leaves the version alone and publishes only `:main` and `:main-<short sha>`. Pushing a `vX.Y.Z` tag by hand still runs
 `release.yml` as a fallback.
 
 ## Contributing

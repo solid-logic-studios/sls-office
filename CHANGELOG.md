@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Every merge to `main` publishes the image as `:main` and `:main-<short sha>` (CI's image job), and the lab follows `:main`, so a merge goes live within a few minutes. Releases still publish `:X.Y.Z` and `:X.Y`. A PR still only builds the image.
+
 ## [0.5.1] - 20 November 2026
 
 ### Fixed

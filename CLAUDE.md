@@ -86,6 +86,10 @@ over hand-rolling, reference the docs, and stay current with releases (Dependabo
   (`.claude/skills/release/`): it opens a `chore(release): vX.Y.Z` PR, and merging it tags `vX.Y.Z`
   and publishes the image (`.github/workflows/tag-release.yml` calling `release.yml`). Never tag by hand
   unless that automation fails.
+- **A merge to `main` is a deploy.** CI's image job pushes `:main` and `:main-<short sha>` on every
+  push to `main`, and the lab follows `:main` within minutes (infrastructure `./lab office deploy`).
+  A Snapshot schema change must land in infrastructure (collector and pinned schema) first: the lab
+  refuses an image whose schema differs from its pinned copy.
 
 ## Workflow
 
