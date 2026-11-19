@@ -26,20 +26,39 @@ const forced = new URLSearchParams('mute');
 
 describe('the saved mute preference', () => {
   it('is sound on when nothing is saved', () => {
-    expect(initialMuted(none, memoryStorage())).toBe(false);
+    expect(initialMuted(none, memoryStorage(), false)).toBe(false);
   });
 
   it('restores a saved mute', () => {
-    expect(initialMuted(none, memoryStorage({ [MUTE_KEY]: 'true' }))).toBe(true);
+    expect(initialMuted(none, memoryStorage({ [MUTE_KEY]: 'true' }), false)).toBe(true);
   });
 
   it('restores a saved unmute', () => {
-    expect(initialMuted(none, memoryStorage({ [MUTE_KEY]: 'false' }))).toBe(false);
+    expect(initialMuted(none, memoryStorage({ [MUTE_KEY]: 'false' }), false)).toBe(false);
   });
 
   it('lets ?mute win over a saved unmute', () => {
-    expect(initialMuted(forced, memoryStorage({ [MUTE_KEY]: 'false' }))).toBe(true);
-    expect(initialMuted(new URLSearchParams('mute=0'), null)).toBe(true);
+    expect(initialMuted(forced, memoryStorage({ [MUTE_KEY]: 'false' }), false)).toBe(true);
+    expect(initialMuted(new URLSearchParams('mute=0'), null, false)).toBe(true);
+  });
+
+  describe('with the compact (phone) default', () => {
+    it('is muted when nothing is saved', () => {
+      expect(initialMuted(none, memoryStorage(), true)).toBe(true);
+    });
+
+    it('keeps a saved unmute', () => {
+      expect(initialMuted(none, memoryStorage({ [MUTE_KEY]: 'false' }), true)).toBe(false);
+    });
+
+    it('still lets ?mute force silence', () => {
+      expect(initialMuted(forced, memoryStorage({ [MUTE_KEY]: 'false' }), true)).toBe(true);
+    });
+
+    it('falls to the default when storage throws or is missing', () => {
+      expect(initialMuted(none, throwing, true)).toBe(true);
+      expect(initialMuted(none, null, true)).toBe(true);
+    });
   });
 
   it('saves a toggle', () => {
@@ -55,12 +74,12 @@ describe('the saved mute preference', () => {
   });
 
   it('works when storage throws', () => {
-    expect(initialMuted(none, throwing)).toBe(false);
+    expect(initialMuted(none, throwing, false)).toBe(false);
     expect(() => saveMuted(none, throwing, true)).not.toThrow();
   });
 
   it('works with no storage', () => {
-    expect(initialMuted(none, null)).toBe(false);
+    expect(initialMuted(none, null, false)).toBe(false);
     expect(() => saveMuted(none, null, true)).not.toThrow();
   });
 });

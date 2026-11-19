@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Compact page mode at 480 CSS px wide or less: a sticky verdict bar (all calm, watch or trouble, with VM and workload counts and the last heard time when stale), a trouble list, a bottom detail sheet in place of the hover tooltip (tap a character, hotspot or row, with a little slop for small characters), a controls sheet behind the menu button, and 44 px touch targets (#60).
 - Tower theme (`?theme=tower`, or the theme picker): the Office's world as a 212 px wide high-rise for a phone, with a basement plant room and vault, a lobby, two floors of desks, the data and deploy rooms, the CI pod floor, the founders on top and one lift joining them. A "+N" sign shows when there are more site instances or pods than desks or benches (#61).
+- Phone defaults at 480 CSS px wide or less, read once at load: the page opens on the Tower unless `?theme=` asks otherwise, the stage runs edge to edge, sound starts off unless a choice is saved, the loop runs at about 20 frames a second, and drawing stops while the canvas is scrolled off screen (#62).
 
 ## [0.4.0] - 19 November 2026
 

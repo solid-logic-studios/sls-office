@@ -9,16 +9,20 @@ function forcedMute(query: URLSearchParams): boolean {
 }
 
 /**
- * Whether the Office starts muted. `?mute` wins over the saved choice; with nothing saved, sound is on.
+ * Whether the Office starts muted. `?mute` wins over the saved choice, and a saved choice wins over
+ * `defaultMuted` (a phone passes `true`, so it starts silent until the visitor turns sound on).
  * Storage may be missing or may throw (private windows, blocked site data); either way it reads as
- * "not muted".
+ * `defaultMuted`.
  */
-export function initialMuted(query: URLSearchParams, storage: MuteStorage | null): boolean {
+export function initialMuted(query: URLSearchParams, storage: MuteStorage | null, defaultMuted: boolean): boolean {
   if (forcedMute(query)) return true;
   try {
-    return storage?.getItem(MUTE_KEY) === 'true';
+    const saved = storage?.getItem(MUTE_KEY);
+    if (saved === 'true') return true;
+    if (saved === 'false') return false;
+    return defaultMuted;
   } catch {
-    return false;
+    return defaultMuted;
   }
 }
 

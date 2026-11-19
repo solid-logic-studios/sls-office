@@ -14,6 +14,8 @@ import { StandupSchedule } from './page/audio/standup-schedule.ts';
 import { initialVolume, saveVolume } from './page/audio/volume-preference.ts';
 import { loadVoiceManifest } from './page/audio/voice-manifest.ts';
 import { WebSpeechOutput } from './page/audio/web-speech-output.ts';
+import { chooseTheme } from './page/default-theme.ts';
+import { throttleFrames } from './page/frame-throttle.ts';
 import { localHour } from './page/clock.ts';
 import { compactMedia, isCompact } from './page/compact.ts';
 import { placeControls } from './page/controls-sheet.ts';
@@ -40,6 +42,7 @@ import { Simulator } from './simulator/simulator.ts';
 import { HttpSnapshotSource } from './source/http-snapshot-source.ts';
 import { THEMES } from './themes/index.ts';
 import { officeTheme } from './themes/office/index.ts';
+import { towerTheme } from './themes/tower/index.ts';
 
 /** The composition root: it picks the Theme and the SnapshotSource and joins the Engine to the page. */
 
@@ -58,7 +61,11 @@ function element<T extends HTMLElement>(id: string, type: new () => T): T {
 
 const query = new URLSearchParams(window.location.search);
 const simulated = query.has('sim');
-const firstTheme = THEMES.find((theme) => theme.id === query.get('theme')) ?? officeTheme;
+/** Read once: rotating a phone later does not swap the Theme, the sound default or the frame rate. */
+const compactAtLoad = isCompact();
+const firstTheme = chooseTheme(THEMES, query.get('theme'), compactAtLoad, { wide: officeTheme, compact: towerTheme });
+/** A phone draws about 20 frames a second: the Office is slow-moving and it saves battery. */
+const COMPACT_FRAME_MS = 50;
 
 const canvas = element('office', HTMLCanvasElement);
 const waking = element('waking', HTMLParagraphElement);
@@ -131,7 +138,7 @@ const soundboard = new Soundboard(engine, audio, {
 
 const diary = new OfficeDiary(engine.bus, () => Date.now());
 const standup = new Standup(engine, soundboard, diary, new StandupSchedule(storage));
-soundboard.muted = initialMuted(query, storage);
+soundboard.muted = initialMuted(query, storage, compactAtLoad);
 /** The saved volume applies everywhere; only the slider that sets it is `?sim`-only. */
 soundboard.volume = initialVolume(storage);
 mountSpeakerButton(element('sound', HTMLButtonElement), {
@@ -163,18 +170,20 @@ mountMusicButton(element('music', HTMLButtonElement), {
   onToggle: (on) => saveMusic(storage, on),
 });
 
-const loop = new Loop(
-  (callback) => window.requestAnimationFrame(callback),
-  (handle) => window.cancelAnimationFrame(handle),
-  (dt) => {
-    if (!awake) return;
-    engine.setHour(hour());
-    engine.update(dt);
-    const painter = stage.painter;
-    painter.clear(engine.layout.width, engine.layout.height);
-    engine.draw(painter);
-  },
-);
+const browserFrames = {
+  requestFrame: (callback: (timeMs: number) => void): number => window.requestAnimationFrame(callback),
+  cancelFrame: (handle: number): void => window.cancelAnimationFrame(handle),
+};
+const frames = compactAtLoad ? throttleFrames(browserFrames, COMPACT_FRAME_MS) : browserFrames;
+
+const loop = new Loop(frames.requestFrame, frames.cancelFrame, (dt) => {
+  if (!awake) return;
+  engine.setHour(hour());
+  engine.update(dt);
+  const painter = stage.painter;
+  painter.clear(engine.layout.width, engine.layout.height);
+  engine.draw(painter);
+});
 
 function setPaused(paused: boolean): void {
   loop.paused = paused;
@@ -338,3 +347,13 @@ pollWhileVisible(new Poller(snapshotSource(), simulated ? SIM_POLL_MS : LIVE_POL
 if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) setPaused(true);
 bar.setClock(hour());
 loop.start();
+
+/** Nothing is drawn while the canvas is scrolled out of view; polling, the bar and the list carry on. `start` resets the clock, so there is no jump. */
+if (typeof IntersectionObserver !== 'undefined') {
+  new IntersectionObserver((entries) => {
+    const latest = entries[entries.length - 1];
+    if (latest === undefined) return;
+    if (latest.isIntersecting) loop.start();
+    else loop.stop();
+  }).observe(canvas);
+}

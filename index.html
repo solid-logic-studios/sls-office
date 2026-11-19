@@ -477,6 +477,14 @@
         .stage:has(canvas[hidden]) {
           display: none;
         }
+        /* Edge to edge: drop the frame and cancel .wrap's side padding so the scroller spans the viewport. */
+        .stage {
+          padding: 0;
+          border-inline: 0;
+          box-shadow: none;
+          margin-left: calc(-1 * max(8px, env(safe-area-inset-left, 0px)));
+          margin-right: calc(-1 * max(8px, env(safe-area-inset-right, 0px)));
+        }
 
         /* Verdict bar */
         .vbar {
