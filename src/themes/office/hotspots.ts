@@ -1,4 +1,4 @@
-import type { Health, ServiceWorkload } from '../../contract/snapshot.ts';
+import type { Health, ServiceWorkload, Temps } from '../../contract/snapshot.ts';
 import type { Hotspot, Severity, StageView, Tip } from '../../contract/theme.ts';
 import {
   CLOUD_OFFICE,
@@ -16,6 +16,7 @@ import {
   VAULT,
 } from './boards.ts';
 import { SPORT_NAMES, scoreAt } from './scoreboard.ts';
+import { tempBand, type TempSensor } from './temps.ts';
 
 /** Hover text for the set dressing. The Engine handles rooms and characters; the Theme handles the walls. */
 
@@ -41,16 +42,29 @@ function cabinetTip(index: number, title: string, detail: string, stage: StageVi
 const HOST_DETAIL =
   'Lab host: the building itself. Proxmox VE 9.2 on an OptiPlex 7070 Micro. One NVMe is worn (acknowledged), replacement planned for January 2027.';
 
+const TEMP_NAMES: Readonly<Record<TempSensor, string>> = { cpu: 'CPU', chipset: 'chipset', nvme: 'NVMe' };
+
+/** The sentence spelling out the readings, and whether any present one is hot. */
+function tempsSentence(temps: Temps): { text: string; hot: boolean } {
+  const sensors = Object.keys(TEMP_NAMES) as TempSensor[];
+  const parts = sensors.map((sensor) => {
+    const reading = temps[sensor];
+    return typeof reading === 'number' ? `${TEMP_NAMES[sensor]} ${reading} °C` : `${TEMP_NAMES[sensor]} unreadable`;
+  });
+  const hot = sensors.some((sensor) => {
+    const reading = temps[sensor];
+    return typeof reading === 'number' && tempBand(sensor, reading) === 'hot';
+  });
+  return { text: parts.join(', '), hot };
+}
+
 function hostTip({ host }: StageView): Tip {
   if (!host) return { title: 'Lab host', detail: HOST_DETAIL, status: 'Waiting on the first Snapshot', severity: 'ok' };
-  return {
-    title: host.name,
-    detail: HOST_DETAIL,
-    cpu: host.cpu,
-    mem: host.mem,
-    status: 'Running. NVMe SMART warning acknowledged',
-    severity: 'warn',
-  };
+  const status = 'Running. NVMe SMART warning acknowledged';
+  const tip = { title: host.name, detail: HOST_DETAIL, cpu: host.cpu, mem: host.mem };
+  if (!host.temps) return { ...tip, status, severity: 'warn' };
+  const { text, hot } = tempsSentence(host.temps);
+  return { ...tip, status: `${status}. ${text}`, severity: hot ? 'crit' : 'warn' };
 }
 
 export const HOTSPOTS: readonly Hotspot[] = [

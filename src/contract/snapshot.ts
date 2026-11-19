@@ -45,11 +45,29 @@ export interface Findings {
   crit: Count;
 }
 
+/**
+ * Whole degrees Celsius.
+ * @asType integer
+ */
+export type Celsius = number;
+
+/** Host sensor readings. A `null` reading was unreadable this tick; it is never shown as 0. */
+export interface Temps {
+  /** CPU package (x86_pkg_temp / coretemp). */
+  cpu?: Celsius | null;
+  /** Chipset, the PCH (pch_cannonlake). */
+  chipset?: Celsius | null;
+  /** The hottest NVMe composite. */
+  nvme?: Celsius | null;
+}
+
 export interface Host {
   name: string;
   cpu: Percent;
   mem: Percent;
   findings: Findings;
+  /** Absent from an older collector. */
+  temps?: Temps;
 }
 
 export interface SiteInstanceWorkload {

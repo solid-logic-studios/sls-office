@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Snapshot `host.temps` (optional: `cpu`, `chipset` and `nvme` in whole degrees Celsius, `null` when unreadable; `v` stays 1, so a v0.3.0 Snapshot still validates). The Office basement shows them with cool, warm and hot bands, `--` when a reading is unreadable and nothing for an older collector, and the host tooltip spells them out (#56).
+
 ## [0.3.0] - 17 November 2026
 
 ### Added

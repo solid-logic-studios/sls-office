@@ -5,6 +5,7 @@
     "name": "sls-host",
     "cpu": 45,
     "mem": 40,
+    "temps": { "cpu": 71, "chipset": 67, "nvme": 56 },
     "findings": {
       "ok": 12,
       "warn": 1,

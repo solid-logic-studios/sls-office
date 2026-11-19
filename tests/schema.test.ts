@@ -34,6 +34,42 @@ describe('snapshot schema generated from the contract types', () => {
     expect(validate({ ...base, host: { ...base.host, findings: { ok: 1.5, warn: 0, crit: 0 } } })).toBe(false);
   });
 
+  describe('host temps', () => {
+    const base = loadFixture('snapshot.all-working.json');
+    const withTemps = (temps: unknown) => ({ ...base, host: { ...base.host, temps } });
+
+    it('keeps the v0.3.0 shape (no temps) valid', () => {
+      expect(base.host.temps).toBeUndefined();
+      expect(validate(base)).toBe(true);
+    });
+
+    it.each([
+      ['all present', { cpu: 71, chipset: 67, nvme: 56 }],
+      ['all null', { cpu: null, chipset: null, nvme: null }],
+      ['partial', { cpu: 71 }],
+      ['empty', {}],
+    ])('accepts temps that are %s, and the guard agrees', (_name, temps) => {
+      const body = withTemps(temps);
+      expect(validate(body), JSON.stringify(validate.errors)).toBe(true);
+      expect(isSnapshot(body)).toBe(true);
+    });
+
+    it.each([
+      ['an extra key', { cpu: 1, gpu: 2 }],
+      ['a non-integer', { cpu: 71.5 }],
+      ['a string reading', { cpu: '71' }],
+    ])('rejects temps with %s', (_name, temps) => {
+      expect(validate(withTemps(temps))).toBe(false);
+    });
+
+    it('guard rejects a string reading and a null or array temps', () => {
+      expect(isSnapshot(withTemps({ cpu: '71' }))).toBe(false);
+      expect(isSnapshot(withTemps(null))).toBe(false);
+      expect(isSnapshot(withTemps([]))).toBe(false);
+      expect(isSnapshot(withTemps('hot'))).toBe(false);
+    });
+  });
+
   it('rejects a non date-time at', () => {
     expect(validate({ ...loadFixture('snapshot.all-working.json'), at: 'yesterday' })).toBe(false);
   });

@@ -1,10 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import type { ServiceWorkload, SiteInstanceWorkload, Vm, VmRole, Workload } from '../../src/contract/snapshot.ts';
+import type {
+  ServiceWorkload,
+  Temps,
+  SiteInstanceWorkload,
+  Vm,
+  VmRole,
+  Workload,
+} from '../../src/contract/snapshot.ts';
 import type { Cue, LabSubject, Mood, Occupant, PersonLook, Place, Rect, StageView } from '../../src/contract/theme.ts';
 import { PLAQUE, LAN_BOARD, REPLACE_NOTE } from '../../src/themes/office/boards.ts';
 import { DOORWAYS, DOOR_HEIGHT } from '../../src/themes/office/doorways.ts';
 import { officeTheme } from '../../src/themes/office/index.ts';
 import { scoreAt } from '../../src/themes/office/scoreboard.ts';
+import { TEMP_COLOURS, tempBand, type TempBand, type TempSensor } from '../../src/themes/office/temps.ts';
 import { ROOF_SIGN } from '../../src/themes/office/shell.ts';
 import type { PaintCall } from '../support/recording-painter.ts';
 import { RecordingPainter } from '../support/recording-painter.ts';
@@ -390,6 +398,101 @@ describe('officeTheme signs', () => {
     const [left, right] = extent(call, painter);
     expect(left).toBeGreaterThanOrEqual(board.x + inset);
     expect(right).toBeLessThanOrEqual(board.x + board.w - inset);
+  });
+});
+
+describe('tempBand', () => {
+  it.each<[TempSensor, number, TempBand]>([
+    ['cpu', 69, 'cool'],
+    ['cpu', 70, 'warm'],
+    ['cpu', 85, 'warm'],
+    ['cpu', 86, 'hot'],
+    ['chipset', 69, 'cool'],
+    ['chipset', 70, 'warm'],
+    ['chipset', 80, 'warm'],
+    ['chipset', 81, 'hot'],
+    ['nvme', 59, 'cool'],
+    ['nvme', 60, 'warm'],
+    ['nvme', 70, 'warm'],
+    ['nvme', 71, 'hot'],
+  ])('%s at %i is %s', (sensor, celsius, band) => {
+    expect(tempBand(sensor, celsius)).toBe(band);
+  });
+});
+
+describe('officeTheme host temperatures', () => {
+  const hostWith = (temps?: Temps): StageView =>
+    stage({
+      host: { name: 'pve', cpu: 40, mem: 80, findings: { ok: 3, warn: 1, crit: 0 }, ...(temps ? { temps } : {}) },
+    });
+
+  const paintBack = (view: StageView): RecordingPainter => {
+    const painter = new RecordingPainter();
+    for (const paint of officeTheme.decor.back) paint(painter, view);
+    return painter;
+  };
+
+  const textCalls = (painter: RecordingPainter, text: string) =>
+    painter.calls.filter((c): c is Extract<PaintCall, { op: 'text' }> => c.op === 'text' && c.text === text);
+
+  const ledCount = (painter: RecordingPainter): number =>
+    painter.rects.filter((r) => r.y === 253 && r.w === 2 && r.x >= 464 && r.x < 568).length;
+
+  it('draws each reading in its band colour', () => {
+    const painter = paintBack(hostWith({ cpu: 71, chipset: 67, nvme: 56 }));
+    expect(textCalls(painter, '71').map((c) => c.colour)).toEqual([TEMP_COLOURS.warm]);
+    expect(textCalls(painter, '67').map((c) => c.colour)).toEqual([TEMP_COLOURS.cool]);
+    expect(textCalls(painter, '56').map((c) => c.colour)).toEqual([TEMP_COLOURS.cool]);
+    expect(textCalls(painter, 'PCH')).toHaveLength(1);
+    expect(ledCount(painter)).toBe(5);
+  });
+
+  it('draws a hot reading in the hot colour', () => {
+    const painter = paintBack(hostWith({ cpu: 90, chipset: 67, nvme: 56 }));
+    expect(textCalls(painter, '90').map((c) => c.colour)).toEqual(['#ff6b5e']);
+  });
+
+  it('draws -- for a null or missing reading and never 0', () => {
+    const nulls = paintBack(hostWith({ cpu: null, chipset: null, nvme: null }));
+    expect(textCalls(nulls, '--').map((c) => c.colour)).toEqual([
+      TEMP_COLOURS.unknown,
+      TEMP_COLOURS.unknown,
+      TEMP_COLOURS.unknown,
+    ]);
+    expect(textCalls(nulls, '0')).toHaveLength(0);
+    const partial = paintBack(hostWith({ cpu: 50 }));
+    expect(textCalls(partial, '50')).toHaveLength(1);
+    expect(textCalls(partial, '--')).toHaveLength(2);
+    expect(textCalls(partial, '0')).toHaveLength(0);
+  });
+
+  it('draws no panel and keeps all 16 rack LED columns without temps', () => {
+    const painter = paintBack(hostWith());
+    expect(textCalls(painter, 'PCH')).toHaveLength(0);
+    expect(textCalls(painter, '--')).toHaveLength(0);
+    expect(ledCount(painter)).toBe(16);
+  });
+
+  const hostStatus = (view: StageView): { status: string; severity: string } => {
+    const tip = officeTheme.hotspots.map((h) => h.tip(view)).find((t) => t.title === 'pve');
+    if (!tip) throw new Error('no host tip');
+    return tip;
+  };
+
+  it('spells the readings out in the host tooltip', () => {
+    expect(hostStatus(hostWith({ cpu: 71, chipset: 67, nvme: 56 }))).toMatchObject({
+      status: expect.stringContaining('CPU 71 °C, chipset 67 °C, NVMe 56 °C'),
+      severity: 'warn',
+    });
+    expect(hostStatus(hostWith({ cpu: 71, chipset: null })).status).toContain('chipset unreadable, NVMe unreadable');
+  });
+
+  it('turns the host tooltip critical when a reading is hot, and leaves it alone without temps', () => {
+    expect(hostStatus(hostWith({ cpu: 71, chipset: 67, nvme: 75 })).severity).toBe('crit');
+    expect(hostStatus(hostWith())).toMatchObject({
+      status: 'Running. NVMe SMART warning acknowledged',
+      severity: 'warn',
+    });
   });
 });
 

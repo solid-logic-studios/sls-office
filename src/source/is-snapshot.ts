@@ -3,6 +3,7 @@ import {
   type Host,
   type LabEvent,
   type Snapshot,
+  type Temps,
   type Vm,
   type Workload,
 } from '../contract/snapshot.ts';
@@ -28,6 +29,17 @@ function isNumber(value: unknown): value is number {
   return typeof value === 'number';
 }
 
+function isReading(value: unknown): boolean {
+  return value === undefined || value === null || isNumber(value);
+}
+
+function isTemps(value: unknown): value is Temps {
+  return (
+    value === undefined ||
+    (isRecord(value) && isReading(value.cpu) && isReading(value.chipset) && isReading(value.nvme))
+  );
+}
+
 function isHost(value: unknown): value is Host {
   return (
     isRecord(value) &&
@@ -37,7 +49,8 @@ function isHost(value: unknown): value is Host {
     isRecord(value.findings) &&
     isNumber(value.findings.ok) &&
     isNumber(value.findings.warn) &&
-    isNumber(value.findings.crit)
+    isNumber(value.findings.crit) &&
+    isTemps(value.temps)
   );
 }
 
@@ -79,8 +92,8 @@ function isEvent(value: unknown): value is LabEvent {
 
 /**
  * Lightweight runtime guard for the browser. It checks the structure the Engine and the Themes read:
- * the top-level shape, the host and its findings, every VM and its role, every workload by kind, and
- * every event by kind. Deliberately NOT checked: numeric ranges, the `health` vocabulary, timestamp
+ * the top-level shape, the host, its findings and its optional temps (each reading a number or null),
+ * every VM and its role, every workload by kind, and every event by kind. Deliberately NOT checked: numeric ranges, the `health` vocabulary, timestamp
  * formats and extra properties. That is the generated JSON Schema's job (ajv is not shipped to the browser).
  */
 export function isSnapshot(value: unknown): value is Snapshot {
