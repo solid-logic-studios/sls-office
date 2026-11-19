@@ -89,6 +89,7 @@ const STAGE: StageView = {
   vms: [vm('data'), COMPUTE, vm('deploy'), vm('ci')],
   findings: { ok: 3, warn: 1, crit: 0 },
   liftInUse: false,
+  liftCarY: null,
   vaultOpen: false,
   openStores: new Set(),
   busyBreakSpots: new Set(),

@@ -8,6 +8,7 @@ import { Cast } from './cast.ts';
 import type { Character } from './characters/character.ts';
 import { Founder } from './characters/founder.ts';
 import { Effects } from './effects.ts';
+import { LiftCar } from './lift-car.ts';
 import type { EventBus } from './event-bus.ts';
 import { MoodMachine, vitalsOf } from './mood.ts';
 import type { Random } from './random.ts';
@@ -40,6 +41,7 @@ export class Stage implements World {
   vms: readonly Vm[] = [];
   findings: Findings = NO_FINDINGS;
 
+  private readonly liftCar: LiftCar;
   private readonly director = new Director();
   private readonly triggers: SceneTriggers;
   private readonly traffic: Traffic;
@@ -60,6 +62,7 @@ export class Stage implements World {
     this.bubbles = new Bubbles(bus, clock, locate, theme.layout.width);
     this.breakSpots = new BreakSpots(theme.layout.breakSpots, random);
     this.cast = new Cast(this);
+    this.liftCar = new LiftCar(theme.layout.floors);
     this.triggers = new SceneTriggers(this, this.director);
     this.traffic = new Traffic(this, this.director);
     this.banter = new Banter(this);
@@ -94,6 +97,7 @@ export class Stage implements World {
   update(dt: number): void {
     this.updateVmMoods();
     this.cast.update(dt);
+    this.liftCar.update(this.cast.list().filter((character) => character.visible));
     this.director.update();
     this.traffic.update(dt);
     this.banter.update();
@@ -159,6 +163,7 @@ export class Stage implements World {
       vms: this.vms,
       findings: this.findings,
       liftInUse: this.cast.list().some((character) => character.visible && character.inLift),
+      liftCarY: this.liftCar.y,
       vaultOpen: this.setPieces.vaultOpen,
       openStores: this.setPieces.openStores,
       busyBreakSpots: this.breakSpots.busy,

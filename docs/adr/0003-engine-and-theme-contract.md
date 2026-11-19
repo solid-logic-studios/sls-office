@@ -114,3 +114,15 @@ that drift.
 - **Known quirk:** the Engine sends the Standup to `layout.floors[0]`, which is the Tower's
   basement. It works, in an odd room. Putting it in the lobby needs a contract change (an optional
   front spot), which is out of scope here.
+
+## Amendment: the lift car's position (November 2026)
+
+The Tower's lift car used to sweep the shaft on its own whenever anyone rode, unrelated to the
+rider. The Engine now says where the car is.
+
+- **`StageView.liftCarY`** is additive: the walk line (`Floor.walkY`) the car stands at. It follows
+  the first rider (cast order) while anyone rides and stays where the last ride ended; `null` until
+  the first ride. `liftInUse` is unchanged. Themes that do not draw a car (the Office, the boxes)
+  ignore it.
+- **A ride takes `LIFT_SECONDS` per floor travelled**, not a flat time. The Office's rides are all
+  one floor (it has two), so its timing is unchanged; the Tower's longer rides now take longer.

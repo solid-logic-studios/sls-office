@@ -112,6 +112,11 @@ export interface StageView {
   vms: readonly Vm[];
   findings: Findings;
   liftInUse: boolean;
+  /**
+   * The walk line (`Floor.walkY`) the lift car stands at: it follows the rider while anyone rides and
+   * stays where the last ride ended. `null` until the first ride.
+   */
+  liftCarY: number | null;
   vaultOpen: boolean;
   /** Indexes into `layout.stores` that the keeper has open right now. */
   openStores: ReadonlySet<number>;

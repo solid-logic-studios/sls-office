@@ -125,6 +125,11 @@ export abstract class Character implements StageNode {
     return this.walker.inLift;
   }
 
+  /** The walk line the lift is at while this character rides it (no lane offset), else `null`. */
+  get liftLineY(): number | null {
+    return this.walker.liftLineY;
+  }
+
   get seated(): boolean {
     return this.seatY !== null && !this.walker.moving;
   }

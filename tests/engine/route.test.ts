@@ -49,6 +49,16 @@ describe('planRoute', () => {
   });
 });
 
+const tall = {
+  floors: [
+    { walkY: 300, minX: 10, maxX: 300 },
+    { walkY: 200, minX: 10, maxX: 300 },
+    { walkY: 100, minX: 10, maxX: 300 },
+    { walkY: 0, minX: 10, maxX: 300 },
+  ],
+  liftX: 150,
+};
+
 describe('Walker', () => {
   it('stands on the floor line lifted by its lane', () => {
     const walker = new Walker(layout, { x: 50, floor: 0 }, 6);
@@ -130,5 +140,37 @@ describe('Walker', () => {
     walker.goTo({ x: 100, floor: 1 }, 10);
     walker.teleport({ x: 220, floor: 1 });
     expect(walker).toMatchObject({ x: 220, y: 98, floor: 1, moving: false });
+  });
+
+  it('takes LIFT_SECONDS for a one-floor ride', () => {
+    const walker = new Walker(tall, { x: 150, floor: 0 }, 0);
+    walker.goTo({ x: 150, floor: 1 }, 10);
+    expect(walker.step(LIFT_SECONDS - 0.01)).toBe(false);
+    expect(walker.inLift).toBe(true);
+    expect(walker.step(0.01)).toBe(true);
+    expect(walker).toMatchObject({ inLift: false, floor: 1, y: 200 });
+  });
+
+  it('takes LIFT_SECONDS per floor travelled, and is halfway in y at half that time', () => {
+    const walker = new Walker(tall, { x: 150, floor: 0 }, 4);
+    walker.goTo({ x: 150, floor: 3 }, 10);
+    expect(walker.step(1.5 * LIFT_SECONDS)).toBe(false);
+    expect(walker.y).toBeCloseTo(150 - 4);
+    expect(walker.liftLineY).toBeCloseTo(150);
+    expect(walker.step(1.5 * LIFT_SECONDS - 0.01)).toBe(false);
+    expect(walker.inLift).toBe(true);
+    expect(walker.step(0.01)).toBe(true);
+    expect(walker).toMatchObject({ inLift: false, floor: 3, y: -4, liftLineY: null });
+  });
+
+  it('reports the lift line without the lane offset, and null when not riding', () => {
+    const walker = new Walker(tall, { x: 140, floor: 1 }, 6);
+    expect(walker.liftLineY).toBeNull();
+    walker.goTo({ x: 150, floor: 2 }, 10);
+    walker.step(1);
+    expect(walker.liftLineY).toBe(200);
+    expect(walker.y).toBe(194);
+    walker.step(LIFT_SECONDS / 2);
+    expect(walker.liftLineY).toBeCloseTo(150);
   });
 });

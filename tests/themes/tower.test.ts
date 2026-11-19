@@ -7,6 +7,8 @@ import { officeTheme } from '../../src/themes/office/index.ts';
 import { TEMP_COLOURS } from '../../src/themes/office/temps.ts';
 import { FINDINGS_LAMP } from '../../src/themes/tower/boards.ts';
 import { LAMP_COLOURS, findingsLamp, paintOverflow } from '../../src/themes/tower/dressing.ts';
+import { FLOOR, STOREYS, band } from '../../src/themes/tower/geometry.ts';
+import { CAR_TOP_OFFSET, carTopAt } from '../../src/themes/tower/lift.ts';
 import { towerTheme } from '../../src/themes/tower/index.ts';
 import { RecordingPainter } from '../support/recording-painter.ts';
 
@@ -54,6 +56,7 @@ function stage(over: Partial<StageView> = {}): StageView {
     ],
     findings: { ok: 3, warn: 2, crit: 1 },
     liftInUse: true,
+    liftCarY: null,
     vaultOpen: true,
     openStores: new Set([0, 1]),
     busyBreakSpots: new Set([0]),
@@ -254,6 +257,12 @@ describe('towerTheme drawing', () => {
     expect(paintBack(stage({ liftInUse: true })).calls).not.toEqual(paintBack(stage({ liftInUse: false })).calls);
   });
 
+  it('shows the lift in use differently from idle at the same spot', () => {
+    expect(paintBack(stage({ liftInUse: true, liftCarY: band(3).walk })).calls).not.toEqual(
+      paintBack(stage({ liftInUse: false, liftCarY: band(3).walk })).calls,
+    );
+  });
+
   it('keeps every hotspot on the stage', () => {
     for (const { rect } of towerTheme.hotspots) {
       expect(rect.x).toBeGreaterThanOrEqual(0);
@@ -353,5 +362,40 @@ describe('the Tower hotspots', () => {
     expect(tip('MySQL 8.4', stage())).toMatchObject({ status: 'Unhealthy', severity: 'crit' });
     expect(tip('runner-1', stage())).toMatchObject({ cpu: 40, mem: 30, status: 'Healthy' });
     expect(tip('Deploy runner', stage({ vms: [] })).cpu).toBeUndefined();
+  });
+});
+
+describe('the Tower lift car', () => {
+  const CAR_LIT = '#fff2c4';
+  const CAR_FRAME = '#c9a14a';
+  const litCar = (view: StageView) => paintBack(view).rects.find((rect) => rect.colour === CAR_LIT);
+
+  it('sits the same distance above the walk line on every floor', () => {
+    for (let floor = 0; floor < STOREYS; floor++) {
+      expect(band(floor).walk - (band(floor).back - 24)).toBe(CAR_TOP_OFFSET);
+      expect(carTopAt(band(floor).walk)).toBe(band(floor).back - 24);
+    }
+  });
+
+  it('is drawn lit at the walk line the Engine reports, wherever that is', () => {
+    for (const walkY of [band(FLOOR.basement).walk, band(4).walk, (band(4).walk + band(5).walk) / 2]) {
+      expect(litCar(stage({ liftInUse: true, liftCarY: walkY }))?.y).toBe(carTopAt(walkY));
+    }
+  });
+
+  it('frames the lit car, and parks in the lobby when the Engine has no position yet', () => {
+    const lobbyTop = carTopAt(band(FLOOR.lobby).walk);
+    const view = stage({ liftInUse: true, liftCarY: null });
+    expect(litCar(view)?.y).toBe(lobbyTop);
+    expect(paintBack(view).rects.some((rect) => rect.colour === CAR_FRAME && rect.y === lobbyTop - 1)).toBe(true);
+  });
+
+  it('parks shut at the floor it last stopped at when idle', () => {
+    const parked = (liftCarY: number | null): number | undefined =>
+      paintBack(stage({ liftInUse: false, liftCarY })).rects.find((rect) => rect.colour === CAR_FRAME && rect.h === 2)
+        ?.y;
+    expect(litCar(stage({ liftInUse: false, liftCarY: band(5).walk }))).toBeUndefined();
+    expect(parked(band(5).walk)).toBe(carTopAt(band(5).walk));
+    expect(parked(null)).toBe(carTopAt(band(FLOOR.lobby).walk));
   });
 });

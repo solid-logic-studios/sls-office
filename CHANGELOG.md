@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Tower lift car now carries its rider, and lift rides take longer the further they go.
+
 ## [0.5.0] - 19 November 2026
 
 ### Added

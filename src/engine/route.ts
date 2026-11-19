@@ -4,6 +4,7 @@ export type RouteStep = { kind: 'walk'; x: number } | { kind: 'lift'; floor: num
 
 type RouteLayout = Pick<Layout, 'floors' | 'liftX'>;
 
+/** Seconds a lift ride takes per floor travelled: one floor takes this long, three take three times it. */
 export const LIFT_SECONDS = 0.9;
 
 function floorAt(layout: RouteLayout, index: number): Floor {
@@ -53,10 +54,12 @@ export class Walker {
   }
 
   get y(): number {
-    const here = this.lineY(this.floorIndex);
-    const step = this.steps[0];
-    if (this.ride === null || step?.kind !== 'lift') return here;
-    return here + (this.lineY(step.floor) - here) * (this.ride / LIFT_SECONDS);
+    return (this.rideWalkY() ?? this.walkY(this.floorIndex)) - this.lane;
+  }
+
+  /** The walk line (without the lane offset) the lift is at while this walker rides it, else `null`. */
+  get liftLineY(): number | null {
+    return this.rideWalkY();
   }
 
   get floor(): number {
@@ -109,8 +112,21 @@ export class Walker {
     return true;
   }
 
-  private lineY(floor: number): number {
-    return floorAt(this.layout, floor).walkY - this.lane;
+  private walkY(floor: number): number {
+    return floorAt(this.layout, floor).walkY;
+  }
+
+  /** How long a ride from the floor the walker is on to `floor` takes. */
+  private rideSeconds(floor: number): number {
+    return LIFT_SECONDS * Math.abs(floor - this.floorIndex);
+  }
+
+  /** The lift's walk line, interpolated from the ride's start floor to its destination; `null` when not riding. */
+  private rideWalkY(): number | null {
+    const step = this.steps[0];
+    if (this.ride === null || step?.kind !== 'lift') return null;
+    const from = this.walkY(this.floorIndex);
+    return from + (this.walkY(step.floor) - from) * (this.ride / this.rideSeconds(step.floor));
   }
 
   /** Puts a rider down on the floor the lift was heading for. */
@@ -135,12 +151,13 @@ export class Walker {
 
   private rideLift(floor: number, left: number): number | null {
     const elapsed = (this.ride ?? 0) + left;
-    if (elapsed < LIFT_SECONDS) {
+    const duration = this.rideSeconds(floor);
+    if (elapsed < duration) {
       this.ride = elapsed;
       return null;
     }
     this.floorIndex = floor;
     this.ride = null;
-    return elapsed - LIFT_SECONDS;
+    return elapsed - duration;
   }
 }
