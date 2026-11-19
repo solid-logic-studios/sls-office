@@ -470,12 +470,22 @@
         }
         .wrap {
           padding-block: 6px 20px;
-          padding-left: max(8px, env(safe-area-inset-left, 0px));
-          padding-right: max(8px, env(safe-area-inset-right, 0px));
+          --gutter-left: max(8px, env(safe-area-inset-left, 0px));
+          --gutter-right: max(8px, env(safe-area-inset-right, 0px));
+          padding-left: var(--gutter-left);
+          padding-right: var(--gutter-right);
         }
         #waking,
         .stage:has(canvas[hidden]) {
           display: none;
+        }
+        /* Edge to edge: drop the frame and cancel .wrap's side padding so the scroller spans the viewport. */
+        .stage {
+          padding: 0;
+          border-inline: 0;
+          box-shadow: none;
+          margin-left: calc(-1 * var(--gutter-left));
+          margin-right: calc(-1 * var(--gutter-right));
         }
 
         /* Verdict bar */

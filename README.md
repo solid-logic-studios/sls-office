@@ -23,6 +23,11 @@ under the stage with presets, load sliders and triggers for each scene (deploy, 
 backup, OOM, VM down). `?theme=tower` picks the Tower, a narrow high-rise for a phone;
 `?theme=boxes` picks the plain test theme. The theme picker in the header does the same.
 
+On a phone (a viewport 480 CSS px wide or less, read once at load) the page opens on the Tower
+unless `?theme=` says otherwise (the Office above that width), starts with sound off unless a
+choice is saved (`?mute` still forces it off), draws about 20 frames a second, and stops drawing
+while the stage is scrolled off screen. Polling carries on.
+
 ## Themes
 
 A Theme supplies the layout, the looks, the lines and the set dressing; the engine owns all the
