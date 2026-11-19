@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The lift is now one shared car. Riders wait at the landing, share trips and ride inside it, so nobody slides up a bare shaft, and rides take longer the further they go (#68).
+
 ## [0.5.0] - 19 November 2026
 
 ### Added

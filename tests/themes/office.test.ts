@@ -51,6 +51,7 @@ function stage(over: Partial<StageView> = {}): StageView {
     vms: [vm('data'), vm('compute', [site()])],
     findings: { ok: 3, warn: 2, crit: 1 },
     liftInUse: true,
+    lift: { y: 242, moving: false, doorsOpen: false, calls: new Set() },
     vaultOpen: true,
     openStores: new Set([0, 1]),
     busyBreakSpots: new Set([3, 6]),

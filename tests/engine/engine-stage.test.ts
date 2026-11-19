@@ -190,7 +190,13 @@ describe('Engine drawing', () => {
     run(engine, 1);
     engine.draw(new RecordingPainter());
     expect(views).toHaveLength(1);
-    expect(views[0]).toMatchObject({ hour: 21.5, vaultOpen: false, liftInUse: false, host: { name: 'sls-host' } });
+    expect(views[0]).toMatchObject({
+      hour: 21.5,
+      vaultOpen: false,
+      liftInUse: false,
+      lift: { moving: false, doorsOpen: false, calls: new Set() },
+      host: { name: 'sls-host' },
+    });
     expect(views[0]?.now).toBeCloseTo(1);
     expect(views[0]?.vms).toHaveLength(4);
   });

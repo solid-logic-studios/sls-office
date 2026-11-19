@@ -172,6 +172,7 @@ export class Cast {
     if (!this.everyone.some((character) => character.gone)) return;
     for (const character of this.everyone) {
       if (!character.gone) continue;
+      character.dispose();
       if (character.home !== null) this.homes.vacate(character.home, character);
       const subject = character.subject;
       if (subject !== null && subject.kind !== 'founder') {

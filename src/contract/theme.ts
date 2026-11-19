@@ -101,6 +101,18 @@ export interface Occupant {
   atSeat: boolean;
 }
 
+/** The lift car, as a Theme paints it. Riders are drawn over it by the Engine. */
+export interface LiftView {
+  /** The walk line (`Floor.walkY`) the car is at: a floor's while stopped, between two while travelling. */
+  y: number;
+  /** True while the car is travelling between floors. */
+  moving: boolean;
+  /** True while the car stands at a floor with its doors open. */
+  doorsOpen: boolean;
+  /** Floors with someone waiting at the landing. */
+  calls: ReadonlySet<number>;
+}
+
 /** What a Theme can read while it paints: the lab state plus a few facts about the stage. */
 export interface StageView {
   /** Seconds of animation time. Stops while the Office is paused. */
@@ -111,7 +123,10 @@ export interface StageView {
   host: Host | null;
   vms: readonly Vm[];
   findings: Findings;
+  /** Anyone is waiting for the lift or riding it. */
   liftInUse: boolean;
+  /** The one lift car the Engine runs. */
+  lift: LiftView;
   vaultOpen: boolean;
   /** Indexes into `layout.stores` that the keeper has open right now. */
   openStores: ReadonlySet<number>;

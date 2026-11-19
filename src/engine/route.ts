@@ -1,10 +1,9 @@
 import type { Floor, Layout, Spot } from '../contract/theme.ts';
+import type { Lift, LiftTicket } from './lift.ts';
 
 export type RouteStep = { kind: 'walk'; x: number } | { kind: 'lift'; floor: number };
 
 type RouteLayout = Pick<Layout, 'floors' | 'liftX'>;
-
-export const LIFT_SECONDS = 0.9;
 
 function floorAt(layout: RouteLayout, index: number): Floor {
   const floor = layout.floors[index];
@@ -29,19 +28,28 @@ export function planRoute(from: Spot, to: Spot, layout: RouteLayout): RouteStep[
   return steps;
 }
 
+/**
+ * Walks a character along its route. A lift step is wait, then ride: at `liftX` the walker calls the
+ * shared `Lift` and stands at the landing in its lane until the car boards it; while riding, its y is
+ * the car's walk line less its lane; the lift lets it off at its floor, and the route carries on.
+ */
 export class Walker {
   private posX: number;
   private floorIndex: number;
   private steps: RouteStep[] = [];
   private speed = 0;
   private facingDir: 1 | -1 = 1;
-  /** Seconds into the current lift ride, or `null` when not riding. */
-  private ride: number | null = null;
+  /** The call for the lift step under way, from the moment the walker reaches the landing until it is let off. */
+  private ticket: LiftTicket | null = null;
+  /** A route that ended at the lift door ended when the lift let the walker off: the next step reports it. */
+  private arrivedByLift = false;
 
   constructor(
     private readonly layout: RouteLayout,
     start: Spot,
-    private readonly lane: number,
+    /** Pixels above the walk line it walks at, so a crowd does not stand on one line. */
+    readonly lane: number,
+    private readonly lift: Lift,
   ) {
     floorAt(layout, start.floor);
     this.posX = start.x;
@@ -53,10 +61,7 @@ export class Walker {
   }
 
   get y(): number {
-    const here = this.lineY(this.floorIndex);
-    const step = this.steps[0];
-    if (this.ride === null || step?.kind !== 'lift') return here;
-    return here + (this.lineY(step.floor) - here) * (this.ride / LIFT_SECONDS);
+    return (this.inLift ? this.lift.y : this.walkY(this.floorIndex)) - this.lane;
   }
 
   get floor(): number {
@@ -68,40 +73,66 @@ export class Walker {
     return this.facingDir;
   }
 
+  /** On a route, including waiting for and riding the lift. */
   get moving(): boolean {
     return this.steps.length > 0;
   }
 
+  /** In the car. */
   get inLift(): boolean {
-    return this.ride !== null;
+    return this.ticket?.state === 'riding';
   }
 
-  /** Replaces any current route. `speed` is art pixels per second. */
+  /** At the landing, waiting for the car. */
+  get waitingForLift(): boolean {
+    return this.ticket?.state === 'waiting';
+  }
+
+  /**
+   * Replaces the current route. `speed` is art pixels per second. A ride already under way is not
+   * interrupted: it finishes, and the new route is planned from where it lets the rider off. A call
+   * still waiting is cancelled, and the new route is planned from the landing.
+   */
   goTo(target: Spot, speed: number): void {
-    this.settle();
-    this.steps = planRoute({ x: this.posX, floor: this.floorIndex }, target, this.layout);
+    const ride = this.keepRideOnly();
+    const from = ride === null ? { x: this.posX, floor: this.floorIndex } : { x: this.layout.liftX, floor: ride.floor };
+    this.steps.push(...planRoute(from, target, this.layout));
     this.speed = speed;
+    this.arrivedByLift = false;
   }
 
-  /** Drops the route where it stands; a rider is put down on the floor it was heading for. */
+  /** Drops the route where it stands: a ride already under way finishes first, a waiting call is cancelled. */
   stop(): void {
-    this.settle();
-    this.steps = [];
+    this.keepRideOnly();
+    this.arrivedByLift = false;
   }
 
+  /** Drops the route and leaves the lift at once: the call is cancelled, or the rider taken out of the car. */
+  halt(): void {
+    if (this.ticket !== null) this.lift.leave(this.ticket);
+    this.ticket = null;
+    this.steps = [];
+    this.arrivedByLift = false;
+  }
+
+  /** Moves at once to `spot`, dropping the route and leaving the lift. */
   teleport(spot: Spot): void {
     floorAt(this.layout, spot.floor);
-    this.stop();
+    this.halt();
     this.posX = spot.x;
     this.floorIndex = spot.floor;
   }
 
   /** Advances by `dt` seconds. Returns true only on the step in which the walker arrives. */
   step(dt: number): boolean {
+    if (this.arrivedByLift) {
+      this.arrivedByLift = false;
+      return true;
+    }
     if (this.steps.length === 0) return false;
     let left = dt;
     for (let step = this.steps[0]; step; step = this.steps[0]) {
-      const remaining = step.kind === 'walk' ? this.walk(step.x, left) : this.rideLift(step.floor, left);
+      const remaining = step.kind === 'walk' ? this.walk(step.x, left) : this.callLift(step.floor);
       if (remaining === null) return false;
       left = remaining;
       this.steps.shift();
@@ -109,15 +140,29 @@ export class Walker {
     return true;
   }
 
-  private lineY(floor: number): number {
-    return floorAt(this.layout, floor).walkY - this.lane;
+  private walkY(floor: number): number {
+    return floorAt(this.layout, floor).walkY;
   }
 
-  /** Puts a rider down on the floor the lift was heading for. */
-  private settle(): void {
+  /** The lift step the walker is riding, or `null` when not in the car. */
+  private currentRide(): Extract<RouteStep, { kind: 'lift' }> | null {
     const step = this.steps[0];
-    if (this.ride !== null && step?.kind === 'lift') this.floorIndex = step.floor;
-    this.ride = null;
+    return this.inLift && step?.kind === 'lift' ? step : null;
+  }
+
+  /** Drops every step but a ride under way, which it returns; with none, cancels a call still waiting. */
+  private keepRideOnly(): Extract<RouteStep, { kind: 'lift' }> | null {
+    const ride = this.currentRide();
+    if (ride === null) this.leaveQueue();
+    this.steps = ride === null ? [] : [ride];
+    return ride;
+  }
+
+  /** Cancels a call still waiting at the landing. */
+  private leaveQueue(): void {
+    if (this.ticket === null || this.ticket.state !== 'waiting') return;
+    this.lift.leave(this.ticket);
+    this.ticket = null;
   }
 
   /** Returns the time left over once the step is done, or `null` if it is not done yet. */
@@ -133,14 +178,20 @@ export class Walker {
     return distance === 0 ? left : left - distance / this.speed;
   }
 
-  private rideLift(floor: number, left: number): number | null {
-    const elapsed = (this.ride ?? 0) + left;
-    if (elapsed < LIFT_SECONDS) {
-      this.ride = elapsed;
-      return null;
-    }
-    this.floorIndex = floor;
-    this.ride = null;
-    return elapsed - LIFT_SECONDS;
+  /** At the landing: calls the car once, then waits. The lift ends the step itself, through `alight`. */
+  private callLift(floor: number): null {
+    this.ticket ??= this.lift.call(this.floorIndex, floor, () => this.alight());
+    return null;
+  }
+
+  /** The car stands at the walker's floor with its doors open: it steps off and carries on. */
+  private alight(): void {
+    const step = this.steps[0];
+    if (this.ticket === null || step?.kind !== 'lift') return;
+    this.floorIndex = this.ticket.to;
+    this.posX = this.layout.liftX;
+    this.ticket = null;
+    this.steps.shift();
+    if (this.steps.length === 0) this.arrivedByLift = true;
   }
 }
