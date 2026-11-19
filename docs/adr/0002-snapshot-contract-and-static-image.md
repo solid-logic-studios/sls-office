@@ -48,6 +48,11 @@ Image:
 - **Amended (v0.1.1):** the GHCR package is public (solid-logic-studios/infrastructure ADR-0018), so
   hosts pull with no credential. Public is one-way, so only reviewed releases are published, with
   no provenance or SBOM attestation (their GitHub event payload would be public too).
+- **Amended (November 2026):** release tags are made by automation, not by hand. A release is a
+  reviewed `chore(release): vX.Y.Z` PR that bumps `package.json` and rolls the CHANGELOG (opened by
+  the `/release` skill). On merge, `.github/workflows/tag-release.yml` tags the merge commit and calls
+  `release.yml` in the same run, because a tag pushed with `GITHUB_TOKEN` starts no workflow. Only a
+  version change on `main` publishes, so the "only reviewed releases are published" rule holds.
 
 ## Consequences
 

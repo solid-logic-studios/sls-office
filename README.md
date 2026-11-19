@@ -157,6 +157,16 @@ A few small surprises are tucked in, all quiet effects that follow mute and quie
 snores until it recovers, a long run of days with no Alarm earns a jingle, and the kettle goes on at morning tea.
 The rest you can find in `?sim`, where the Sound panel plays each of them.
 
+## Releasing
+
+Run `/release` in Claude Code (or follow `.claude/skills/release/SKILL.md` by hand). It works out the
+next version from `CHANGELOG.md` `[Unreleased]`, bumps `package.json`, rolls the CHANGELOG and opens a
+`chore(release): vX.Y.Z` PR. Merging that PR is the release: `tag-release.yml` sees a version on `main`
+with no tag, tags the merge commit `vX.Y.Z` and calls `release.yml`, which runs the gate, pushes
+`:X.Y.Z` and `:X.Y` to GHCR and creates the GitHub Release with the schema asset. Any other merge to
+`main` leaves the version alone and publishes nothing. Pushing a `vX.Y.Z` tag by hand still runs
+`release.yml` as a fallback.
+
 ## Contributing
 
 See [`CLAUDE.md`](CLAUDE.md) (canonical), [`AGENTS.md`](AGENTS.md) and [`CONTEXT.md`](CONTEXT.md).
