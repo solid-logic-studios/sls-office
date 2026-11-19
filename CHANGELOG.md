@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 20 November 2026
+
 ### Fixed
 
 - The lift is now one shared car. Riders wait at the landing, share trips and ride inside it, so nobody slides up a bare shaft, and rides take longer the further they go (#68).
@@ -77,7 +79,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Minimal VM moods page with a "Waking the office…" state when the snapshot is missing or stale.
 - Static image `ghcr.io/solid-logic-studios/sls-office` built by CI.
 
-[Unreleased]: https://github.com/solid-logic-studios/sls-office/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/solid-logic-studios/sls-office/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/solid-logic-studios/sls-office/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/solid-logic-studios/sls-office/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/solid-logic-studios/sls-office/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/solid-logic-studios/sls-office/compare/v0.2.1...v0.3.0
