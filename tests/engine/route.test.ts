@@ -258,10 +258,9 @@ describe('Walker', () => {
     walker.goTo({ x: 200, floor: 3 }, 10);
     until(() => walker.inLift);
     until(() => lift.y < 250);
-    expect(lift.load).toBe(1);
+    expect(walker.inLift).toBe(true);
     walker.teleport({ x: 40, floor: 0 });
     expect(walker).toMatchObject({ x: 40, y: 300, floor: 0, moving: false, inLift: false });
-    expect(lift.load).toBe(0);
     expect(lift.inUse).toBe(false);
   });
 

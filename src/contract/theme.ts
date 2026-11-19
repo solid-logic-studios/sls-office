@@ -105,6 +105,8 @@ export interface Occupant {
 export interface LiftView {
   /** The walk line (`Floor.walkY`) the car is at: a floor's while stopped, between two while travelling. */
   y: number;
+  /** True while the car is travelling between floors. */
+  moving: boolean;
   /** True while the car stands at a floor with its doors open. */
   doorsOpen: boolean;
   /** Floors with someone waiting at the landing. */

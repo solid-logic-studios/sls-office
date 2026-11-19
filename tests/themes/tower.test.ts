@@ -13,7 +13,7 @@ import { towerTheme } from '../../src/themes/tower/index.ts';
 import { RecordingPainter } from '../support/recording-painter.ts';
 
 /** A shut lift car standing at the walk line `y`. */
-const carAt = (y: number): StageView['lift'] => ({ y, doorsOpen: false, calls: new Set() });
+const carAt = (y: number): StageView['lift'] => ({ y, moving: false, doorsOpen: false, calls: new Set() });
 
 /* ------------------------------------------------------------------ helpers */
 
@@ -413,15 +413,15 @@ describe('the Tower lift car', () => {
     const between = (band(3).walk + band(4).walk) / 2;
 
     it('shows the car door gap only while the doors are open', () => {
-      const open = stage({ liftInUse: true, lift: { y: between, doorsOpen: true, calls: new Set() } });
-      const shut = stage({ liftInUse: true, lift: { y: between, doorsOpen: false, calls: new Set() } });
+      const open = stage({ liftInUse: true, lift: { y: between, moving: false, doorsOpen: true, calls: new Set() } });
+      const shut = stage({ liftInUse: true, lift: { y: between, moving: false, doorsOpen: false, calls: new Set() } });
       expect(gaps(open).some((rect) => rect.y === carTopAt(between))).toBe(true);
       expect(gaps(shut)).toHaveLength(0);
     });
 
     it('opens the landing doors only on the car floor while the doors are open', () => {
       const walkY = band(3).walk;
-      const open = stage({ liftInUse: true, lift: { y: walkY, doorsOpen: true, calls: new Set() } });
+      const open = stage({ liftInUse: true, lift: { y: walkY, moving: false, doorsOpen: true, calls: new Set() } });
       const landing = gaps(open).map((rect) => rect.y);
       expect(landing).toContain(carTopAt(walkY));
       for (let floor = 0; floor < STOREYS; floor++) {
@@ -431,7 +431,7 @@ describe('the Tower lift car', () => {
     });
 
     it('lights a landing lamp amber only for floors with a call', () => {
-      const view = stage({ lift: { y: between, doorsOpen: false, calls: new Set([2, 5]) } });
+      const view = stage({ lift: { y: between, moving: false, doorsOpen: false, calls: new Set([2, 5]) } });
       for (let floor = 0; floor < STOREYS; floor++) {
         expect(lamp(view, floor)?.colour === LAMP_BUSY).toBe(floor === 2 || floor === 5);
       }
@@ -440,11 +440,28 @@ describe('the Tower lift car', () => {
     it('runs the cables only while the car travels', () => {
       const cables = (view: StageView) =>
         paintBack(view).rects.filter((rect) => rect.colour === '#55506a' && rect.h === 2);
-      expect(cables(stage({ liftInUse: true, lift: carAt(between) })).length).toBeGreaterThan(0);
-      expect(cables(stage({ liftInUse: true, lift: carAt(band(3).walk) }))).toHaveLength(0);
-      expect(cables(stage({ liftInUse: true, lift: { y: between, doorsOpen: true, calls: new Set() } }))).toHaveLength(
-        0,
-      );
+      const walkY = band(3).walk;
+      expect(cables(stage({ liftInUse: true, lift: { ...carAt(between), moving: true } })).length).toBeGreaterThan(0);
+      expect(cables(stage({ liftInUse: false, lift: { ...carAt(between), moving: true } })).length).toBeGreaterThan(0);
+      expect(cables(stage({ liftInUse: true, lift: carAt(walkY) }))).toHaveLength(0);
+      expect(cables(stage({ liftInUse: true, lift: { ...carAt(walkY), doorsOpen: true } }))).toHaveLength(0);
+    });
+  });
+
+  describe('the car body', () => {
+    const lit = (view: StageView) => paintBack(view).rects.some((rect) => rect.colour === '#fff2c4');
+    const walkY = band(3).walk;
+
+    it("is drawn while the doors are open with nobody about (the last rider's dwell)", () => {
+      expect(lit(stage({ liftInUse: false, lift: { ...carAt(walkY), doorsOpen: true } }))).toBe(true);
+    });
+
+    it('is drawn while the car moves with nobody about (a cancelled call)', () => {
+      expect(lit(stage({ liftInUse: false, lift: { ...carAt(walkY), moving: true } }))).toBe(true);
+    });
+
+    it('shows only the gold cap when idle with nobody about', () => {
+      expect(lit(stage({ liftInUse: false, lift: carAt(walkY) }))).toBe(false);
     });
   });
 });

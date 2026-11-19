@@ -94,9 +94,7 @@ export class Walker {
    * still waiting is cancelled, and the new route is planned from the landing.
    */
   goTo(target: Spot, speed: number): void {
-    const ride = this.currentRide();
-    if (ride === null) this.leaveQueue();
-    this.steps = ride === null ? [] : [ride];
+    const ride = this.keepRideOnly();
     const from = ride === null ? { x: this.posX, floor: this.floorIndex } : { x: this.layout.liftX, floor: ride.floor };
     this.steps.push(...planRoute(from, target, this.layout));
     this.speed = speed;
@@ -105,9 +103,7 @@ export class Walker {
 
   /** Drops the route where it stands: a ride already under way finishes first, a waiting call is cancelled. */
   stop(): void {
-    const ride = this.currentRide();
-    if (ride === null) this.leaveQueue();
-    this.steps = ride === null ? [] : [ride];
+    this.keepRideOnly();
     this.arrivedByLift = false;
   }
 
@@ -152,6 +148,14 @@ export class Walker {
   private currentRide(): Extract<RouteStep, { kind: 'lift' }> | null {
     const step = this.steps[0];
     return this.inLift && step?.kind === 'lift' ? step : null;
+  }
+
+  /** Drops every step but a ride under way, which it returns; with none, cancels a call still waiting. */
+  private keepRideOnly(): Extract<RouteStep, { kind: 'lift' }> | null {
+    const ride = this.currentRide();
+    if (ride === null) this.leaveQueue();
+    this.steps = ride === null ? [] : [ride];
+    return ride;
   }
 
   /** Cancels a call still waiting at the landing. */

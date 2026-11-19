@@ -192,7 +192,7 @@ export abstract class Character implements StageNode {
   /** Its subject has gone from the lab. */
   retire(): void {
     if (this.visible) this.retiring = true;
-    else this.gone = true;
+    else this.vanish();
   }
 
   /** Pops into view where it stands. */
@@ -203,6 +203,7 @@ export abstract class Character implements StageNode {
   /** Pops out of view for good (quietly, if it was already out of view). */
   vanish(): void {
     if (this.visible) this.world.effects.puff(this.x, this.y - PUFF_LIFT);
+    this.walker.halt();
     this.gone = true;
   }
 

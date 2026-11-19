@@ -1,5 +1,5 @@
 import type { Painter } from '../../contract/painter.ts';
-import type { DecorFn, LiftView } from '../../contract/theme.ts';
+import type { DecorFn } from '../../contract/theme.ts';
 import { pen } from '../office/pen.ts';
 import { FLOOR, FLOOR_NAMES, SHAFT, STOREYS, band, storeyTop } from './geometry.ts';
 
@@ -7,10 +7,10 @@ import { FLOOR, FLOOR_NAMES, SHAFT, STOREYS, band, storeyTop } from './geometry.
  * The lift: a shaft at the right of every storey, a landing with doors, a lamp and the floor's
  * name on each, and the one car the Engine runs. The Engine reports the car as `lift`: the walk
  * line it is at (`y`), whether its doors are open and the floors with someone waiting (`calls`).
- * The car is drawn wherever `y` is. It is lit while anyone waits or rides (`liftInUse`) and shows
- * only a shut gold cap when idle and empty. While its doors are open a gap shows in the car and in
+ * The car is drawn wherever `y` is. It is lit while it travels, stands with its doors open or anyone
+ * waits or rides (`liftInUse`), and shows only a shut gold cap when idle with nobody about. While its doors are open a gap shows in the car and in
  * the landing doors of the floor it stands at; the other landings stay shut. A landing's lamp is
- * amber while someone waits there and green otherwise. The cables run only while the car travels.
+ * amber while someone waits there and green otherwise. The cables run only while the car travels (`moving`).
  * The riders are drawn over the car by the Engine.
  */
 
@@ -39,13 +39,6 @@ function nearestFloor(walkY: number): number {
   return nearest;
 }
 
-/** True while the car travels: the lift is in use, its doors are shut and it is between landings. */
-const isMoving = (liftInUse: boolean, { y, doorsOpen }: LiftView): boolean => {
-  if (!liftInUse || doorsOpen) return false;
-  for (let floor = 0; floor < STOREYS; floor++) if (band(floor).walk === y) return false;
-  return true;
-};
-
 /** The dark gap down the middle of a pair of doors whose top is at `top`. */
 const gap = (painter: Painter, top: number): void =>
   pen(painter).R('#2a2533', CAR_X + CAR.w / 2 - DOOR_GAP, top, DOOR_GAP * 2, CAR.h);
@@ -58,7 +51,7 @@ export const paintLift: DecorFn = (painter, { now, liftInUse, lift }) => {
   // The shaft and its cables.
   R('#1c1926', SHAFT.x, top, SHAFT.w, bottom - top);
   for (const x of [SHAFT.x + 5, SHAFT.x + SHAFT.w - 6]) R('#2c2838', x, top, 1, bottom - top);
-  if (isMoving(liftInUse, lift)) {
+  if (lift.moving) {
     for (let y = top + Math.floor((now * 40) % 8); y < bottom; y += 8) R('#55506a', SHAFT.x + 5, y, 1, 2);
   }
   for (let floor = 0; floor < STOREYS; floor++) {
@@ -74,7 +67,7 @@ export const paintLift: DecorFn = (painter, { now, liftInUse, lift }) => {
   }
   // The car.
   const y = carTopAt(lift.y);
-  if (!liftInUse) {
+  if (!(lift.moving || lift.doorsOpen || liftInUse)) {
     R('#c9a14a', CAR_X, y, CAR.w, 2);
     return;
   }

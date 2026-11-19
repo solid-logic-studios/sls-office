@@ -47,8 +47,8 @@ function rig(entrance = 0) {
 describe('Lift', () => {
   it('starts parked on the entrance floor with its doors shut and nobody about', () => {
     const { lift } = rig(2);
-    expect(lift).toMatchObject({ y: walkY(2), doorsOpen: false, inUse: false, load: 0 });
-    expect(lift.view()).toEqual({ y: walkY(2), doorsOpen: false, calls: new Set() });
+    expect(lift).toMatchObject({ y: walkY(2), doorsOpen: false, moving: false, inUse: false });
+    expect(lift.view()).toEqual({ y: walkY(2), moving: false, doorsOpen: false, calls: new Set() });
   });
 
   it('idles where it is with nothing to do', () => {
@@ -75,7 +75,7 @@ describe('Lift', () => {
     // Doors dwell, then two floors down, and the doors open on floor 1.
     r.until(() => r.alighted.has('a'));
     expect(r.alighted.get('a')).toBeCloseTo(3 * LIFT_SECONDS + DWELL_SECONDS + 2 * LIFT_SECONDS, 1);
-    expect(r.lift).toMatchObject({ y: walkY(1), doorsOpen: true, load: 0, inUse: false });
+    expect(r.lift).toMatchObject({ y: walkY(1), doorsOpen: true, moving: false, inUse: false });
     expect(r.state('a')).toBe('done');
   });
 
@@ -93,7 +93,6 @@ describe('Lift', () => {
     r.call('b', 2, 3);
     r.until(() => r.lift.doorsOpen);
     expect([r.state('a'), r.state('b')]).toEqual(['riding', 'riding']);
-    expect(r.lift.load).toBe(2);
     r.until(() => r.alighted.has('a'));
     expect(r.alighted.get('b')).toBeLessThan(r.alighted.get('a') ?? 0);
   });
@@ -131,7 +130,6 @@ describe('Lift', () => {
     for (const name of ['a', 'b', 'c', 'd']) r.call(name, 2, 4);
     r.until(() => r.lift.doorsOpen);
     r.tick();
-    expect(r.lift.load).toBe(CAPACITY);
     expect([r.state('a'), r.state('b'), r.state('c'), r.state('d')]).toEqual(['riding', 'riding', 'riding', 'waiting']);
     expect(r.lift.calls).toEqual(new Set([2]));
     r.until(() => r.alighted.has('d'));
@@ -156,7 +154,7 @@ describe('Lift', () => {
     const ticket = r.call('a', 0, 4);
     r.until(() => r.lift.y < walkY(1));
     r.lift.leave(ticket);
-    expect(r.lift).toMatchObject({ load: 0, inUse: false });
+    expect(r.lift).toMatchObject({ inUse: false });
     r.until(() => false, 10);
     expect(r.alighted.has('a')).toBe(false);
   });

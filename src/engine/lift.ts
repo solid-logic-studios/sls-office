@@ -84,6 +84,11 @@ export class Lift {
     }
   }
 
+  /** True while the car is travelling between floors. */
+  get moving(): boolean {
+    return this.car.kind === 'moving';
+  }
+
   get doorsOpen(): boolean {
     return this.car.kind === 'open';
   }
@@ -98,13 +103,8 @@ export class Lift {
     return this.waiting.length > 0 || this.riders.length > 0;
   }
 
-  /** How many are in the car. */
-  get load(): number {
-    return this.riders.length;
-  }
-
   view(): LiftView {
-    return { y: this.y, doorsOpen: this.doorsOpen, calls: this.calls };
+    return { y: this.y, moving: this.moving, doorsOpen: this.doorsOpen, calls: this.calls };
   }
 
   /** Queues a rider at the `from` landing for `to`. `alight` runs when the car lets it off at `to`. */

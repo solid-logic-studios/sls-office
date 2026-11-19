@@ -81,13 +81,33 @@ describe('the shared lift on the Stage', () => {
       frame();
       stage.draw(new RecordingPainter(), 12);
       const view = views.at(-1);
-      expect(view?.lift).toEqual({ y: stage.lift.y, doorsOpen: stage.lift.doorsOpen, calls: stage.lift.calls });
+      expect(view?.lift).toEqual({
+        y: stage.lift.y,
+        moving: stage.lift.moving,
+        doorsOpen: stage.lift.doorsOpen,
+        calls: stage.lift.calls,
+      });
       expect(view?.liftInUse).toBe(stage.lift.inUse);
       called ||= (view?.lift.calls.size ?? 0) > 0;
       opened ||= view?.lift.doorsOpen === true;
     }
     expect(called).toBe(true);
     expect(opened).toBe(true);
+  });
+
+  it('drops a waiting character from the lift calls in the same frame it vanishes', () => {
+    const { stage, frame } = stageOf(towerTheme);
+    const founder = towerTheme.founders[0];
+    if (founder === undefined) throw new Error('No founder');
+    stage.callStandup(founder.id);
+    for (let t = 0; t < 30 && stage.lift.calls.size === 0; t += DT) frame();
+    const waiter = stage.characters().find((character) => character.waitingForLift);
+    if (waiter === undefined) throw new Error('Nobody waited for the lift');
+    const others = stage.characters().filter((character) => character !== waiter && character.waitingForLift);
+    expect(stage.lift.calls.has(waiter.floor)).toBe(true);
+    waiter.vanish();
+    expect(waiter.waitingForLift).toBe(false);
+    expect(stage.lift.calls).toEqual(new Set(others.map((character) => character.floor)));
   });
 });
 

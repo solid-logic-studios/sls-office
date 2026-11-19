@@ -126,9 +126,9 @@ owns one `Lift` that every rider shares.
 - **Riders wait, then ride.** A rider queues at its landing, boards when the car stops there going
   its way, rides inside the car and steps off at its floor. A redirect mid-ride finishes the ride
   first, so nobody jumps floors. A ride takes longer the further it goes.
-- **`StageView.lift`** (`y`, `doorsOpen`, `calls`) is additive and replaces the interim
+- **`StageView.lift`** (`y`, `moving`, `doorsOpen`, `calls`) is additive and replaces the interim
   `liftCarY`: the walk line the car is at, whether its doors are open, and the floors with someone
-  waiting. **`liftInUse`** now means anyone is waiting or riding.
+  waiting; `moving` is true while the car travels between floors. **`liftInUse`** now means anyone is waiting or riding.
 - **The Tower** draws the car at `lift.y`, opens the car and landing doors on the car's floor while
   `doorsOpen`, lights a landing lamp amber for each floor in `calls` and runs the cables only while
   the car travels. **The Office** has no new art, and its riders now wait for the car.

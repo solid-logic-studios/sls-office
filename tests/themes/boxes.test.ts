@@ -89,7 +89,7 @@ const STAGE: StageView = {
   vms: [vm('data'), COMPUTE, vm('deploy'), vm('ci')],
   findings: { ok: 3, warn: 1, crit: 0 },
   liftInUse: false,
-  lift: { y: 0, doorsOpen: false, calls: new Set() },
+  lift: { y: 0, moving: false, doorsOpen: false, calls: new Set() },
   vaultOpen: false,
   openStores: new Set(),
   busyBreakSpots: new Set(),
