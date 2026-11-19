@@ -48,5 +48,6 @@ The common recipes, plus any change that must touch several places at once.
 ## Release & workflow
 
 Trunk-based release model; Conventional Commits; a CHANGELOG `[Unreleased]` bullet per
-user-facing PR. After a PR, run `/code-review --comment` and the `uncle-bob` agent; fix the obvious
+user-facing PR, no per-PR version bumps. Release with `/release`: its PR, once merged, is tagged and
+published by `tag-release.yml`. After a PR, run `/code-review --comment` and the `uncle-bob` agent; fix the obvious
 findings, escalate the rest to the orchestrator. Details in [`CLAUDE.md`](CLAUDE.md).

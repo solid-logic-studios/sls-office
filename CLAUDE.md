@@ -82,7 +82,10 @@ over hand-rolling, reference the docs, and stay current with releases (Dependabo
 - Branch off `main`; every change lands through a PR.
 - Conventional Commits; enable the template once with `git config commit.template .gitmessage`.
 - A `CHANGELOG.md` `[Unreleased]` bullet in the same PR as any user-facing change.
-- Bump `package.json` version and tag `vX.Y.Z` at release only; no per-PR version bumps.
+- Bump `package.json` version at release only; no per-PR version bumps. **Release with `/release`**
+  (`.claude/skills/release/`): it opens a `chore(release): vX.Y.Z` PR, and merging it tags `vX.Y.Z`
+  and publishes the image (`.github/workflows/tag-release.yml` calling `release.yml`). Never tag by hand
+  unless that automation fails.
 
 ## Workflow
 

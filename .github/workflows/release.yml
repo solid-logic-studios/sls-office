@@ -1,23 +1,42 @@
 name: Release
 on:
+  # A merged release PR is tagged and published by tag-release.yml, which calls this with the tag
+  # (a tag pushed with GITHUB_TOKEN starts no workflow). Pushing a tag by hand still works as a fallback.
   push:
     tags: ['v*']
+  workflow_call:
+    inputs:
+      tag:
+        description: The release tag to publish, vX.Y.Z
+        required: true
+        type: string
+  # Recovery: republish an existing tag whose release run failed (Actions > Release > Run workflow).
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: The existing release tag to publish, vX.Y.Z
+        required: true
+        type: string
 permissions:
   contents: write
   packages: write
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ inputs.tag || github.ref_name }}
   cancel-in-progress: false
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ inputs.tag || github.ref_name }}
       - name: Tag must match package.json version
         run: |
           version="$(node -p "require('./package.json').version")"
-          if [ "$GITHUB_REF_NAME" != "v${version}" ]; then
-            echo "Tag $GITHUB_REF_NAME does not match package.json version v${version}" >&2
+          if [ "$TAG" != "v${version}" ]; then
+            echo "Tag $TAG does not match package.json version v${version}" >&2
             exit 1
           fi
       - uses: pnpm/action-setup@v6
@@ -42,8 +61,8 @@ jobs:
           images: ghcr.io/solid-logic-studios/sls-office
           flavor: latest=false
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{version}},value=${{ env.TAG }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ env.TAG }}
       - uses: docker/build-push-action@v7
         with:
           context: .
@@ -60,7 +79,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          version="${GITHUB_REF_NAME#v}"
+          version="${TAG#v}"
           awk -v v="$version" '
             index($0, "## [" v "]") == 1 { found = 1; next }
             found && (/^## \[/ || /^\[[^]]+\]: /) { exit }
@@ -71,5 +90,5 @@ jobs:
           else
             notes=(--generate-notes)
           fi
-          gh release create "$GITHUB_REF_NAME" dist/schema/snapshot.v1.schema.json \
-            --title "$GITHUB_REF_NAME" "${notes[@]}"
+          gh release create "$TAG" dist/schema/snapshot.v1.schema.json \
+            --title "$TAG" "${notes[@]}"
