@@ -10,13 +10,14 @@ import { boxesTheme } from '../../src/themes/boxes/index.ts';
 import { officeTheme } from '../../src/themes/office/index.ts';
 import { Lab, backup, deploy, oom } from '../support/lab.ts';
 import { RecordingSoundOutput } from '../support/recording-sound-output.ts';
+import { MIDDAY } from '../support/midday.ts';
 
 /** A Soundboard over a real Engine, fed by `feed`, which stands in for the page's `show()`. */
 function listen(theme: Theme) {
   const engine = new Engine(theme, { random: seededRandom(7) });
   const output = new RecordingSoundOutput();
   const clock = { ms: 0 };
-  const soundboard = new Soundboard(engine, output, { now: () => clock.ms });
+  const soundboard = new Soundboard(engine, output, { now: () => clock.ms, hour: MIDDAY });
   const advance = (minutes: number): void => {
     clock.ms += minutes * 60 * 1000;
   };

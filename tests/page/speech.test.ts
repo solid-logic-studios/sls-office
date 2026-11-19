@@ -16,6 +16,7 @@ import { officeTheme } from '../../src/themes/office/index.ts';
 import { Lab, oom } from '../support/lab.ts';
 import { RecordingSoundOutput } from '../support/recording-sound-output.ts';
 import { RecordingSpeechOutput } from '../support/recording-speech-output.ts';
+import { MIDDAY } from '../support/midday.ts';
 
 const PARTS: readonly Part[] = [
   'worker',
@@ -297,6 +298,7 @@ function listen(theme: Theme) {
     now: () => clock.ms,
     later: (callback, ms) => timers.push({ callback, ms }),
     speech,
+    hour: MIDDAY,
   });
   const lab = new Lab();
   engine.accept(lab.snapshot());
@@ -322,7 +324,7 @@ describe('the Soundboard speaking', () => {
       layout: engine.layout,
       characters: () => hidden,
     };
-    new Soundboard(source, new RecordingSoundOutput(), { now: () => 0, later: () => undefined, speech });
+    new Soundboard(source, new RecordingSoundOutput(), { now: () => 0, later: () => undefined, speech, hour: MIDDAY });
     engine.bus.publish({ kind: 'speech', speakerId: hidden[0]?.id ?? '', text: 'HELLO', force: false });
     expect(speech.spoken).toHaveLength(0);
   });
