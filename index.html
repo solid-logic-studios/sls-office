@@ -20,6 +20,10 @@
         --ok: #2a8344;
         --warn: #a56d00;
         --crit: #c2352c;
+        /* Text-safe variants: --ok and --warn are under 4.5:1 as text on the light panel. */
+        --ok-text: #1f6d38;
+        --warn-text: #8a5a00;
+        --crit-text: #c2352c;
         --font-display: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
         --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
       }
@@ -38,6 +42,9 @@
           --ok: #5fcf7a;
           --warn: #f0b840;
           --crit: #ff6b5e;
+          --ok-text: #5fcf7a;
+          --warn-text: #f0b840;
+          --crit-text: #ff6b5e;
         }
       }
       * {
@@ -255,17 +262,17 @@
         font-size: 13px;
         line-height: 1.35;
       }
-      .tip h3 {
+      :is(.tip, .sheet) h3 {
         margin: 0 0 2px;
         font: 700 13px/1.3 var(--font-display);
         overflow-wrap: anywhere;
       }
-      .tip p {
+      :is(.tip, .sheet) p {
         margin: 0 0 6px;
         color: var(--muted);
         overflow-wrap: anywhere;
       }
-      .tip .row {
+      :is(.tip, .sheet) .row {
         display: grid;
         grid-template-columns: 40px 1fr 44px;
         gap: 6px;
@@ -274,28 +281,28 @@
         margin-top: 4px;
         font-variant-numeric: tabular-nums;
       }
-      .tip .bar {
+      :is(.tip, .sheet) .bar {
         height: 8px;
         background: var(--inset);
         border: 1px solid var(--line);
       }
-      .tip .bar i {
+      :is(.tip, .sheet) .bar i {
         display: block;
         height: 100%;
         background: var(--ok);
       }
-      .tip .st {
+      :is(.tip, .sheet) .st {
         margin-top: 7px;
         font: 400 12px/1.3 var(--font-display);
         text-transform: uppercase;
       }
-      .tip .st.ok {
+      :is(.tip, .sheet) .st.ok {
         color: var(--ok);
       }
-      .tip .st.warn {
+      :is(.tip, .sheet) .st.warn {
         color: var(--warn);
       }
-      .tip .st.crit {
+      :is(.tip, .sheet) .st.crit {
         color: var(--crit);
       }
 
@@ -450,9 +457,265 @@
         min-width: 0;
         overflow-wrap: anywhere;
       }
+      /* Compact page chrome: hidden above 480 px, so the wide page is unchanged. */
+      .vbar,
+      .trouble,
+      .sheet {
+        display: none;
+      }
+      @media (max-width: 480px) {
+        .top,
+        .under {
+          display: none;
+        }
+        .wrap {
+          padding-block: 6px 20px;
+          padding-left: max(8px, env(safe-area-inset-left, 0px));
+          padding-right: max(8px, env(safe-area-inset-right, 0px));
+        }
+        #waking,
+        .stage:has(canvas[hidden]) {
+          display: none;
+        }
+
+        /* Verdict bar */
+        .vbar {
+          position: sticky;
+          top: 0;
+          z-index: 20;
+          display: grid;
+          grid-template-columns: auto 1fr auto auto;
+          grid-template-areas: 'dot head clock menu' 'dot counts clock menu';
+          column-gap: 10px;
+          align-items: center;
+          min-height: 56px;
+          padding-block: 4px;
+          padding-left: max(12px, env(safe-area-inset-left, 0px));
+          padding-right: max(8px, env(safe-area-inset-right, 0px));
+          background: var(--panel);
+          border-bottom: 4px solid var(--muted);
+        }
+        .vbar[data-tone='ok'] {
+          border-bottom-color: var(--ok);
+        }
+        .vbar[data-tone='warn'] {
+          border-bottom-color: var(--warn);
+        }
+        .vbar[data-tone='crit'] {
+          border-bottom-color: var(--crit);
+        }
+        .vdot {
+          grid-area: dot;
+          width: 14px;
+          height: 14px;
+          background: var(--muted);
+        }
+        .vbar[data-tone='ok'] .vdot {
+          background: var(--ok);
+        }
+        .vbar[data-tone='warn'] .vdot {
+          background: var(--warn);
+        }
+        .vbar[data-tone='crit'] .vdot {
+          background: var(--crit);
+        }
+        .vhead {
+          grid-area: head;
+          margin: 0;
+          min-width: 0;
+          font: 700 16px/1.25 var(--font-display);
+          overflow-wrap: anywhere;
+        }
+        .vcounts {
+          grid-area: counts;
+          margin: 0;
+          min-height: 1.25em;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0 10px;
+          color: var(--muted);
+          font: 400 12px/1.25 var(--font-display);
+          font-variant-numeric: tabular-nums;
+        }
+        .vclock {
+          grid-area: clock;
+          font: 400 14px/1 var(--font-display);
+          font-variant-numeric: tabular-nums;
+        }
+        #menu {
+          grid-area: menu;
+        }
+
+        /* Trouble list */
+        .trouble {
+          display: block;
+          margin: 0;
+          padding: 0;
+          list-style: none;
+          background: var(--panel);
+          border-bottom: 2px solid var(--line);
+        }
+        .trow {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          width: 100%;
+          min-height: 44px;
+          padding-block: 6px;
+          padding-left: max(12px, env(safe-area-inset-left, 0px));
+          padding-right: max(12px, env(safe-area-inset-right, 0px));
+          border: 0;
+          border-bottom: 1px solid var(--shadow);
+          box-shadow: none;
+          background: transparent;
+          text-align: left;
+          text-transform: none;
+          font: 400 15px/1.3 var(--font-body);
+        }
+        .trow .tdot {
+          flex: none;
+          width: 12px;
+          height: 12px;
+          background: var(--warn);
+        }
+        .trow[data-severity='crit'] .tdot {
+          background: var(--crit);
+        }
+        .trow .ttext {
+          min-width: 0;
+          flex: 1;
+          overflow-wrap: anywhere;
+        }
+        .trow::after {
+          content: '>';
+          color: var(--muted);
+          font-family: var(--font-display);
+        }
+        .trow.more {
+          justify-content: center;
+          font: 700 13px/1.3 var(--font-display);
+          text-transform: uppercase;
+        }
+        .trow.more::after {
+          content: none;
+        }
+
+        /* Sheets (the detail sheet and the controls sheet) */
+        .sheet {
+          display: block;
+          position: fixed;
+          z-index: 30;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          max-height: 65vh;
+          overflow-y: auto;
+          padding-block: 12px;
+          padding-bottom: max(14px, env(safe-area-inset-bottom, 0px));
+          padding-left: max(14px, env(safe-area-inset-left, 0px));
+          padding-right: max(14px, env(safe-area-inset-right, 0px));
+          border-width: 2px 0 0;
+          box-shadow: 0 -3px 0 var(--shadow);
+          font-size: 15px;
+          line-height: 1.4;
+        }
+        .sheet:focus {
+          outline: none;
+        }
+        .sheet:focus-visible {
+          outline: 2px solid var(--accent);
+          outline-offset: -4px;
+        }
+        .sheet[hidden] {
+          display: none;
+        }
+        .sheet h3 {
+          font-size: 16px;
+          padding-right: 48px;
+        }
+        .sheet p {
+          font-size: 15px;
+        }
+        .sheet .row {
+          grid-template-columns: 48px 1fr 48px;
+          font-size: 13px;
+          margin-top: 8px;
+        }
+        .sheet .bar {
+          height: 10px;
+        }
+        .sheet .st {
+          margin-top: 10px;
+          font-size: 14px;
+          font-weight: 700;
+        }
+        .sheet .st.ok {
+          color: var(--ok-text);
+        }
+        .sheet .st.warn {
+          color: var(--warn-text);
+        }
+        .sheet .st.crit {
+          color: var(--crit-text);
+        }
+        .sheet-close {
+          position: absolute;
+          top: 4px;
+          right: max(4px, env(safe-area-inset-right, 0px));
+        }
+        .controls-body {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+        }
+        .controls-body .theme {
+          flex: 1 1 100%;
+          justify-content: space-between;
+        }
+        .controls-body select {
+          flex: 1;
+        }
+        @media (prefers-reduced-motion: no-preference) {
+          .sheet:not([hidden]) {
+            animation: sheet-in 0.18s ease-out;
+          }
+          @keyframes sheet-in {
+            from {
+              transform: translateY(100%);
+            }
+          }
+        }
+
+        /* Touch targets: every control is at least 44 by 44 CSS px. */
+        button,
+        select,
+        summary,
+        .console label,
+        input[type='range'] {
+          min-width: 44px;
+          min-height: 44px;
+        }
+        summary {
+          display: flex;
+          align-items: center;
+        }
+        .console label {
+          align-items: center;
+        }
+      }
     </style>
   </head>
   <body>
+    <div class="vbar" id="vbar" data-tone="neutral">
+      <span class="vdot" aria-hidden="true"></span>
+      <p class="vhead" data-headline role="status">Waking the office…</p>
+      <p class="vcounts" data-counts></p>
+      <span class="vclock" data-bar-clock aria-hidden="true">--:--</span>
+      <button id="menu" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="controls-sheet">
+        Menu
+      </button>
+    </div>
+    <ul class="trouble" id="trouble" aria-label="Trouble list" hidden></ul>
     <div class="wrap">
       <header class="top">
         <div class="brand">
@@ -512,6 +775,31 @@
 
       <ul id="roster" class="visually-hidden" aria-live="polite" aria-label="Lab status"></ul>
     </div>
+    <aside
+      class="sheet px"
+      id="sheet"
+      role="dialog"
+      aria-modal="false"
+      aria-labelledby="sheet-title"
+      tabindex="-1"
+      hidden
+    >
+      <button class="sheet-close" type="button" data-close aria-label="Close details">X</button>
+      <div id="sheet-body"></div>
+    </aside>
+    <aside
+      class="sheet px"
+      id="controls-sheet"
+      role="dialog"
+      aria-modal="false"
+      aria-labelledby="controls-title"
+      tabindex="-1"
+      hidden
+    >
+      <button class="sheet-close" type="button" data-close aria-label="Close controls">X</button>
+      <h3 id="controls-title">Controls</h3>
+      <div class="controls-body" id="controls-body"></div>
+    </aside>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

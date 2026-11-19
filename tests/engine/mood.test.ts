@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { CiPodWorkload, Health, SiteInstanceWorkload, Vm } from '../../src/contract/snapshot.ts';
-import { FAINT_SECONDS, MoodMachine, vitalsOf, type Vitals } from '../../src/engine/mood.ts';
+import { FAINT_SECONDS, MoodMachine, steadyMood, vitalsOf, type Vitals } from '../../src/engine/mood.ts';
 
 const vitals = (cpu: number, mem = 50, present = true): Vitals => ({ present, cpu, mem });
 
@@ -116,5 +116,28 @@ describe('vitalsOf', () => {
     const workload: CiPodWorkload = { kind: 'ci-pod', id: 'p1', cpu: 70, mem: 60 };
     expect(vitalsOf({ kind: 'workload', vm: vm(), workload })).toEqual({ present: true, cpu: 70, mem: 60 });
     expect(vitalsOf({ kind: 'workload', vm: vm({ up: false }), workload }).present).toBe(false);
+  });
+});
+
+describe('steadyMood', () => {
+  it.each([
+    [vitals(85), 'stressed'],
+    [vitals(50, 90), 'swamped'],
+    [vitals(5), 'break'],
+    [vitals(12), 'working'],
+    [vitals(40), 'working'],
+    [vitals(14), 'working'],
+  ] as const)('classifies %j as %s', (v, mood) => {
+    expect(steadyMood(v)).toBe(mood);
+  });
+
+  it('is absent when not present, whatever the load', () => {
+    expect(steadyMood(vitals(95, 95, false))).toBe('absent');
+  });
+
+  it('agrees with a fresh MoodMachine', () => {
+    for (const v of [vitals(85), vitals(50, 90), vitals(5), vitals(40), vitals(40, 40, false)]) {
+      expect(steadyMood(v)).toBe(new MoodMachine().update(v, 0));
+    }
   });
 });

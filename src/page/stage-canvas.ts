@@ -87,6 +87,11 @@ export class StageCanvas {
     return this.art;
   }
 
+  /** CSS pixels per art pixel right now, for turning a distance on screen into art pixels. */
+  get cssPerArtPixel(): number {
+    return this.scale / (window.devicePixelRatio || 1);
+  }
+
   zoomIn(): void {
     this.step(1);
   }

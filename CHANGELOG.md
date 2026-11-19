@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Compact page mode at 480 CSS px wide or less: a sticky verdict bar (all calm, watch or trouble, with VM and workload counts and the last heard time when stale), a trouble list, a bottom detail sheet in place of the hover tooltip (tap a character, hotspot or row, with a little slop for small characters), a controls sheet behind the menu button, and 44 px touch targets (#60).
+
 ## [0.4.0] - 19 November 2026
 
 ### Added

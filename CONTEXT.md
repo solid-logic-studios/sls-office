@@ -97,6 +97,18 @@ _Avoid_: night mode, do not disturb, sleep.
 Its tempo follows lab load, and it keeps to mute and quiet hours like the ambient bed.
 _Avoid_: soundtrack, background track.
 
+**Verdict**: the page's one-glance answer to "is the lab healthy?": ok, watch or trouble, with the counts
+behind it. A pure function of the Snapshot, so it counts subjects the Engine has no Place for.
+_Avoid_: health, status, alert level.
+
+**Trouble list**: the rows under the verdict bar that name what is wrong, critical before warning, capped at
+three with "+N more". Hidden when calm. Each row opens the Detail sheet.
+_Avoid_: alerts, issues panel, error list.
+
+**Detail sheet**: the compact page's non-modal bottom sheet that shows a Tip (title, detail, meters, status)
+in place of the hover tooltip. Opened by a tap on the stage or a Trouble list row.
+_Avoid_: modal, popup, drawer.
+
 ## Versioning (trunk-based)
 
 Work off `main`; Conventional Commits + Keep a Changelog; bump version + tag at release;
