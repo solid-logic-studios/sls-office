@@ -15,6 +15,14 @@ import { initialVolume, saveVolume } from './page/audio/volume-preference.ts';
 import { loadVoiceManifest } from './page/audio/voice-manifest.ts';
 import { WebSpeechOutput } from './page/audio/web-speech-output.ts';
 import { localHour } from './page/clock.ts';
+import { compactMedia, isCompact } from './page/compact.ts';
+import { placeControls } from './page/controls-sheet.ts';
+import { DetailSheet } from './page/detail-sheet.ts';
+import { sheetOf } from './page/sheet.ts';
+import { probeWithSlop } from './page/tap-slop.ts';
+import { TroubleList } from './page/trouble-list.ts';
+import { verdictOf } from './page/verdict.ts';
+import { VerdictBar, type BarState } from './page/verdict-bar.ts';
 import { mountControlRoom } from './page/control-room.ts';
 import { isStale } from './page/freshness.ts';
 import { renderLegend } from './page/legend.ts';
@@ -58,11 +66,30 @@ const roster = element('roster', HTMLUListElement);
 const legend = element('legend', HTMLUListElement);
 const pause = element('pause', HTMLButtonElement);
 
+function themeLabel(): HTMLElement {
+  const label = element('theme', HTMLSelectElement).closest('label');
+  if (label === null) throw new Error('Missing the theme label');
+  return label;
+}
+
 const engine = new Engine(firstTheme, { random: Math.random });
 const stage = new StageCanvas(element('scroll', HTMLDivElement), canvas, engine.layout);
 const tooltip = new TooltipView(element('tip', HTMLDivElement), element('stage', HTMLElement));
-const strip = new StatusStrip(element('strip', HTMLDivElement));
+const stripEl = element('strip', HTMLDivElement);
+const strip = new StatusStrip(stripEl);
 const log = new OfficeLog(element('log', HTMLOListElement));
+
+/** The compact page chrome. Above 480 px CSS keeps it hidden and none of it is used. */
+const bar = new VerdictBar(element('vbar', HTMLDivElement));
+const detail = new DetailSheet(element('sheet', HTMLElement), element('sheet-body', HTMLDivElement));
+const menu = element('menu', HTMLButtonElement);
+const controlsSheet = sheetOf(element('controls-sheet', HTMLElement), (open) =>
+  menu.setAttribute('aria-expanded', String(open)),
+);
+const trouble = new TroubleList(element('trouble', HTMLUListElement), (issue) => {
+  controlsSheet.close();
+  detail.open(issue.tip);
+});
 
 /** Set by the control room's time-of-day slider; `null` follows the local clock. */
 let hourOverride: number | null = null;
@@ -155,10 +182,36 @@ function setPaused(paused: boolean): void {
 }
 
 pause.addEventListener('click', () => setPaused(!loop.paused));
+
+menu.addEventListener('click', () => {
+  if (controlsSheet.isOpen) {
+    controlsSheet.close();
+    return;
+  }
+  detail.close();
+  controlsSheet.open();
+});
+placeControls(
+  compactMedia,
+  stripEl,
+  element('controls-body', HTMLDivElement),
+  [pause, element('sound', HTMLButtonElement), element('music', HTMLButtonElement), themeLabel()],
+  () => {
+    detail.close();
+    controlsSheet.close();
+  },
+);
+
 element('zoom-in', HTMLButtonElement).addEventListener('click', () => stage.zoomIn());
 element('zoom-out', HTMLButtonElement).addEventListener('click', () => stage.zoomOut());
 
+// Entering compact leaves no hover to dismiss the tooltip, so it is hidden as the breakpoint is crossed.
+compactMedia.addEventListener('change', (event) => {
+  if (event.matches) tooltip.hide();
+});
+
 stage.onPoint((point) => {
+  if (isCompact()) return;
   const tip = point === null ? null : engine.tipAt(point.x, point.y);
   if (point === null || tip === null) tooltip.hide();
   else tooltip.show(tip, point);
@@ -166,6 +219,18 @@ stage.onPoint((point) => {
 
 /** A tap on empty stage speaks the status; anything with a tooltip (a character, hotspot or room) is unchanged. */
 stage.onTap((point) => {
+  if (isCompact()) {
+    // A finger is wider than a character, so a miss is retried on a small ring around the tap.
+    const tip = probeWithSlop((x, y) => engine.tipAt(x, y), point.x, point.y, stage.cssPerArtPixel);
+    if (tip !== null) {
+      controlsSheet.close();
+      detail.open(tip);
+      return;
+    }
+    detail.close();
+    soundboard.announceStatus();
+    return;
+  }
   if (engine.tipAt(point.x, point.y) === null) soundboard.announceStatus();
 });
 
@@ -180,6 +245,7 @@ mountThemeSwitcher(element('theme', HTMLSelectElement), THEMES, firstTheme.id, (
   renderLegend(legend, theme.legend);
   soundPanel?.setTheme(theme);
   tooltip.hide();
+  detail.close();
 });
 
 /** Rebuild the live region only when its text changes, so screen readers are not re-read the roster every poll. */
@@ -197,8 +263,26 @@ function updateRoster(lines: readonly string[]): void {
 
 let refreshControls = (): void => {};
 
+/** The `at` of the last Snapshot that parsed, so a stale or missing feed can say when it was last heard. */
+let lastGood: Date | null = null;
+
+function barStateOf(snapshot: Snapshot | null, fresh: boolean): BarState {
+  if (snapshot === null) return { kind: 'no-signal', lastGood };
+  if (!fresh) return { kind: 'stale', lastHeard: lastGood };
+  return { kind: 'live', verdict: verdictOf(snapshot) };
+}
+
 function show(snapshot: Snapshot | null): void {
-  awake = snapshot !== null && !isStale(snapshot, new Date());
+  const now = new Date();
+  if (snapshot !== null) {
+    const takenAt = new Date(snapshot.at);
+    lastGood = Number.isNaN(takenAt.getTime()) ? lastGood : takenAt;
+  }
+  awake = snapshot !== null && !isStale(snapshot, now);
+  const state = barStateOf(snapshot, awake);
+  bar.render(state);
+  bar.setClock(hour());
+  trouble.update(state.kind === 'live' ? state.verdict.issues : []);
   waking.hidden = awake;
   canvas.hidden = !awake;
   if (snapshot === null || !awake) {
@@ -206,12 +290,13 @@ function show(snapshot: Snapshot | null): void {
     strip.clear();
     updateRoster([]);
     tooltip.hide();
+    detail.close();
     return;
   }
   engine.accept(snapshot);
   soundboard.endSnapshot(snapshot);
   diary.noteSnapshot(snapshot);
-  standup.check(new Date());
+  standup.check(now);
   strip.update(engine.findings, hour());
   updateRoster(engine.roster());
   refreshControls();
@@ -241,6 +326,7 @@ function snapshotSource(): HttpSnapshotSource | Simulator {
   const controls = mountControlRoom(container, simulator, {
     onHour: (value) => {
       hourOverride = value;
+      bar.setClock(hour());
     },
     extra: [soundPanel.element],
   });
@@ -250,4 +336,5 @@ function snapshotSource(): HttpSnapshotSource | Simulator {
 
 pollWhileVisible(new Poller(snapshotSource(), simulated ? SIM_POLL_MS : LIVE_POLL_MS, show), document);
 if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) setPaused(true);
+bar.setClock(hour());
 loop.start();

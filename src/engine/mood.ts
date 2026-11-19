@@ -60,12 +60,33 @@ const SWAMPED = new SteadyState('swamped');
 const BREAK = new SteadyState('break');
 const ABSENT = new AbsentState();
 
-/** The mood for a present character. A break holds until CPU climbs back to `BREAK_ENDS_AT_CPU`. */
+export type SteadyMood = Exclude<Mood, 'fainted' | 'absent'>;
+
+/** The steady mood for a present character. A break holds until CPU climbs back to `BREAK_ENDS_AT_CPU`. */
+function classify(vitals: Vitals, onBreak: boolean): SteadyMood {
+  if (vitals.cpu > STRESSED_ABOVE_CPU) return 'stressed';
+  if (vitals.mem > SWAMPED_ABOVE_MEM) return 'swamped';
+  if (vitals.cpu < BREAK_BELOW_CPU || (onBreak && vitals.cpu < BREAK_ENDS_AT_CPU)) return 'break';
+  return 'working';
+}
+
+const STEADY: Record<SteadyMood, SteadyState> = {
+  working: WORKING,
+  stressed: STRESSED,
+  swamped: SWAMPED,
+  break: BREAK,
+};
+
 function resolve(vitals: Vitals, onBreak: boolean): MoodState {
-  if (vitals.cpu > STRESSED_ABOVE_CPU) return STRESSED;
-  if (vitals.mem > SWAMPED_ABOVE_MEM) return SWAMPED;
-  if (vitals.cpu < BREAK_BELOW_CPU || (onBreak && vitals.cpu < BREAK_ENDS_AT_CPU)) return BREAK;
-  return WORKING;
+  return STEADY[classify(vitals, onBreak)];
+}
+
+/**
+ * The mood these vitals settle at, with no memory: `absent` when not present, else the steady rule
+ * without break hysteresis. For callers that need a verdict on a bare VM or workload, not a character.
+ */
+export function steadyMood(vitals: Vitals): SteadyMood | 'absent' {
+  return vitals.present ? classify(vitals, false) : 'absent';
 }
 
 export class MoodMachine {
