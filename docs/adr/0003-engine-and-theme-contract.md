@@ -121,8 +121,9 @@ The Tower's lift car used to sweep the shaft on its own whenever anyone rode, un
 rider. The Engine now says where the car is.
 
 - **`StageView.liftCarY`** is additive: the walk line (`Floor.walkY`) the car stands at. It follows
-  the first rider (cast order) while anyone rides and stays where the last ride ended; `null` until
-  the first ride. `liftInUse` is unchanged. Themes that do not draw a car (the Office, the boxes)
+  the first rider (cast order) while anyone rides; once nobody does it parks at the floor nearest
+  where the last ride left it; `null` until the first ride. `liftInUse` is unchanged. A ride already
+  under way always finishes before a new route starts, so a redirected rider never jumps floors. Themes that do not draw a car (the Office, the boxes)
   ignore it.
 - **A ride takes `LIFT_SECONDS` per floor travelled**, not a flat time. The Office's rides are all
   one floor (it has two), so its timing is unchanged; the Tower's longer rides now take longer.

@@ -54,12 +54,18 @@ export class Walker {
   }
 
   get y(): number {
-    return (this.rideWalkY() ?? this.walkY(this.floorIndex)) - this.lane;
+    return (this.liftLineY ?? this.walkY(this.floorIndex)) - this.lane;
   }
 
-  /** The walk line (without the lane offset) the lift is at while this walker rides it, else `null`. */
+  /**
+   * The walk line (without the lane offset) the lift is at while this walker rides it, else `null`:
+   * interpolated from the ride's start floor to its destination.
+   */
   get liftLineY(): number | null {
-    return this.rideWalkY();
+    const step = this.steps[0];
+    if (this.ride === null || step?.kind !== 'lift') return null;
+    const from = this.walkY(this.floorIndex);
+    return from + (this.walkY(step.floor) - from) * (this.ride / this.rideSeconds(step.floor));
   }
 
   get floor(): number {
@@ -79,22 +85,29 @@ export class Walker {
     return this.ride !== null;
   }
 
-  /** Replaces any current route. `speed` is art pixels per second. */
+  /**
+   * Replaces the current route. `speed` is art pixels per second. A ride already under way is not
+   * interrupted: it finishes, and the new route is planned from where it lets the rider off.
+   */
   goTo(target: Spot, speed: number): void {
-    this.settle();
-    this.steps = planRoute({ x: this.posX, floor: this.floorIndex }, target, this.layout);
+    const ride = this.currentRide();
+    this.steps = ride === null ? [] : [ride];
+    const from = ride === null ? { x: this.posX, floor: this.floorIndex } : { x: this.layout.liftX, floor: ride.floor };
+    this.steps.push(...planRoute(from, target, this.layout));
     this.speed = speed;
   }
 
-  /** Drops the route where it stands; a rider is put down on the floor it was heading for. */
+  /** Drops the route where it stands; a ride already under way finishes first. */
   stop(): void {
-    this.settle();
-    this.steps = [];
+    const ride = this.currentRide();
+    this.steps = ride === null ? [] : [ride];
   }
 
+  /** Moves at once to `spot`, dropping the route and any ride. */
   teleport(spot: Spot): void {
     floorAt(this.layout, spot.floor);
-    this.stop();
+    this.steps = [];
+    this.ride = null;
     this.posX = spot.x;
     this.floorIndex = spot.floor;
   }
@@ -121,19 +134,10 @@ export class Walker {
     return LIFT_SECONDS * Math.abs(floor - this.floorIndex);
   }
 
-  /** The lift's walk line, interpolated from the ride's start floor to its destination; `null` when not riding. */
-  private rideWalkY(): number | null {
+  /** The lift step the walker is part-way through, or `null` when not riding. */
+  private currentRide(): Extract<RouteStep, { kind: 'lift' }> | null {
     const step = this.steps[0];
-    if (this.ride === null || step?.kind !== 'lift') return null;
-    const from = this.walkY(this.floorIndex);
-    return from + (this.walkY(step.floor) - from) * (this.ride / this.rideSeconds(step.floor));
-  }
-
-  /** Puts a rider down on the floor the lift was heading for. */
-  private settle(): void {
-    const step = this.steps[0];
-    if (this.ride !== null && step?.kind === 'lift') this.floorIndex = step.floor;
-    this.ride = null;
+    return this.ride !== null && step?.kind === 'lift' ? step : null;
   }
 
   /** Returns the time left over once the step is done, or `null` if it is not done yet. */

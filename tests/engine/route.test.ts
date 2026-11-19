@@ -118,13 +118,39 @@ describe('Walker', () => {
     expect(walker.x).toBe(160);
   });
 
-  it('puts a rider down on the destination floor when stopped mid-lift', () => {
+  it('finishes the ride, then stops, when stopped mid-lift', () => {
     const walker = new Walker(layout, { x: 150, floor: 0 }, 0);
     walker.goTo({ x: 200, floor: 1 }, 10);
     walker.step(LIFT_SECONDS / 2);
+    const y = walker.y;
     walker.stop();
+    expect(walker).toMatchObject({ inLift: true, moving: true, y });
+    expect(walker.step(LIFT_SECONDS / 2)).toBe(true);
     expect(walker).toMatchObject({ inLift: false, moving: false, floor: 1, y: 100, x: 150 });
-    expect(walker.step(1)).toBe(false);
+  });
+
+  it('redirects mid-ride without a jump, finishing the ride then walking to the new target', () => {
+    const walker = new Walker(layout, { x: 150, floor: 0 }, 0);
+    walker.goTo({ x: 200, floor: 1 }, 10);
+    walker.step(LIFT_SECONDS / 2);
+    const y = walker.y;
+    walker.goTo({ x: 170, floor: 1 }, 10);
+    expect(walker).toMatchObject({ inLift: true, floor: 0, y });
+    expect(walker.step(LIFT_SECONDS / 2 + 1)).toBe(false);
+    expect(walker).toMatchObject({ inLift: false, floor: 1, y: 100, x: 160 });
+    expect(walker.step(1)).toBe(true);
+    expect(walker.x).toBe(170);
+  });
+
+  it('redirects mid-ride to a further floor by riding on from where the lift lets off', () => {
+    const walker = new Walker(tall, { x: 150, floor: 0 }, 0);
+    walker.goTo({ x: 150, floor: 1 }, 10);
+    walker.step(LIFT_SECONDS / 2);
+    walker.goTo({ x: 150, floor: 2 }, 10);
+    expect(walker.step(LIFT_SECONDS / 2)).toBe(false);
+    expect(walker).toMatchObject({ inLift: true, floor: 1 });
+    expect(walker.step(LIFT_SECONDS)).toBe(true);
+    expect(walker).toMatchObject({ inLift: false, floor: 2 });
   });
 
   it('stops where it stands on a walk', () => {
@@ -140,6 +166,14 @@ describe('Walker', () => {
     walker.goTo({ x: 100, floor: 1 }, 10);
     walker.teleport({ x: 220, floor: 1 });
     expect(walker).toMatchObject({ x: 220, y: 98, floor: 1, moving: false });
+  });
+
+  it('teleports at once out of a ride', () => {
+    const walker = new Walker(layout, { x: 150, floor: 0 }, 0);
+    walker.goTo({ x: 200, floor: 1 }, 10);
+    walker.step(LIFT_SECONDS / 2);
+    walker.teleport({ x: 40, floor: 0 });
+    expect(walker).toMatchObject({ x: 40, y: 200, floor: 0, moving: false, inLift: false });
   });
 
   it('takes LIFT_SECONDS for a one-floor ride', () => {

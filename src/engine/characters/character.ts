@@ -292,7 +292,12 @@ export abstract class Character implements StageNode {
 
   update(dt: number): void {
     this.refreshMood();
-    if (!this.visible || this.lastMood === 'fainted') return;
+    if (!this.visible) return;
+    if (this.lastMood === 'fainted') {
+      // A rider who faints mid-ride still finishes the ride (stop() lets it), then stays put.
+      if (this.walker.inLift) this.walker.step(dt);
+      return;
+    }
     this.walker.step(dt);
     if (this.walkingOut) {
       if (!this.walker.moving) this.gone = true;

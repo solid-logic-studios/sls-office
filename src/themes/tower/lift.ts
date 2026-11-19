@@ -23,7 +23,7 @@ export const CAR_TOP_OFFSET = band(FLOOR.basement).walk - band(FLOOR.basement).b
 export const carTopAt = (walkY: number): number => walkY - CAR_TOP_OFFSET;
 
 /** The car's top when it stands at a floor's landing. */
-const carTop = (floor: number): number => band(floor).back - CAR.h;
+const carTop = (floor: number): number => carTopAt(band(floor).walk);
 
 /** The floor whose landing the car is nearest to. */
 function nearestFloor(walkY: number): number {

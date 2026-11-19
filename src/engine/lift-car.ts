@@ -1,13 +1,17 @@
 import type { Floor } from '../contract/theme.ts';
 import type { Character } from './characters/character.ts';
 
+/** What the car needs to know about a character. */
+export type LiftRider = Pick<Character, 'inLift' | 'liftLineY'>;
+
 /**
- * Where the lift car is, as a walk line. It follows the first rider (cast order) while anyone rides,
- * and stays at the floor the last ride ended on. `null` until the first ride.
+ * Where the lift car is, as a walk line. It follows the first rider (cast order) while anyone rides;
+ * once nobody does it parks on the floor nearest where the last ride left it. `null` until the first ride.
  */
 export class LiftCar {
   private carY: number | null = null;
-  private rider: Character | null = null;
+  private lastLine: number | null = null;
+  private riding = false;
 
   constructor(private readonly floors: readonly Floor[]) {}
 
@@ -15,18 +19,28 @@ export class LiftCar {
     return this.carY;
   }
 
+  /** Whether a rider was found by the latest `update`. */
+  get inUse(): boolean {
+    return this.riding;
+  }
+
   /** Call once per frame with the visible characters, after they have moved. */
-  update(visible: readonly Character[]): void {
-    const riding = visible.find((character) => character.inLift);
-    const line = riding?.liftLineY ?? null;
-    if (riding !== undefined && line !== null) {
-      this.rider = riding;
+  update(visible: readonly LiftRider[]): void {
+    const line = visible.find((character) => character.inLift)?.liftLineY ?? null;
+    this.riding = line !== null;
+    if (line !== null) {
+      this.lastLine = line;
       this.carY = line;
-      return;
+    } else if (this.lastLine !== null) {
+      this.carY = this.nearestWalkY(this.lastLine);
     }
-    // The ride just ended: park the car on the walk line of the floor the rider was put down on.
-    const parked = this.rider === null ? undefined : this.floors[this.rider.floor];
-    if (parked !== undefined) this.carY = parked.walkY;
-    this.rider = null;
+  }
+
+  private nearestWalkY(line: number): number {
+    const nearest = this.floors.reduce<number | null>(
+      (best, floor) => (best === null || Math.abs(floor.walkY - line) < Math.abs(best - line) ? floor.walkY : best),
+      null,
+    );
+    return nearest ?? line;
   }
 }

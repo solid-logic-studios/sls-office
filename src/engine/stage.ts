@@ -162,7 +162,7 @@ export class Stage implements World {
       host: this.host,
       vms: this.vms,
       findings: this.findings,
-      liftInUse: this.cast.list().some((character) => character.visible && character.inLift),
+      liftInUse: this.liftCar.inUse,
       liftCarY: this.liftCar.y,
       vaultOpen: this.setPieces.vaultOpen,
       openStores: this.setPieces.openStores,
