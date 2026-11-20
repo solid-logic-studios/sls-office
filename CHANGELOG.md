@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The screen stays on while the Office is open (Screen Wake Lock), so a phone on a stand no longer dims or sleeps. It lets go when the feed goes stale or the tab is hidden, and is retaken when the tab comes back. Needs HTTPS (or localhost).
+
 ### Changed
 
 - Every merge to `main` publishes the image as `:main` and `:main-<short sha>` (CI's image job), and the lab follows `:main`, so a merge goes live within a few minutes. Releases still publish `:X.Y.Z` and `:X.Y`. A PR still only builds the image.

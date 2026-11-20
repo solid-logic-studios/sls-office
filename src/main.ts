@@ -15,6 +15,7 @@ import { initialVolume, saveVolume } from './page/audio/volume-preference.ts';
 import { loadVoiceManifest } from './page/audio/voice-manifest.ts';
 import { WebSpeechOutput } from './page/audio/web-speech-output.ts';
 import { chooseTheme } from './page/default-theme.ts';
+import { browserWakeLock, KeepAwake } from './page/keep-awake.ts';
 import { stopWhileOffScreen } from './page/offscreen-gate.ts';
 import { throttleFrames } from './page/frame-throttle.ts';
 import { localHour } from './page/clock.ts';
@@ -101,6 +102,8 @@ const trouble = new TroubleList(element('trouble', HTMLUListElement), (issue) =>
 let hourOverride: number | null = null;
 const hour = (): number => hourOverride ?? localHour(new Date());
 let awake = false;
+/** Keeps a phone's screen on while the Office is open. */
+const keepAwake = new KeepAwake(browserWakeLock(), document);
 
 waking.textContent = WAKING_TEXT;
 renderLegend(legend, firstTheme.legend);
@@ -289,6 +292,7 @@ function show(snapshot: Snapshot | null): void {
     lastGood = Number.isNaN(takenAt.getTime()) ? lastGood : takenAt;
   }
   awake = snapshot !== null && !isStale(snapshot, now);
+  keepAwake.open = awake;
   const state = barStateOf(snapshot, awake);
   bar.render(state);
   bar.setClock(hour());
