@@ -1,13 +1,17 @@
 import type { DecorFn, Prop, Theme } from '../../contract/theme.ts';
-import { officeTheme } from '../office/index.ts';
 import { paintSky } from '../shared/sky.ts';
 import { CORE, JARVIS } from './boards.ts';
+import { CITIZEN, castSubject } from './cast.ts';
 import { powerCore } from './core.ts';
 import { HOTSPOTS } from './hotspots.ts';
+import { FOUNDERS } from './founders.ts';
 import { jarvisConsole } from './jarvis-console.ts';
 import { HQ_LAYOUT } from './layout.ts';
+import { LEGEND } from './legend.ts';
+import { LINES } from './lines.ts';
 import { ROOMS } from './palette.ts';
 import { paintAlarmWash, paintNightTint, paintSpine, paintStructure } from './shell.ts';
+import { SOUNDSCAPE } from './soundscape.ts';
 
 /** The rec room couch: its back is set dressing; its front sorts by base line, so sitters sit behind it. */
 const COUCH = { x: 484, base: 128, w: 50 } as const;
@@ -26,24 +30,23 @@ const paintCouchFront: DecorFn = (painter) => {
 const PROPS: readonly Prop[] = [{ baseY: COUCH.base, draw: paintCouchFront }];
 
 /**
- * The lab as a superhero HQ with JARVIS at the helm (issue #4). The structure, the JARVIS orb and the
- * power core are the HQ's own. The cast, founders, lines, legend and sound are the Office's until the
- * HQ's own land (docs/design/hq-theme.md).
+ * The lab as a superhero HQ with JARVIS at the helm (issue #4): the Nines on watch, JARVIS as the HQ's
+ * AI and first founder, and the arc-style power core under it (docs/design/hq-theme.md).
  */
 export const hqTheme: Theme = {
   id: 'hq',
   name: 'HQ',
   layout: HQ_LAYOUT,
-  cast: officeTheme.cast,
-  founders: officeTheme.founders,
-  visitor: officeTheme.visitor,
-  lines: officeTheme.lines,
+  cast: castSubject,
+  founders: FOUNDERS,
+  visitor: CITIZEN,
+  lines: LINES,
   decor: {
     back: [paintSky, paintStructure, paintSpine, paintCouchBack, jarvisConsole(JARVIS), powerCore(CORE)],
     props: PROPS,
     front: [paintNightTint, paintAlarmWash],
   },
   hotspots: HOTSPOTS,
-  legend: officeTheme.legend,
-  soundscape: officeTheme.soundscape,
+  legend: LEGEND,
+  soundscape: SOUNDSCAPE,
 };

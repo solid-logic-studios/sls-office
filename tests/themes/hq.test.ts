@@ -280,10 +280,10 @@ describe('hqTheme', () => {
     }
   });
 
-  it('seats twelve heroes on watch, three rookies and both founders', () => {
+  it('seats twelve heroes on watch, three rookies, both founders and docks the JARVIS remote', () => {
     expect(layout.homes.worker).toHaveLength(12);
     expect(layout.homes.pod).toHaveLength(3);
-    expect(layout.homes.founder).toHaveLength(2);
+    expect(layout.homes.founder).toHaveLength(3);
   });
 
   it('keeps every seat, spot and store on its floor', () => {
@@ -303,7 +303,7 @@ describe('hqTheme', () => {
   });
 
   it('seats the founders either side of the orb, clear of the projector', () => {
-    const [left, right] = layout.homes.founder;
+    const [, left, right] = layout.homes.founder;
     expect((left?.x ?? 0) + (left?.w ?? 0)).toBeLessThanOrEqual(JARVIS.pedestal.x);
     expect(right?.x ?? 0).toBeGreaterThanOrEqual(JARVIS.pedestal.x + JARVIS.pedestal.w);
   });
