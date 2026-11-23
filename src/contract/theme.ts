@@ -197,6 +197,43 @@ export interface Layout {
 
 export type HairStyle = 'short' | 'long' | 'bun' | 'spiky' | 'bald' | 'thin' | 'cap' | 'hardhat';
 
+/** A grid of colours, top row first. `null` is a clear pixel. */
+export type PixelGrid = readonly (readonly (string | null)[])[];
+
+/**
+ * A mark on the chest: a star, a badge, stripes, a light. The top row sits at the collar and the grid
+ * is centred on the torso, which is 8 pixels wide and 7 tall; lead with clear rows to sit it lower.
+ */
+export interface Emblem {
+  pixels: PixelGrid;
+  /** A soft halo in this colour that pulses around the mark. */
+  glow?: string;
+}
+
+/**
+ * Something worn over the whole head, in place of the hair. (`hairStyle: 'cap'` and `'hardhat'`
+ * are older and stay hair styles.)
+ * - `helmet`: a hard shell with a faceplate and two lit eye slits.
+ * - `mask`: a cloth mask over the whole face, with two lenses.
+ * - `cowl`: covers the crown, the ears and the eyes; the lower face shows.
+ */
+export type Headgear =
+  | { kind: 'helmet'; shell: string; face: string; eyes: string }
+  | { kind: 'mask'; colour: string; eyes: string }
+  | { kind: 'cowl'; colour: string; /** A small mark on the brow. */ mark?: string };
+
+/**
+ * Something bigger than a clipboard, always in the hand on the viewer's right.
+ * - `shield`: a round shield on the forearm, seven pixels across. From the rim in, its rings are
+ *   `rim`, `band`, `rim` again and the `boss` at the centre.
+ * - `hammer`: a short-hafted hammer held upright, its head at the shoulder.
+ * - `bow`: a bow held upright, and, with `quiver`, arrows behind the other shoulder.
+ */
+export type HeldItem =
+  | { item: 'shield'; rim: string; band: string; boss: string }
+  | { item: 'hammer'; head: string; haft: string }
+  | { item: 'bow'; limbs: string; /** The colour of the arrows' fletching. */ quiver?: string };
+
 /** A person drawn by the Engine's one sprite renderer. Every colour is a CSS colour. */
 export interface PersonLook {
   kind: 'person';
@@ -214,8 +251,20 @@ export interface PersonLook {
   headset?: boolean;
   /** A broader build. */
   wide?: boolean;
-  /** Something always in hand. */
-  carry?: 'clipboard' | 'tablet';
+  /** Something always in hand. Both hands go to a trolley, so nothing is carried while one is pushed. */
+  carry?: 'clipboard' | 'tablet' | HeldItem;
+  /** The arms, when they differ from the shirt: bare (the skin colour) or armoured. */
+  sleeves?: string;
+  /** The hands, when they are not bare. */
+  gloves?: string;
+  /** Boots, two pixels up from the sole. */
+  boots?: string;
+  /** A cape from the shoulders to the shins, behind the body. It trails when walking. */
+  cape?: string;
+  emblem?: Emblem;
+  headgear?: Headgear;
+  /** A patch over the left eye, with its strap. */
+  eyepatch?: boolean;
 }
 
 /** A plain coloured box, for a Theme with no art. */
