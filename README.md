@@ -35,8 +35,8 @@ A Theme supplies the layout, the looks, the lines and the set dressing; the engi
 behaviour. The contract is `src/contract/theme.ts`, and
 [ADR 0003](docs/adr/0003-engine-and-theme-contract.md) records the rules. `src/themes/office/` is
 the Office; `src/themes/tower/` is the same world re-laid out as a 212 px wide high-rise (a storey or two
-per job, joined by one lift) that fits a phone without a sideways pan; `src/themes/hq/` is the HQ (an
-original hero team, the Nines, on watch under JARVIS's orb, with an arc-style power core and a jet
+per job, joined by one lift) that fits a phone without a sideways pan; `src/themes/hq/` is the HQ (the
+Avengers on watch under JARVIS's orb, with an arc-style power core and a jet
 run to an off-site bunker; see [its design spec](docs/design/hq-theme.md)); `src/themes/spire/` is
 the HQ stacked for a phone; `src/themes/boxes/` is the smallest working Theme. `pnpm shot <theme id>`
 renders a Theme in Node to PNGs in `.shots/`, with no browser.

@@ -12,7 +12,7 @@ import { SET_BACK, SKY_BACK } from './set.ts';
 import { paintAlarmWash, paintNightTint, paintSpine, paintStructure } from './shell.ts';
 
 /**
- * The HQ as a spire for a phone (docs/design/hq-theme.md, section 5): the same Nines, JARVIS, words
+ * The HQ as a spire for a phone (docs/design/hq-theme.md, section 5): the same Avengers, JARVIS, words
  * and sound, a storey or two per job, joined by one lift. The orb floats in the open on the roof and
  * the core glows at the foot, so on a phone the HQ is a spire with a beacon on top. Only the layout,
  * the furniture's placing, the set and the Hotspots are its own; the set is the HQ's art, placed anew.
