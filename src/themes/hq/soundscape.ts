@@ -68,7 +68,7 @@ export const HQ_SPOKEN: Readonly<Record<string, string>> = {
   'MY WATCH IS DONE. CYA!': 'my watch is done. see ya!',
   'VITALS CHECK...': 'vitals check',
   'BACK TO THE HANGAR...': 'back to the hangar',
-  '02:30. JET RUN.': 'two thirty. jet run.',
+  '02:30. HULK FLY JET.': 'two thirty. hulk fly jet.',
   'SAFE IN THE R2 BUNKER': 'safe in the r two bunker',
   'ONE RECORD, TA': 'one record, tah',
   'ONE-TWO!': 'one, two!',

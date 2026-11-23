@@ -6,7 +6,7 @@ import { CITIZEN, castSubject } from '../../src/themes/hq/cast.ts';
 import { FOUNDERS } from '../../src/themes/hq/founders.ts';
 import { LEGEND } from '../../src/themes/hq/legend.ts';
 import { BREAK_SPOT_KINDS, LINES } from '../../src/themes/hq/lines.ts';
-import { CODENAMES } from '../../src/themes/hq/looks.ts';
+import { HEROES, POSTS, ROOKIES, SQUADS, RESERVES } from '../../src/themes/hq/avengers.ts';
 import { VM_BLURBS } from '../../src/themes/hq/rooms.ts';
 import { HQ_SPOKEN, SOUNDSCAPE } from '../../src/themes/hq/soundscape.ts';
 import { CUE_SPEAKERS } from '../../src/page/audio/voice-lines.ts';
@@ -145,6 +145,13 @@ describe('the HQ words', () => {
     for (const part of parts) expect(LINES.part[part]?.length, part).toBeGreaterThan(0);
   });
 
+  it('speaks of the Avengers and no longer of the Nines', () => {
+    expect(LINES.cue['pods-up']).toEqual(['ROOKIES, ASSEMBLE!']);
+    expect(LINES.cue.alarm).toContain('AVENGERS, ASSEMBLE!');
+    expect(LINES.cue['backup-start']).toEqual(['02:30. HULK FLY JET.']);
+    expect(JSON.stringify(LINES)).not.toMatch(/MARK|MUSTER|SUIT UP!/);
+  });
+
   it('writes the Australian way', () => {
     const said = JSON.stringify([LINES, FOUNDERS, LEGEND, VM_BLURBS, castBlurbs()]);
     expect(said).not.toMatch(/\b(color|colors|organize|center|favorite)\b/i);
@@ -152,103 +159,92 @@ describe('the HQ words', () => {
 });
 
 describe('the HQ cast', () => {
-  it('casts the VMs by role', () => {
+  it('casts the VMs by role, each with its hero', () => {
     expect(byRole('data')?.part).toBe('keeper');
     expect(byRole('data')?.blurb).toBe(VM_BLURBS.data);
+    expect(byRole('data')?.look).toBe(POSTS.keeper.look);
     expect(byRole('ci')?.part).toBe('wrangler');
-    expect(person(byRole('ci')?.look).carry).toBe('tablet');
+    expect(byRole('ci')?.look).toBe(POSTS.wrangler.look);
+    expect(byRole('ci')?.blurb).toContain('Captain America');
     expect(byRole('deploy')?.part).toBe('courier');
-    expect(person(byRole('deploy')?.look).hairStyle).toBe('hardhat');
+    expect(byRole('deploy')?.look).toBe(POSTS.courier.look);
     expect(byRole('compute')).toBeNull();
   });
 
-  it('masks every sworn hero and leaves the rookies, founders and citizens bare', () => {
-    const sworn = [
-      byRole('data'),
-      byRole('ci'),
-      byRole('deploy'),
-      cast(site()),
-      cast(site({ env: 'production' })),
-      cast(service('platform', 'traefik')),
-      cast(service('platform', 'cloudflared-1')),
-      cast(service('platform', 'gatus')),
-    ];
-    for (const casting of sworn) expect(person(casting?.look).glasses, casting?.blurb).toBe(true);
-    expect(person(cast({ kind: 'ci-pod', id: 'pod-1', cpu: 1, mem: 1 })?.look).glasses).toBeUndefined();
-    for (const founder of FOUNDERS) {
-      if (founder.look.kind === 'person') expect(founder.look.glasses).toBeUndefined();
+  it('names every hero in its tooltip', () => {
+    expect(byRole('data')?.blurb).toContain('Hulk');
+    expect(byRole('deploy')?.blurb).toContain('Thor');
+    expect(cast(service('platform', 'traefik'))?.blurb).toContain('Nick Fury');
+    expect(cast(service('platform', 'cloudflared-1'))?.blurb).toContain('Hawkeye');
+    expect(cast(service('platform', 'cloudflared-2'))?.blurb).toContain('Kate Bishop');
+    expect(cast(service('platform', 'gatus'))?.blurb).toContain('Black Widow');
+    for (const [client, squad] of Object.entries(SQUADS)) {
+      const w = site({ client, id: `${client}-x`, env: 'production' });
+      const onVm = { ...compute, workloads: [w] };
+      const casting = castSubject({ kind: 'workload', vm: onVm, workload: w }, 0);
+      expect(casting?.blurb, client).toContain(squad[0].name);
     }
-    expect(person(CITIZEN.look(0.4)).glasses).toBeUndefined();
   });
 
-  it('casts a site instance as a hero in its squad colour, with a codename and the full names in the blurb', () => {
-    const casting = cast(site());
+  it('casts a site instance as the squad hero on its station, leader first on the senior environment', () => {
+    const w = site({ client: 'scrd', env: 'production' });
+    const casting = castSubject({ kind: 'workload', vm: { ...compute, workloads: [w] }, workload: w }, 0);
     expect(casting?.part).toBe('worker');
-    expect(person(casting?.look).shirt).toBe('#e0563f');
-    expect(casting?.blurb).toMatch(
-      /^[A-Z]+ of the SCRD squad: server \(node-api\), develop, a container on sls-compute$/,
+    expect(casting?.look).toBe(SQUADS.scrd[0].look);
+    expect(casting?.blurb).toBe(
+      'Iron Man, leading the SCRD squad: server (node-api), production, a container on sls-compute',
+    );
+    const staging = site({ client: 'scrd', env: 'staging', id: 'scrd-staging' });
+    const both = { ...compute, workloads: [w, staging] };
+    expect(castSubject({ kind: 'workload', vm: both, workload: staging }, 0)?.blurb).toMatch(
+      /^Scarlet Witch of the SCRD squad: server \(node-api\), staging, a container on sls-compute$/,
     );
     expect(cast(site({ client: 'forms-api' }))?.blurb).toContain('Forms API squad');
   });
 
-  it('picks a codename from the list by workload id, so it survives a deploy', () => {
-    const name = (generation: number) => cast(site(), generation)?.blurb.split(' ')[0] ?? '';
-    expect(CODENAMES).toContain(name(0));
-    expect(new Set([0, 1, 2, 3].map(name)).size).toBe(1);
-    const names = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((id) => cast(site({ id }))?.blurb.split(' ')[0]);
-    expect(new Set(names).size).toBeGreaterThan(1);
+  it('puts an unknown client on the reserves', () => {
+    const casting = cast(site({ client: 'acme-co' }));
+    expect(RESERVES.map((hero) => hero.look)).toContain(casting?.look);
+    expect(casting?.blurb).toContain('acme-co squad');
   });
 
-  it('dresses staging with a steel collar and production as a veteran with the client on the chest', () => {
-    const develop = person(cast(site({ client: 'acme-co' }))?.look);
-    const staging = person(cast(site({ client: 'acme-co', env: 'staging' }))?.look);
-    const prod = person(cast(site({ client: 'acme-co', env: 'production' }))?.look);
-    expect(develop.shirt).toBe(person(cast(site({ client: 'acme-co', id: 'other' }))?.look).shirt);
-    expect(develop.shirt).not.toBe('#e0563f');
-    expect(develop.trim).toBeUndefined();
-    expect(staging.shirt).toBe(develop.shirt);
-    expect(staging.trim).toBeDefined();
-    expect(prod.tie).toBe(develop.shirt);
-    expect(prod.shirt).toBe('#1d2740');
-    expect(prod.trim).toBe('#e2b84a');
-  });
-
-  it('changes the face but not the suit when the workload is redeployed', () => {
-    const looks = [0, 1, 2, 3, 4, 5].map((g) => person(cast(site(), g)?.look));
-    expect(new Set(looks.map((l) => l.shirt)).size).toBe(1);
-    expect(new Set(looks.map((l) => `${l.skin}/${l.hair}/${l.hairStyle}`)).size).toBeGreaterThan(1);
-    expect(person(cast(site(), 3)?.look)).toEqual(person(cast(site(), 3)?.look));
+  it('tags a different hero in when the workload is redeployed', () => {
+    const looks = [0, 1, 2].map((g) => cast(site(), g)?.look);
+    expect(looks[1]).not.toBe(looks[0]);
+    expect(cast(site(), 2)).toEqual(cast(site(), 2));
   });
 
   it('casts the platform containers by name and leaves the rest without a character', () => {
     const board = cast(service('platform', 'traefik'));
     expect(board?.part).toBe('greeter');
-    expect(person(board?.look).headset).toBe(true);
-    const ping = cast(service('platform', 'cloudflared-1'));
-    const pong = cast(service('platform', 'cloudflared-2'));
-    expect(ping?.part).toBe('guard');
-    expect(pong?.part).toBe('guard');
-    expect(person(ping?.look).cap).toBe('#f38020');
-    expect(person(ping?.look).wide).toBe(true);
-    expect(ping?.blurb).toContain('Ping');
-    expect(pong?.blurb).toContain('Pong');
-    const medic = cast(service('platform', 'gatus'));
-    expect(medic?.part).toBe('checker');
-    expect(person(medic?.look).carry).toBe('clipboard');
+    expect(board?.look).toBe(POSTS.greeter.look);
+    const first = cast(service('platform', 'cloudflared-1'));
+    const second = cast(service('platform', 'cloudflared-2'));
+    expect(first?.part).toBe('guard');
+    expect(second?.part).toBe('guard');
+    expect(first?.look).toBe(POSTS.guards[0].look);
+    expect(second?.look).toBe(POSTS.guards[1].look);
+    const widow = cast(service('platform', 'gatus'));
+    expect(widow?.part).toBe('checker');
+    expect(widow?.look).toBe(POSTS.checker.look);
     expect(cast(service('platform', 'watchtower'))).toBeNull();
     expect(cast(service('engine', 'postgres'))).toBeNull();
     expect(cast(service('runner', 'runner-1'))).toBeNull();
   });
 
-  it('casts a CI pod as a rookie, varied by its id', () => {
+  it('casts a CI pod as one of the rookies, picked by its id', () => {
     const rookie = cast({ kind: 'ci-pod', id: 'pod-1', cpu: 90, mem: 40 });
     expect(rookie?.part).toBe('pod');
     expect(rookie?.blurb).toContain('sls-compute');
-    const faces = ['pod-1', 'pod-2', 'pod-3', 'pod-4', 'pod-5'].map((id) => {
-      const look = person(cast({ kind: 'ci-pod', id, cpu: 1, mem: 1 })?.look);
-      return `${look.skin}/${look.hair}/${look.hairStyle}`;
-    });
-    expect(new Set(faces).size).toBeGreaterThan(1);
+    const names = ROOKIES.map((r) => r.name);
+    const ids = ['pod-1', 'pod-2', 'pod-3', 'pod-4', 'pod-5', 'pod-6'];
+    const blurbs = ids.map((id) => cast({ kind: 'ci-pod', id, cpu: 1, mem: 1 })?.blurb ?? '');
+    for (const blurb of blurbs)
+      expect(
+        names.some((name) => blurb.startsWith(name)),
+        blurb,
+      ).toBe(true);
+    expect(new Set(blurbs.map((b) => b.split(',')[0])).size).toBeGreaterThan(1);
   });
 
   it('casts the same parts as the Office for every VM role and workload kind', () => {
@@ -281,6 +277,17 @@ describe('the HQ founders', () => {
     expect(person(dhruv?.look).shirt).toBe('#2f8f5b');
   });
 
+  it('gives Paul and Dhruv their Office faces and colours, each with the arc reactor', () => {
+    for (const id of ['paul', 'dhruv']) {
+      const mine = person(FOUNDERS.find((f) => f.id === id)?.look);
+      const theirs = person(officeTheme.founders.find((f) => f.id === id)?.look);
+      expect({ ...mine, emblem: undefined }).toEqual({ ...theirs, emblem: undefined });
+      expect(mine.emblem?.glow, id).toBeDefined();
+    }
+    expect(FOUNDERS[0]?.id).toBe('jarvis');
+    expect(person(FOUNDERS[1]?.look).emblem).toEqual(person(FOUNDERS[2]?.look).emblem);
+  });
+
   it('keeps the Office lines for Paul and Dhruv and gives JARVIS its own', () => {
     const lines = (id: string) => FOUNDERS.find((f) => f.id === id)?.lines;
     for (const id of ['paul', 'dhruv']) {
@@ -299,6 +306,15 @@ describe('the HQ founders', () => {
 });
 
 describe('the HQ legend', () => {
+  it('names the squad leaders and the posts in the Avengers words', () => {
+    const labels = LEGEND.map((entry) => entry.label);
+    expect(labels).toContain('SCRD squad: Iron Man leads');
+    expect(labels).toContain('Nick Fury: Traefik');
+    expect(labels).toContain('The Hawkeyes: cloudflared x2');
+    expect(labels).toContain('Captain America: the autoscaler');
+    expect(labels.join(' ')).not.toMatch(/Switchboard|Vitals|Ledger|Payload|Muster|Tunnel Twins/);
+  });
+
   it('labels every entry once, in a hex colour, with JARVIS last', () => {
     expect(new Set(LEGEND.map((entry) => entry.label)).size).toBe(LEGEND.length);
     for (const entry of LEGEND) {
@@ -370,14 +386,14 @@ describe('the HQ soundscape', () => {
 
   it('names every Part and VM room in the HQ words, in lower case', () => {
     expect(vocabulary?.parts).toEqual({
-      worker: 'the hero on watch',
+      worker: 'the avenger on watch',
       pod: 'the rookie',
-      greeter: 'dispatch',
-      guard: 'the gatekeeper',
-      checker: 'the medic',
-      keeper: 'the archivist',
-      courier: 'the quartermaster',
-      wrangler: 'the drill instructor',
+      greeter: 'nick fury',
+      guard: 'hawkeye',
+      checker: 'black widow',
+      keeper: 'the hulk',
+      courier: 'thor',
+      wrangler: 'the captain',
     });
     expect(vocabulary?.rooms).toEqual({
       ci: 'the rookie bay',
