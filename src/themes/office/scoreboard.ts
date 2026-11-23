@@ -1,4 +1,4 @@
-import { mix } from './hash.ts';
+import { mix } from '../shared/hash.ts';
 
 export type Sport = 'SQ' | 'RB';
 

@@ -1,7 +1,7 @@
 import type { Painter } from '../../contract/painter.ts';
 import type { Findings, ServiceWorkload, Vm, Workload } from '../../contract/snapshot.ts';
 import type { DecorFn, Rect, Severity } from '../../contract/theme.ts';
-import { pen } from '../office/pen.ts';
+import { pen } from '../shared/pen.ts';
 import { FINDINGS_LAMP, MYSQL_CABINET, POD_OVERFLOW, POSTGRES_CABINET, RUNNER_RACK, SITE_OVERFLOW } from './boards.ts';
 import { TOWER_LAYOUT } from './layout.ts';
 

@@ -1,7 +1,7 @@
 import type { Painter } from '../../contract/painter.ts';
 import type { StageView } from '../../contract/theme.ts';
 import { PLAQUE, REPLACE_NOTE } from './boards.ts';
-import { pen } from './pen.ts';
+import { pen } from '../shared/pen.ts';
 import { paintWindow } from './shell.ts';
 
 /** Static art for the ground floor, the basement and the off-site vault. */

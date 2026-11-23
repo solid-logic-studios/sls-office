@@ -1,7 +1,7 @@
 import type { Painter } from '../../contract/painter.ts';
 import type { Host, Temps } from '../../contract/snapshot.ts';
 import type { DecorFn, Rect, StageView } from '../../contract/theme.ts';
-import { SENSOR_ORDER, TEMP_COLOURS, TEMP_SENSORS, readingOf } from '../office/temps.ts';
+import { SENSOR_ORDER, TEMP_COLOURS, TEMP_SENSORS, readingOf } from '../shared/temps.ts';
 import { TAU, disc, dot, wave } from './kit.ts';
 import { ALARM, CYAN, HULL, INK, LAMP, ROOMS, STEEL, UNLIT } from './palette.ts';
 

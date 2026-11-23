@@ -1,6 +1,6 @@
 import type { Painter } from '../../contract/painter.ts';
 import type { DecorFn } from '../../contract/theme.ts';
-import { pen } from '../office/pen.ts';
+import { pen } from '../shared/pen.ts';
 import { FLOOR, FLOOR_NAMES, SHAFT, STOREYS, band, storeyTop } from './geometry.ts';
 
 /**

@@ -16,7 +16,7 @@ import {
   VAULT,
 } from './boards.ts';
 import { SPORT_NAMES, scoreAt } from './scoreboard.ts';
-import { SENSOR_ORDER, TEMP_SENSORS, readingOf } from './temps.ts';
+import { SENSOR_ORDER, TEMP_SENSORS, readingOf } from '../shared/temps.ts';
 
 /** Hover text for the set dressing. The Engine handles rooms and characters; the Theme handles the walls. */
 

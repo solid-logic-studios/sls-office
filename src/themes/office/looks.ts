@@ -1,6 +1,6 @@
 import type { HairStyle, PersonLook } from '../../contract/theme.ts';
 import type { SiteEnv } from '../../contract/snapshot.ts';
-import { hashOf, pick } from './hash.ts';
+import { hashOf, pick } from '../shared/hash.ts';
 import { CLIENT_COLOURS, HAIRS, PANTS, PAPER, PRODUCTION_SHIRT, SKINS, SPARE_CLIENT_COLOURS } from './palette.ts';
 
 /** Display name and desk colour for the clients the lab knows. */

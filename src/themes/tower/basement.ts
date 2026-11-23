@@ -2,8 +2,8 @@ import type { Painter } from '../../contract/painter.ts';
 import type { Temps } from '../../contract/snapshot.ts';
 import type { DecorFn } from '../../contract/theme.ts';
 import { loadColour } from '../office/dressing.ts';
-import { pen } from '../office/pen.ts';
-import { SENSOR_ORDER, TEMP_COLOURS, TEMP_SENSORS, readingOf } from '../office/temps.ts';
+import { pen } from '../shared/pen.ts';
+import { SENSOR_ORDER, TEMP_COLOURS, TEMP_SENSORS, readingOf } from '../shared/temps.ts';
 import { PLANT_ROOM, VAULT } from './boards.ts';
 
 /**

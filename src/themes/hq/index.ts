@@ -1,6 +1,6 @@
 import type { DecorFn, Prop, Theme } from '../../contract/theme.ts';
 import { officeTheme } from '../office/index.ts';
-import { paintSky } from '../office/sky.ts';
+import { paintSky } from '../shared/sky.ts';
 import { CORE, JARVIS } from './boards.ts';
 import { powerCore } from './core.ts';
 import { HOTSPOTS } from './hotspots.ts';

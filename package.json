@@ -14,6 +14,7 @@
     "test": "vitest run",
     "schema": "node scripts/generate-schema.ts",
     "voice-lines": "node scripts/voice-lines.ts",
+    "shot": "node --experimental-transform-types --disable-warning=ExperimentalWarning scripts/theme-shot.ts",
     "build": "vite build && pnpm schema",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

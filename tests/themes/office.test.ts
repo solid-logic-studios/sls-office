@@ -12,7 +12,7 @@ import { PLAQUE, LAN_BOARD, REPLACE_NOTE } from '../../src/themes/office/boards.
 import { DOORWAYS, DOOR_HEIGHT } from '../../src/themes/office/doorways.ts';
 import { officeTheme } from '../../src/themes/office/index.ts';
 import { scoreAt } from '../../src/themes/office/scoreboard.ts';
-import { TEMP_COLOURS, tempBand, type TempBand, type TempSensor } from '../../src/themes/office/temps.ts';
+import { TEMP_COLOURS, tempBand, type TempBand, type TempSensor } from '../../src/themes/shared/temps.ts';
 import { ROOF_SIGN } from '../../src/themes/office/shell.ts';
 import type { PaintCall } from '../support/recording-painter.ts';
 import { RecordingPainter } from '../support/recording-painter.ts';

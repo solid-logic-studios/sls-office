@@ -43,7 +43,8 @@ pnpm format:check       # Prettier check (CI gate)
   only through the `Painter`, and knows nothing about any Theme (a test enforces the imports).
 - **`src/themes/`** holds the Themes: `office/` (the prototype's world), `tower/` (the Office's
   world as a phone-width high-rise) and `boxes/` (a plain test theme that proves the contract). A
-  Theme is data and pure drawing functions; it imports only from `src/contract/` and, where it
+  Theme is data and pure drawing functions; it imports only from `src/contract/`, from
+  `src/themes/shared/` (the drawing helpers every Theme may use: pen, hash, temps, sky) and, where it
   reuses a sibling Theme's world, from that sibling (the Tower imports the Office's cast, lines and
   sound; see the ADR 0003 amendment). A new Theme never needs an Engine change.
   `src/themes/index.ts` lists the shipped Themes.

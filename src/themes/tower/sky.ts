@@ -1,7 +1,7 @@
 import type { Painter } from '../../contract/painter.ts';
 import type { DecorFn, StageView } from '../../contract/theme.ts';
-import { lerp, pen } from '../office/pen.ts';
-import { nightFactor, skyColour } from '../office/sky.ts';
+import { lerp, pen } from '../shared/pen.ts';
+import { nightFactor, skyColour } from '../shared/sky.ts';
 import { HEIGHT, ROOF, WIDTH } from './geometry.ts';
 
 /**

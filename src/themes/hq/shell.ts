@@ -1,6 +1,6 @@
 import type { Painter } from '../../contract/painter.ts';
 import type { DecorFn, Rect, StageView } from '../../contract/theme.ts';
-import { nightFactor, openToSky } from '../office/sky.ts';
+import { nightFactor, openToSky } from '../shared/sky.ts';
 import { SPINE } from './boards.ts';
 import {
   APRON,

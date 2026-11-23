@@ -133,3 +133,13 @@ owns one `Lift` that every rider shares.
   `doorsOpen`, lights a landing lamp amber for each floor in `calls` and runs the cables only while
   the car travels. **The Office** has no new art, and its riders now wait for the car.
 - **Known limits:** one car and one shaft, so a busy lab queues at the landing.
+
+## Amendment: a shared Theme kit (23 November 2026, #4)
+
+The HQ is the third Theme to need the Office's drawing helpers, so, as the first amendment said,
+they move out of `office/`.
+
+- **`src/themes/shared/`** holds drawing helpers any Theme may import: `pen.ts`, `hash.ts`,
+  `temps.ts` and `sky.ts` (moved from `src/themes/office/`, unchanged).
+- **A Theme still imports only from `src/contract/`, `src/themes/shared/` and a sibling Theme it
+  reuses.** `shared/` imports only from `src/contract/` and itself, and never from a Theme.
