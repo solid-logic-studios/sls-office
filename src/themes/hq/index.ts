@@ -6,12 +6,16 @@ import { powerCore } from './core.ts';
 import { HOTSPOTS } from './hotspots.ts';
 import { FOUNDERS } from './founders.ts';
 import { jarvisConsole } from './jarvis-console.ts';
+import { GROUND_DECK_BACK, GROUND_DECK_HOTSPOTS, GROUND_DECK_PROPS } from './ground-deck.ts';
+import { JET_BACK, JET_HOTSPOTS, JET_PROPS } from './jet.ts';
 import { HQ_LAYOUT } from './layout.ts';
+import { LIFT_BACK, LIFT_HOTSPOTS, LIFT_PROPS } from './lift.ts';
 import { LEGEND } from './legend.ts';
 import { LINES } from './lines.ts';
 import { ROOMS } from './palette.ts';
 import { paintAlarmWash, paintNightTint, paintSpine, paintStructure } from './shell.ts';
 import { SOUNDSCAPE } from './soundscape.ts';
+import { UPPER_DECK_BACK, UPPER_DECK_HOTSPOTS, UPPER_DECK_PROPS } from './upper-deck.ts';
 
 /** The rec room couch: its back is set dressing; its front sorts by base line, so sitters sit behind it. */
 const COUCH = { x: 484, base: 128, w: 50 } as const;
@@ -27,7 +31,13 @@ const paintCouchFront: DecorFn = (painter) => {
   painter.rect('#5c2845', COUCH.x, COUCH.base - 1, COUCH.w, 1);
 };
 
-const PROPS: readonly Prop[] = [{ baseY: COUCH.base, draw: paintCouchFront }];
+const PROPS: readonly Prop[] = [
+  { baseY: COUCH.base, draw: paintCouchFront },
+  ...UPPER_DECK_PROPS,
+  ...GROUND_DECK_PROPS,
+  ...JET_PROPS,
+  ...LIFT_PROPS,
+];
 
 /**
  * The lab as a superhero HQ with JARVIS at the helm (issue #4): the Nines on watch, JARVIS as the HQ's
@@ -42,11 +52,22 @@ export const hqTheme: Theme = {
   visitor: CITIZEN,
   lines: LINES,
   decor: {
-    back: [paintSky, paintStructure, paintSpine, paintCouchBack, jarvisConsole(JARVIS), powerCore(CORE)],
+    back: [
+      paintSky,
+      paintStructure,
+      paintSpine,
+      paintCouchBack,
+      ...UPPER_DECK_BACK,
+      ...GROUND_DECK_BACK,
+      ...JET_BACK,
+      ...LIFT_BACK,
+      jarvisConsole(JARVIS),
+      powerCore(CORE),
+    ],
     props: PROPS,
     front: [paintNightTint, paintAlarmWash],
   },
-  hotspots: HOTSPOTS,
+  hotspots: [...HOTSPOTS, ...UPPER_DECK_HOTSPOTS, ...GROUND_DECK_HOTSPOTS, ...JET_HOTSPOTS, ...LIFT_HOTSPOTS],
   legend: LEGEND,
   soundscape: SOUNDSCAPE,
 };
