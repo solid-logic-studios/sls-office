@@ -11,8 +11,9 @@ import {
   drawHeld,
   drawMantle,
   showsFace,
-  type Frame,
+  type Stance,
 } from './costume.ts';
+import { INK } from './ink.ts';
 
 /** How a character holds itself. Walking and fainting come from its state; the rest from its behaviour. */
 export type Pose = 'stand' | 'walk' | 'type' | 'idle' | 'faint';
@@ -43,7 +44,6 @@ export interface Bounds {
   height: number;
 }
 
-const INK = '#1d1a26';
 const LIFT_FLOOR = '#8d94a0';
 const STAR = '#f2c230';
 const MOUTH = '#7a2f2f';
@@ -119,7 +119,7 @@ function drawPerson(painter: Painter, look: PersonLook, state: SpriteState, x: n
   const wide = look.wide === true ? 1 : 0;
   const bob = (walking && step % 2 === 1) || (typing && state.frantic && tap === 1) ? 1 : 0;
   const body = y - bob;
-  const frame: Frame = { x, y, body, wide };
+  const frame: Stance = { x, y, body, wide };
 
   if (look.cape !== undefined) drawCape(painter, look.cape, frame, walking && step % 2 === 1 ? -state.facing : 0);
 
@@ -196,8 +196,8 @@ function drawPerson(painter: Painter, look: PersonLook, state: SpriteState, x: n
   } else if (look.carry === 'tablet') {
     rect('#2a2f3a', x + 4, body - 11, 4, 5);
     rect('#7df0c0', x + 5, body - 10, 2, 3);
-  } else if (look.carry !== undefined) {
-    drawHeld(painter, look.carry, frame, typing ? body - 8 : body - 8 + right);
+  } else if (look.carry !== undefined && !(idle && state.seated)) {
+    drawHeld(painter, look.carry, frame, body - 8 + right);
   }
 }
 

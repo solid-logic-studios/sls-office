@@ -10,7 +10,7 @@ import { watchHero } from './watch.ts';
 export const CITIZEN: Theme['visitor'] = {
   look: visitorLook,
   title: 'Citizen',
-  blurb: 'An HTTP request: a citizen in through the Cloudflare Tunnel, sent on by Nick Fury.',
+  blurb: `An HTTP request: a citizen in through the Cloudflare Tunnel, sent on by ${POSTS.greeter.name}.`,
 };
 
 function castVm(vm: Vm): Casting | null {
@@ -23,7 +23,7 @@ function castVm(vm: Vm): Casting | null {
       return {
         part: 'wrangler',
         look: POSTS.wrangler.look,
-        blurb: `Autoscaler: Captain America, drilling the rookies. Manages the scale set on ${vm.name}: up to three single-use rookies.`,
+        blurb: `Autoscaler: ${POSTS.wrangler.name}, drilling the rookies. Manages the scale set on ${vm.name}: up to three single-use rookies.`,
       };
     case 'compute':
       return null;
@@ -50,7 +50,7 @@ function castPlatform(vm: Vm, name: string): Casting | null {
       part: 'greeter',
       look: POSTS.greeter.look,
       blurb: platformBlurb(
-        'Nick Fury at dispatch: Traefik. Sends every citizen to the right Avenger by Host header.',
+        `${POSTS.greeter.name} at dispatch: Traefik. Sends every citizen to the right Avenger by Host header.`,
         vm,
       ),
     };
@@ -59,15 +59,15 @@ function castPlatform(vm: Vm, name: string): Casting | null {
     const [hawkeye, kate] = POSTS.guards;
     const second = lower.endsWith('2');
     const role = second
-      ? 'Kate Bishop, the other Hawkeye: Cloudflare Tunnel replica.'
-      : 'Hawkeye on the gate: Cloudflare Tunnel replica. No inbound ports: citizens come through the tunnel.';
+      ? `${kate.name}, the other ${hawkeye.name}: Cloudflare Tunnel replica.`
+      : `${hawkeye.name} on the gate: Cloudflare Tunnel replica. No inbound ports: citizens come through the tunnel.`;
     return { part: 'guard', look: (second ? kate : hawkeye).look, blurb: platformBlurb(role, vm) };
   }
   if (lower.startsWith('gatus')) {
     return {
       part: 'checker',
       look: POSTS.checker.look,
-      blurb: platformBlurb('Black Widow on her rounds: Gatus. Takes every pulse, alerts nobody.', vm),
+      blurb: platformBlurb(`${POSTS.checker.name} on her rounds: Gatus. Takes every pulse, alerts nobody.`, vm),
     };
   }
   return null;

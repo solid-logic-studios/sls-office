@@ -11,7 +11,7 @@ const swatch = (hero: Hero, pick: (look: PersonLook) => string | undefined): str
 };
 
 const quiver = ({ carry }: PersonLook): string | undefined =>
-  typeof carry === 'object' && carry.item === 'bow' ? carry.quiver : undefined;
+  typeof carry === 'object' && carry.kind === 'bow' ? carry.quiver : undefined;
 
 export const LEGEND: readonly LegendEntry[] = [
   { colour: CLIENT_COLOURS.scrd, label: 'SCRD squad: Iron Man leads' },

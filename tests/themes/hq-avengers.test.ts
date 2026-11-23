@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { boundsOf, drawLook, type Pose } from '../../src/engine/sprites.ts';
+import { boundsOf, type Pose } from '../../src/engine/sprites.ts';
 import { HEROES, POSTS, RESERVES, ROOKIES, SQUADS } from '../../src/themes/hq/avengers.ts';
 import { ALARM } from '../../src/themes/hq/palette.ts';
-import { RecordingPainter } from '../support/recording-painter.ts';
+import { drawSprite, spriteState } from '../support/sprite.ts';
 
 const POSES: readonly Pose[] = ['stand', 'walk', 'type', 'idle'];
 const TORSO = { w: 8, h: 7 };
@@ -45,19 +45,7 @@ describe('The Avengers cast', () => {
     const { half, height } = boundsOf(look);
     for (const pose of POSES) {
       for (const time of [1.03, 1.15, 1.25, 1.3]) {
-        const painter = new RecordingPainter();
-        drawLook(painter, look, {
-          x: 50,
-          y: 100,
-          pose,
-          facing: 1,
-          time,
-          frantic: false,
-          talking: true,
-          seated: pose === 'idle',
-          inLift: false,
-          trolley: null,
-        });
+        const painter = drawSprite(look, spriteState(pose, { time, talking: true, seated: pose === 'idle' }));
         for (const rect of painter.rects) {
           expect(rect.x).toBeGreaterThanOrEqual(50 - half - 2);
           expect(rect.x + rect.w).toBeLessThanOrEqual(50 + half + 2);

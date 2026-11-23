@@ -5,7 +5,7 @@ import { clientStyle } from '../office/looks.ts';
 import { clamp, pen, type Pen } from '../shared/pen.ts';
 import { wave } from './kit.ts';
 import { vmOf } from './lab.ts';
-import { ALARM, AMBER, CYAN, HULL, INK, LAMP, ROOMS, STEEL, UNLIT } from './palette.ts';
+import { ALARM, AMBER, CYAN, HOURGLASS, HULL, INK, LAMP, ROOMS, STEEL, UNLIT } from './palette.ts';
 
 /**
  * The HQ's furniture: the consoles and posts the cast call home. Graphite consoles with a steel lip,
@@ -232,9 +232,6 @@ export const padArt =
   (accent: string): PlaceArt =>
   (painter, { place, occupant }) =>
     pad(pen(painter), place.x, place.baseY, place.w, standing(occupant), accent);
-
-/** A hero's crimson, not the alarm's bright red (section 14.5). */
-const HOURGLASS = '#b8242c';
 
 /** Black Widow's post: a plate with her red hourglass, three pixels by three. */
 export const medicPostArt: PlaceArt = (painter, { place, occupant }) => {

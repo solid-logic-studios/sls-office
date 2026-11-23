@@ -1,5 +1,6 @@
 import { assertNever } from '../assert-never.ts';
 import type { Painter } from '../contract/painter.ts';
+import { INK } from './ink.ts';
 import type { Emblem, Headgear, HeldItem } from '../contract/theme.ts';
 
 /**
@@ -8,12 +9,11 @@ import type { Emblem, Headgear, HeldItem } from '../contract/theme.ts';
  * out; `x` is the person's centre line and every other argument is a row it has already worked out.
  */
 
-const INK = '#1d1a26';
 const ARROW_SHAFT = '#8a6442';
 const BOWSTRING = '#d8dde6';
 
 /** Where the person stands this frame. */
-export interface Frame {
+export interface Stance {
   /** The centre line. */
   x: number;
   /** The feet. */
@@ -28,7 +28,7 @@ export interface Frame {
  * A cape, behind everything else: it shows either side of the legs and between them. `sway` (-1, 0 or 1)
  * pulls the fall a pixel to one side, so it trails a walker.
  */
-export function drawCape(painter: Painter, colour: string, { x, y, body, wide }: Frame, sway: number): void {
+export function drawCape(painter: Painter, colour: string, { x, y, body, wide }: Stance, sway: number): void {
   const left = x - 6 - wide;
   const width = 12 + 2 * wide;
   painter.rect(colour, left, body - 13, width, 6);
@@ -36,7 +36,7 @@ export function drawCape(painter: Painter, colour: string, { x, y, body, wide }:
 }
 
 /** The cape over the shoulders, in front of the arms: the part that shows above a desk. */
-export function drawMantle(painter: Painter, colour: string, { x, body, wide }: Frame): void {
+export function drawMantle(painter: Painter, colour: string, { x, body, wide }: Stance): void {
   painter.rect(colour, x - 6 - wide, body - 13, 2, 1);
   painter.rect(colour, x + 4 + wide, body - 13, 2, 1);
 }
@@ -48,7 +48,7 @@ export function drawFallenCape(painter: Painter, colour: string, x: number, y: n
 }
 
 /** The chest mark, with its halo underneath. `time` drives the halo's pulse. */
-export function drawEmblem(painter: Painter, emblem: Emblem, { x, body }: Frame, time: number): void {
+export function drawEmblem(painter: Painter, emblem: Emblem, { x, body }: Stance, time: number): void {
   const rows = emblem.pixels;
   const width = Math.max(0, ...rows.map((row) => row.length));
   const left = x - Math.ceil(width / 2);
@@ -159,9 +159,9 @@ export function drawEyepatch(painter: Painter, x: number, headY: number, glance:
 }
 
 /** A held item in the hand on the viewer's right. `hand` is the row of the hand, which swings a pixel when walking. */
-export function drawHeld(painter: Painter, held: HeldItem, { x, body, wide }: Frame, hand: number): void {
+export function drawHeld(painter: Painter, held: HeldItem, { x, body, wide }: Stance, hand: number): void {
   const arm = x + 4 + wide;
-  switch (held.item) {
+  switch (held.kind) {
     case 'shield': {
       const left = arm - 2;
       const top = hand - 5;

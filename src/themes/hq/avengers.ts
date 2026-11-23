@@ -100,7 +100,7 @@ export const CAPTAIN_AMERICA: Hero = {
         [R, W, R, W, W, R, W, R],
       ],
     },
-    carry: { item: 'shield', rim: CRIMSON, band: WHITE, boss: NAVY },
+    carry: { kind: 'shield', rim: CRIMSON, band: WHITE, boss: NAVY },
   },
 };
 
@@ -128,7 +128,7 @@ export const THOR: Hero = {
         [_, S, S, _, _, S, S, _],
       ]),
     },
-    carry: { item: 'hammer', head: SILVER, haft: LEATHER },
+    carry: { kind: 'hammer', head: SILVER, haft: LEATHER },
   },
 };
 
@@ -154,7 +154,7 @@ export const HAWKEYE: Hero = {
         [_, _, _, P, P, _, _, _],
       ]),
     },
-    carry: { item: 'bow', limbs: '#12101a', quiver: PURPLE },
+    carry: { kind: 'bow', limbs: '#12101a', quiver: PURPLE },
   },
 };
 
@@ -238,7 +238,7 @@ export const KATE_BISHOP: Hero = {
     trim: '#c9a8f0',
     gloves: BLACK,
     pants: '#2e2640',
-    carry: { item: 'bow', limbs: '#12101a', quiver: '#c9a8f0' },
+    carry: { kind: 'bow', limbs: '#12101a', quiver: '#c9a8f0' },
   },
 };
 

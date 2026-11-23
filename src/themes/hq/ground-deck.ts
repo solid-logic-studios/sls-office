@@ -60,7 +60,7 @@ const BLAST_DOOR: Rect = { x: 550, y: 184, w: 12, h: 14 };
 
 /** The nine-pip uptime shield on the roof, and the name board beside it. */
 export const EMBLEM: Rect = { x: 44, y: 5, w: 23, h: 29 };
-const NAME_BOARD = { x: 72, y: 14, w: 54, h: 13, text: 'AVENGERS' } as const;
+export const NAME_BOARD = { x: 72, y: 14, w: 54, h: 13, text: 'AVENGERS' } as const;
 /** The emblem's hover box: shield and name board. */
 export const TEAM_EMBLEM: Rect = { x: EMBLEM.x, y: EMBLEM.y, w: NAME_BOARD.x + NAME_BOARD.w - EMBLEM.x, h: EMBLEM.h };
 /** The lamp on top of the roof mast (the mast is the shell's, at x 520). */

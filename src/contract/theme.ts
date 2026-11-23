@@ -230,9 +230,9 @@ export type Headgear =
  * - `bow`: a bow held upright, and, with `quiver`, arrows behind the other shoulder.
  */
 export type HeldItem =
-  | { item: 'shield'; rim: string; band: string; boss: string }
-  | { item: 'hammer'; head: string; haft: string }
-  | { item: 'bow'; limbs: string; /** The colour of the arrows' fletching. */ quiver?: string };
+  | { kind: 'shield'; rim: string; band: string; boss: string }
+  | { kind: 'hammer'; head: string; haft: string }
+  | { kind: 'bow'; limbs: string; /** The colour of the arrows' fletching. */ quiver?: string };
 
 /** A person drawn by the Engine's one sprite renderer. Every colour is a CSS colour. */
 export interface PersonLook {

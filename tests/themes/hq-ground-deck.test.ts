@@ -11,6 +11,7 @@ import {
   GROUND_DECK_HOTSPOTS,
   HEARTBEAT_MONITOR,
   HOLO_TABLE,
+  NAME_BOARD,
   OPS_CLOCK,
   TACTICAL_WALL,
   TEAM_EMBLEM,
@@ -228,6 +229,7 @@ describe('the ground deck hotspots', () => {
       status: '2 critical findings',
       severity: 'crit',
     });
+    expect(tipAt(TEAM_EMBLEM, CALM)).toMatchObject({ title: 'Five nines' });
     expect(beacon?.tip(CALM)).toMatchObject({ status: 'Quiet', severity: 'ok' });
     expect(tipAt(HEARTBEAT_MONITOR, ALARMED)).toMatchObject({ title: 'Healthchecks.io', severity: 'crit' });
     expect(tipAt(GATE, withVm('compute', { up: false }))).toMatchObject({ status: 'Field down', severity: 'crit' });
@@ -298,6 +300,13 @@ describe('the ground deck, reacting to the stage', () => {
     expect(crates(withVm('compute', { workloads: sites(12) }))).toBe(12);
     expect(crates(withVm('compute', { workloads: sites(30) }))).toBe(15);
     expect(crates(stage({ host: null, vms: [] }))).toBe(0);
+  });
+
+  it('reads AVENGERS on the roof name board, inside the board', () => {
+    const painter = paint(CALM);
+    const call = painter.calls.find((c) => c.op === 'text' && c.text === NAME_BOARD.text);
+    if (call === undefined) throw new Error('no name board text');
+    expect(inside(NAME_BOARD, extentOf(call, painter))).toBe(true);
   });
 
   it('lights the emblem and the mast halo after dark', () => {

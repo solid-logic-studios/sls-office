@@ -75,7 +75,36 @@ describe('the watch', () => {
   it('seats an instance missing from its VM by the hash of its id', () => {
     const stray = site('scrd', 'develop', 'stray');
     const a = watchHero(computeWith(), stray, 0);
-    expect(SQUADS.scrd).toContain(a.hero);
+    // Its hash is far beyond the squad, so it sits from the reserves rather than doubling a squad member.
+    expect(RESERVES).toContain(a.hero);
+    expect(a.leader).toBe(false);
     expect(watchHero(computeWith(), stray, 0)).toEqual(a);
+  });
+
+  it.each(['constructor', '__proto__', 'toString'])('treats a client named %s as unknown', (client) => {
+    const mates = [site(client, 'production'), site(client, 'staging')];
+    const clientVm = computeWith(...mates);
+    for (const w of mates) {
+      for (const generation of [0, 1]) {
+        const { hero, leader } = watchHero(clientVm, w, generation);
+        expect(RESERVES, `${w.id} gen ${generation}`).toContain(hero);
+        expect(Object.values(SQUADS).flat()).not.toContain(hero);
+        if (generation > 0) expect(leader).toBe(false);
+      }
+    }
+  });
+
+  it('seats one leader and no second Iron Man among five SCRD instances', () => {
+    const five = [
+      site('scrd', 'production'),
+      site('scrd', 'staging'),
+      site('scrd', 'develop'),
+      site('scrd', 'develop', 'scrd-2'),
+      site('scrd', 'develop', 'scrd-3'),
+    ];
+    const seated = five.map((w) => watchHero(computeWith(...five), w, 0));
+    expect(seated.filter((s) => s.leader)).toHaveLength(1);
+    expect(seated.filter((s) => s.hero === SQUADS.scrd[0])).toHaveLength(1);
+    expect(seated[4]?.hero).toBe(RESERVES[0]);
   });
 });
