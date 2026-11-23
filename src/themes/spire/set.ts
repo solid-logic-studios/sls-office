@@ -71,7 +71,7 @@ const ROOF_SKY = relocate([paintSky], { x: 224, y: 0, w: WIDTH, h: 40 }, { x: 0,
 /** The far ridge and the R2 bunker, on the horizon behind the roof: the jet lands there with the backup. */
 export const BUNKER = piece(BUNKER_BACK, { x: 610, y: 142, w: 50, h: 38 }, { x: 132, y: 0 });
 
-/** The Nines' shield, on the roof's left. */
+/** The uptime shield, on the roof's left. */
 export const SHIELD = piece([paintEmblem], EMBLEM, { x: INSIDE.left + 8, y: 6 });
 
 /* ----------------------------------------------------------- command deck */
@@ -122,7 +122,7 @@ export const BAG_SPOT_X = BAG.rect.x + 2;
 const hangar = band(FLOOR.hangar);
 /** A locker's name board, top and lamp. */
 const LOCKER_HEAD = 15;
-/** Its bottom two drawers (the one Ledger pulls is the upper) and the plinth. */
+/** Its bottom two drawers (the one Hulk pulls is the upper) and the plinth. */
 const LOCKER_FOOT = 23;
 
 /** A locker standing on the floor, its head spliced onto its foot to fit the shorter storey. */
@@ -134,7 +134,7 @@ const locker = (rect: Rect, x: number): Piece =>
     { x, y: hangar.desk - LOCKER_HEAD - LOCKER_FOOT },
   );
 
-/** The two lockers either side of Ledger's desk, in store order: PostgreSQL, then MySQL. */
+/** The two lockers either side of Hulk's desk, in store order: PostgreSQL, then MySQL. */
 export const PGSQL = locker(POSTGRES_LOCKER, INSIDE.left + 2);
 export const MYSQL = locker(MYSQL_LOCKER, PGSQL.rect.x + PGSQL.rect.w + SLOT);
 
@@ -156,7 +156,7 @@ const GATE_AT: Point = { x: 0, y: gate.front - GATE.h };
 export const GATEWAY = piece([paintGateField], GATE, GATE_AT);
 const GATE_SKY = relocate([paintSky], GATE, GATE_AT);
 
-/** Switchboard's sign over the dispatch desk, and the ops clock beside it. */
+/** Nick Fury's sign over the dispatch desk, and the ops clock beside it. */
 export const DISPATCH = piece([paintDispatchSign], DISPATCH_SIGN, { x: 54, y: gate.ceil + 3 });
 export const CLOCK = piece([paintOpsClock], OPS_CLOCK, { x: INSIDE.left + 4, y: gate.ceil + 2 });
 

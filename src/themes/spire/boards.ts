@@ -57,7 +57,7 @@ export const COUCH_RECT: Rect = { x: COUCH.x, y: COUCH.base - 22, w: COUCH.w, h:
 
 const hangar = band(FLOOR.hangar);
 
-/** The hangar's gear rack beside Payload's post: a crate per Site instance, four to a shelf. */
+/** The hangar's gear rack beside Thor's post: a crate per Site instance, four to a shelf. */
 export const GEAR_RACK: Rect = { x: 160, y: hangar.desk - 26, w: 26, h: 26 };
 
 /** Where the "+N" overflow signs hang: high on the wall of the lower ops storey, and over the rookie benches. */

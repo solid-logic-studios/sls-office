@@ -53,6 +53,9 @@ export const ALARM = {
   white: '#ffe3de',
 } as const;
 
+/** A hero's crimson, not the alarm's bright red (section 14.5): Black Widow's hourglass. */
+export const HOURGLASS = '#b8242c';
+
 /** A dead screen, an unlit cell, an empty tube. */
 export const UNLIT = '#16202e';
 

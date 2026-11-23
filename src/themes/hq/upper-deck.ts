@@ -17,7 +17,7 @@ import { ALARM, AMBER, COUCH_COLOURS, CYAN, HULL, INK, LAMP, PAPER, ROOMS, STEEL
  *
  * - Rookie bay (the CI runner): the suit-up tube the rookies step out of, glowing while any pod runs, and
  *   the mission board with one row per rookie.
- * - Archive vault (the data VM): Ledger's two lockers, a drawer pulled out and lit while Ledger has that
+ * - Archive vault (the data VM): Hulk's two lockers, a drawer pulled out and lit while Hulk has that
  *   store open, and the strongroom door, standing open while the backup is out on the jet.
  * - Command deck: the brew station and the trophy shelf.
  * - Rec room: the big screen over the couch and the punching bag, which swings while someone is at it.
@@ -37,12 +37,12 @@ export const MISSION_BOARD: Rect = { x: 40, y: 62, w: 94, h: 36 };
 /** The two lockers with their name boards: PostgreSQL in front of store 0, MySQL in front of store 1. */
 export const POSTGRES_LOCKER: Rect = { x: 148, y: 58, w: 34, h: 62 };
 export const MYSQL_LOCKER: Rect = { x: 216, y: 58, w: 34, h: 62 };
-/** In store order, so a locker's index is the store Ledger opens. */
+/** In store order, so a locker's index is the store Hulk opens. */
 export const LOCKERS: readonly { rect: Rect; label: string }[] = [
   { rect: POSTGRES_LOCKER, label: 'PGSQL' },
   { rect: MYSQL_LOCKER, label: 'MYSQL' },
 ];
-/** The strongroom door's centre, between the lockers over Ledger's desk, and its hover target (frame, open door and lamp). */
+/** The strongroom door's centre, between the lockers over Hulk's desk, and its hover target (frame, open door and lamp). */
 const STRONGROOM_DOOR = { cx: 199, cy: 82 } as const;
 export const STRONGROOM: Rect = { x: 183, y: 69, w: 30, h: 32 };
 export const BREW_STATION: Rect = { x: 276, y: 94, w: 25, h: 27 };
@@ -148,10 +148,10 @@ function paintMissionBoard(painter: Painter, stage: StageView): void {
 /* ------------------------------------------------------------- archive vault */
 
 const VIOLET = ROOMS.archive.accent;
-/** Which of the four drawers Ledger pulls out: the one at arm's height. */
+/** Which of the four drawers Hulk pulls out: the one at arm's height. */
 const PULLED_DRAWER = 2;
 
-/** A locker: a name board, four drawers and a lamp for its engine. The drawer pulls out and glows while Ledger has it open. */
+/** A locker: a name board, four drawers and a lamp for its engine. The drawer pulls out and glows while Hulk has it open. */
 function paintLocker(
   painter: Painter,
   stage: StageView,
@@ -506,7 +506,7 @@ export const missionBoardTip = (stage: StageView): Tip => {
 };
 
 const LOCKER_DETAIL =
-  "Ledger's locker in the archive vault, on sls-data. A drawer opens and glows while Ledger answers a query.";
+  "Hulk's locker in the archive vault, on sls-data. A drawer opens and glows while Hulk answers a query.";
 
 export const postgresLockerTip = (stage: StageView): Tip => ({
   ...postgresTip(stage),
@@ -521,7 +521,7 @@ export const mysqlLockerTip = (stage: StageView): Tip => ({
 export const strongroomTip = ({ vaultOpen }: StageView): Tip => ({
   title: 'Strongroom',
   detail:
-    'Where Ledger seals the nightly backup before the 02:30 jet run: age-encrypted database dumps and volume tars, flown to the R2 bunker off site.',
+    'Where Hulk seals the nightly backup before the 02:30 jet run: age-encrypted database dumps and volume tars, flown to the R2 bunker off site.',
   status: vaultOpen ? 'Open: the backup is in the air' : 'Sealed',
   severity: 'ok',
 });

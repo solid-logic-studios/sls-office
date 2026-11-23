@@ -143,3 +143,39 @@ they move out of `office/`.
   `temps.ts` and `sky.ts` (moved from `src/themes/office/`, unchanged).
 - **A Theme still imports only from `src/contract/`, `src/themes/shared/` and a sibling Theme it
   reuses.** `shared/` imports only from `src/contract/` and itself, and never from a Theme.
+
+## Amendment: costume pieces on a person (23 November 2026, #75)
+
+A `PersonLook` was colours, a hair style and a clipboard. That draws an office worker and a
+colour-coded hero, but not a cape, a shield, a helmet or a chest light, and the HQ's cast now needs
+them. Costumes are the Engine's to draw (it owns the one sprite renderer and every pose), so the
+contract grows; no Theme draws its own people.
+
+- **Every piece is optional and generic.** A look that sets none of them draws exactly as before,
+  rectangle for rectangle: `pnpm shot` of every shipped Theme is byte-identical across this change.
+  Nothing in the contract or the Engine names a character.
+- **Colour-only pieces:** `sleeves` (the arms, when they are not the shirt's colour), `gloves` (the
+  hands), `boots` (two pixels up from the sole) and `cape` (behind the body from the shoulders to
+  the shins, with a pixel over each shoulder so it shows above a desk; it trails a pixel behind a
+  walker and lies spread under a fainted one).
+- **`emblem`** is a `PixelGrid` (rows of colours, `null` for clear) laid on the torso from the collar
+  down, centred, at most 8 by 7. It is the one piece a Theme draws pixel by pixel, because a chest
+  mark is what makes a costume one character's and not another's; the Engine only places it. `glow`
+  adds a pulsing halo one pixel proud of the mark, so a glowing mark should be small.
+- **`headgear`** replaces the hair: a `helmet` (shell, faceplate, lit eye slits), a `mask` (the
+  whole head, two lenses) or a `cowl` (crown, ears and eye line; the lower face shows). A helmet or
+  a mask has no blink and no mouth. `hairStyle: 'cap'` and `'hardhat'` predate this and stay hair
+  styles, so the Office and the Tower are untouched.
+- **`eyepatch`** sits with `glasses` and `headset`.
+- **`carry` grows held items:** a `shield`, a `hammer` or a `bow` (with an optional quiver), each in
+  the Theme's colours. They are one field with the clipboard and the tablet because a person has
+  one free hand, and, as with those, nothing is carried while both hands push a trolley. A fainted
+  person's item is not drawn.
+- **Where it lives:** the pieces are drawn in `src/engine/costume.ts`, called by `sprites.ts`.
+- **The hover box is unchanged.** A held item on a broad build pokes up to two pixels past it, as
+  the clipboard pokes one.
+- **Known limits:** one build height (a giant is `wide`, not tall); pieces do not mirror with
+  `facing`, so the held item is always on the viewer's right; `sleeves` colours both arms.
+- **A look sheet, not a browser, checks a costume:** `pnpm sheet` renders every hero of the HQ in
+  every pose. `scripts/buffer-painter.ts` now holds the software Painter that it and `pnpm shot`
+  share.

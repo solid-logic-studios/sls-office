@@ -5,7 +5,7 @@ import { clientStyle } from '../office/looks.ts';
 import { clamp, pen, type Pen } from '../shared/pen.ts';
 import { wave } from './kit.ts';
 import { vmOf } from './lab.ts';
-import { ALARM, AMBER, CYAN, HULL, INK, LAMP, ROOMS, STEEL, UNLIT } from './palette.ts';
+import { ALARM, AMBER, CYAN, HOURGLASS, HULL, INK, LAMP, ROOMS, STEEL, UNLIT } from './palette.ts';
 
 /**
  * The HQ's furniture: the consoles and posts the cast call home. Graphite consoles with a steel lip,
@@ -124,7 +124,7 @@ export const watchStationArt: PlaceArt = (painter, { place, occupant, stage }) =
 
 /* ------------------------------------------------------------ other consoles */
 
-/** Switchboard's dispatch desk: a routing screen and a patch panel of lamps that chase while the ops floor is up. */
+/** Nick Fury's dispatch desk: a routing screen and a patch panel of lamps that chase while the ops floor is up. */
 export const dispatchDeskArt: PlaceArt = (painter, { place, stage }) => {
   const pn = pen(painter);
   const { R } = pn;
@@ -147,7 +147,7 @@ export const dispatchDeskArt: PlaceArt = (painter, { place, stage }) => {
   R(ringing ? ALARM.base : UNLIT, x + w - 4, b - 14, 2, 2);
 };
 
-/** Ledger's archive desk: records scroll in violet, flash cyan while a locker is open, and a rack of cartridges fills with memory. */
+/** Hulk's archive desk: records scroll in violet, flash cyan while a locker is open, and a rack of cartridges fills with memory. */
 export const archiveDeskArt: PlaceArt = (painter, { place, stage }) => {
   const pn = pen(painter);
   const { R } = pn;
@@ -227,24 +227,25 @@ function pad({ R }: Pen, x: number, b: number, w: number, lit: boolean, accent: 
 
 const standing = (occupant: Occupant | null): boolean => occupant !== null && occupant.atSeat;
 
-/** A post with a plate in `accent`: the gate's Tunnel Twins and Muster in the rookie bay. */
+/** A post with a plate in `accent`: the gate's Hawkeyes and Captain America in the rookie bay. */
 export const padArt =
   (accent: string): PlaceArt =>
   (painter, { place, occupant }) =>
     pad(pen(painter), place.x, place.baseY, place.w, standing(occupant), accent);
 
-/** Vitals's post: a plate with the medic's green cross. */
+/** Black Widow's post: a plate with her red hourglass, three pixels by three. */
 export const medicPostArt: PlaceArt = (painter, { place, occupant }) => {
   const pn = pen(painter);
   const { x, baseY: b, w } = place;
   pad(pn, x, b, w, standing(occupant), LAMP.ok);
   const mid = x + Math.floor(w / 2);
-  pn.R(INK, mid - 3, b - 5, 5, 3);
-  pn.R(LAMP.ok, mid - 2, b - 4, 3, 1);
-  pn.R(LAMP.ok, mid - 1, b - 5, 1, 3);
+  pn.R(INK, mid - 3, b - 6, 5, 5);
+  pn.R(HOURGLASS, mid - 2, b - 5, 3, 1);
+  pn.R(HOURGLASS, mid - 1, b - 4, 1, 1);
+  pn.R(HOURGLASS, mid - 2, b - 3, 3, 1);
 };
 
-/** Payload's post in the hangar: a hazard-striped marshalling pad and a signal lamp that flashes while Payload is out. */
+/** Thor's post in the hangar: a hazard-striped marshalling pad and a signal lamp that flashes while Thor is out. */
 export const hangarPostArt: PlaceArt = (painter, { place, occupant, stage }) => {
   const { R } = pen(painter);
   const { x, baseY: b, w } = place;
@@ -254,7 +255,7 @@ export const hangarPostArt: PlaceArt = (painter, { place, occupant, stage }) => 
   R(signalLamp(occupant, stage.now), x + w - 2, b - 21, 1, 2);
 };
 
-/** Dark with nobody on duty, green while Payload is at the post, flashing amber while Payload is out. */
+/** Dark with nobody on duty, green while Thor is at the post, flashing amber while Thor is out. */
 function signalLamp(occupant: Occupant | null, now: number): string {
   if (occupant === null || occupant.mood === 'absent') return UNLIT;
   if (occupant.atSeat) return LAMP.ok;

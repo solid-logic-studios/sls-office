@@ -22,7 +22,7 @@ import { GATE } from './shell.ts';
  *   wall (radar, SCRD scoreboard, a load bar per VM), the holo-table at the `holo` break spot, the
  *   alarm beacons under the ceiling and the field across the gate.
  * - Hangar: the gear racks (a crate per Site instance), the runner lights and the blast door.
- * - Roof: the Nines' emblem and the mast beacon.
+ * - Roof: the team's shield and the mast beacon.
  *
  * Everything sits on the back wall or the roof, above the furniture, so it is all back layer: no Props.
  * Motion runs off `stage.now` at fixed speeds; readings change colour, count and brightness only.
@@ -32,7 +32,7 @@ import { GATE } from './shell.ts';
 
 /** The ops clock, high on the wall over the dispatch desk. `00:00` is 30 px. */
 export const OPS_CLOCK: Rect = { x: 34, y: 168, w: 40, h: 15 };
-/** The sign over Switchboard's dispatch desk: `DISPATCH` is 48 px; the desk is only 28 wide. */
+/** The sign over Nick Fury's dispatch desk: `DISPATCH` is 48 px; the desk is only 28 wide. */
 export const DISPATCH_SIGN: Rect = { x: 27, y: 194, w: 54, h: 13 };
 export const HEARTBEAT_MONITOR: Rect = { x: 88, y: 168, w: 48, h: 30 };
 /** Radar, SCRD scoreboard and VM load bars, in three panels. */
@@ -49,7 +49,7 @@ const BEACON_TOP = BANDS[DECK.ground].ceil + 1;
 /** A beacon's hover box: the dome and its bracket. */
 export const beaconRect = (x: number): Rect => ({ x: x - 4, y: BEACON_TOP, w: 9, h: 9 });
 
-/** The two gear racks either side of Payload's post, and the runner lights along the top of the wall. */
+/** The two gear racks either side of Thor's post, and the runner lights along the top of the wall. */
 export const GEAR_RACKS: readonly Rect[] = [
   { x: 477, y: 178, w: 21, h: 48 },
   { x: 521, y: 178, w: 28, h: 48 },
@@ -58,9 +58,9 @@ const RUNNER_LIGHTS = { x: 478, y: 167, count: 14, step: 6 } as const;
 /** The blast door's housing over the hangar door, and the rail it runs down. */
 const BLAST_DOOR: Rect = { x: 550, y: 184, w: 12, h: 14 };
 
-/** The Nines' shield on the roof, and the name board beside it. */
+/** The nine-pip uptime shield on the roof, and the name board beside it. */
 export const EMBLEM: Rect = { x: 44, y: 5, w: 23, h: 29 };
-const NAME_BOARD = { x: 72, y: 14, w: 60, h: 13, text: 'THE NINES' } as const;
+export const NAME_BOARD = { x: 72, y: 14, w: 54, h: 13, text: 'AVENGERS' } as const;
 /** The emblem's hover box: shield and name board. */
 export const TEAM_EMBLEM: Rect = { x: EMBLEM.x, y: EMBLEM.y, w: NAME_BOARD.x + NAME_BOARD.w - EMBLEM.x, h: EMBLEM.h };
 /** The lamp on top of the roof mast (the mast is the shell's, at x 520). */
@@ -477,7 +477,7 @@ const paintBlastDoor: DecorFn = (painter, stage) => {
 /** Half the shield's width on row `dy` from its top: straight sides, then a point. */
 const shieldHalf = (dy: number): number => (dy < 17 ? 10 : 10 - Math.round((dy - 16) * 1.1));
 
-/** The Nines' emblem: a steel shield with a gold 9 and five pips, one for each nine of uptime. Lit after dark. */
+/** The uptime shield: a steel shield with a gold 9 and five pips, one for each nine of uptime. Lit after dark. */
 export const paintEmblem: DecorFn = (painter, { hour }) => {
   const { R, T } = pen(painter);
   const cx = EMBLEM.x + 11;
@@ -574,7 +574,7 @@ export const clockTip = ({ hour }: StageView): Tip => ({
 
 export function holoTip(stage: StageView): Tip {
   const detail =
-    'The holo-table: the lab at a glance, one Proxmox host and its four VMs. A break spot for the heroes on watch.';
+    'The holo-table: the lab at a glance, one Proxmox host and its four VMs. A break spot for the Avengers on watch.';
   if (stage.vms.length === 0)
     return { title: 'Holo-table', detail, status: 'Waiting on the first Snapshot', severity: 'ok' };
   const down = stage.vms.filter((vm) => !vm.up).length;
@@ -593,7 +593,7 @@ export const beaconTip = ({ findings }: StageView): Tip => ({
 export const gateTip = (stage: StageView): Tip => ({
   title: 'The gate',
   detail:
-    'Cloudflare Tunnel: the lab has no inbound ports. Citizens (HTTP requests) come in through the tunnel, past the Tunnel Twins, to Switchboard.',
+    'Cloudflare Tunnel: the lab has no inbound ports. Citizens (HTTP requests) come in through the tunnel, past the Hawkeyes, to Nick Fury.',
   status: isUp(stage, 'compute') ? 'Field up' : 'Field down',
   severity: isUp(stage, 'compute') ? 'ok' : 'crit',
 });
@@ -608,9 +608,8 @@ export function rackTip(stage: StageView): Tip {
 }
 
 export const emblemTip = (): Tip => ({
-  title: 'The Nines',
-  detail:
-    'The team, named for five nines of uptime: a pip on the shield for each nine. Every sworn hero wears the mask.',
+  title: 'Five nines',
+  detail: "The HQ's uptime shield: a pip for each of the five nines the lab aims for. The Avengers fly under it.",
   status: 'Flying over the HQ',
   severity: 'ok',
 });

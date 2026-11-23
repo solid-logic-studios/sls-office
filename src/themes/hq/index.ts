@@ -17,7 +17,7 @@ import { SOUNDSCAPE } from './soundscape.ts';
 import { COUCH_PROP, UPPER_DECK_BACK, UPPER_DECK_HOTSPOTS } from './upper-deck.ts';
 
 /**
- * The lab as a superhero HQ with JARVIS at the helm (issue #4): the Nines on watch, JARVIS as the HQ's
+ * The lab as a superhero HQ with JARVIS at the helm (issues #4 and #75): the Avengers on watch, JARVIS as the HQ's
  * AI and first founder, and the arc-style power core under it (docs/design/hq-theme.md).
  */
 export const hqTheme: Theme = {

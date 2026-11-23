@@ -29,6 +29,7 @@ pnpm test               # vitest run
 pnpm build              # vite build, then writes dist/schema/snapshot.v1.schema.json
 pnpm schema             # regenerate the JSON Schema from the Snapshot types
 pnpm shot <theme id>    # render a Theme in Node to PNGs in .shots/ (no browser)
+pnpm sheet              # render the HQ's cast as a look sheet
 pnpm format             # apply Prettier to the repo
 pnpm format:check       # Prettier check (CI gate)
 ```

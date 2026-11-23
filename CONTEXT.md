@@ -36,7 +36,9 @@ _Avoid_: canvas, context, renderer.
 keeper, courier, wrangler, founder. The Theme decides who plays each part.
 _Avoid_: role (that is a VM's role in the Snapshot), type, class.
 
-**Look**: what a character looks like, supplied by the Theme: a person or a plain box.
+**Look**: what a character looks like, supplied by the Theme: a person or a plain box. A person may wear
+optional costume pieces (a cape, a helmet, a chest emblem, a shield, hammer or bow in hand) that the
+Engine draws.
 _Avoid_: sprite, skin, avatar.
 
 **Place**: a piece of furniture or a post that one character calls home in a Theme's layout.

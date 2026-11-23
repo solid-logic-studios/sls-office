@@ -5,8 +5,8 @@ import { FOUNDERS } from '../../src/themes/hq/founders.ts';
 import { BANDS, BAYS, DECK, HULL_RECT, SHAFT, type Span } from '../../src/themes/hq/geometry.ts';
 import { HQ_LAYOUT } from '../../src/themes/hq/layout.ts';
 import { BREAK_SPOT_KINDS } from '../../src/themes/hq/lines.ts';
-import { LAMP } from '../../src/themes/hq/palette.ts';
-import { watchStationArt } from '../../src/themes/hq/places.ts';
+import { HOURGLASS, LAMP } from '../../src/themes/hq/palette.ts';
+import { medicPostArt, watchStationArt } from '../../src/themes/hq/places.ts';
 import { DOORWAYS, DOOR_HEIGHT, GATE, HANGAR_DOOR } from '../../src/themes/hq/shell.ts';
 import { inside, overlaps } from '../support/geometry.ts';
 import { RecordingPainter, type PaintCall } from '../support/recording-painter.ts';
@@ -126,6 +126,16 @@ describe('the HQ furniture', () => {
       painter.rects.filter((r) => r.w === 6 && r.colour === LAMP.warn).length;
     expect(cards(paint('swamped'))).toBe(5);
     expect(paint('fainted').rects.some((r) => r.colour === LAMP.warn)).toBe(true);
+  });
+});
+
+describe('the medic post', () => {
+  it("paints Black Widow's hourglass", () => {
+    const [place] = HQ_LAYOUT.homes.checker;
+    if (!place) throw new Error('no medic post');
+    const painter = new RecordingPainter();
+    medicPostArt(painter, { place, occupant: null, stage: stage({ now: 0 }) });
+    expect(painter.rects.filter((r) => r.colour === HOURGLASS)).toHaveLength(3);
   });
 });
 

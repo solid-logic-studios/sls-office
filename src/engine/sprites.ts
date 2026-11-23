@@ -1,6 +1,19 @@
 import { assertNever } from '../assert-never.ts';
 import type { Painter } from '../contract/painter.ts';
 import type { BoxLook, Look, PersonLook } from '../contract/theme.ts';
+import {
+  drawCape,
+  drawEmblem,
+  drawEyepatch,
+  drawFallenCape,
+  drawFallenHeadgear,
+  drawHeadgear,
+  drawHeld,
+  drawMantle,
+  showsFace,
+  type Stance,
+} from './costume.ts';
+import { INK } from './ink.ts';
 
 /** How a character holds itself. Walking and fainting come from its state; the rest from its behaviour. */
 export type Pose = 'stand' | 'walk' | 'type' | 'idle' | 'faint';
@@ -31,7 +44,6 @@ export interface Bounds {
   height: number;
 }
 
-const INK = '#1d1a26';
 const LIFT_FLOOR = '#8d94a0';
 const STAR = '#f2c230';
 const MOUTH = '#7a2f2f';
@@ -81,12 +93,17 @@ function drawPerson(painter: Painter, look: PersonLook, state: SpriteState, x: n
   const t = state.time;
 
   if (state.pose === 'faint') {
+    if (look.cape !== undefined) drawFallenCape(painter, look.cape, x, y);
     rect(look.pants, x - 9, y - 3, 6, 3);
+    if (look.boots !== undefined) rect(look.boots, x - 9, y - 3, 2, 3);
     rect(look.shirt, x - 3, y - 4, 7, 4);
     rect(look.skin, x + 4, y - 6, 6, 6);
-    rect(look.hair, x + 8, y - 6, 2, 6);
-    rect(INK, x + 5, y - 4, 1, 1);
-    rect(INK, x + 7, y - 4, 1, 1);
+    if (look.headgear === undefined) rect(look.hair, x + 8, y - 6, 2, 6);
+    else drawFallenHeadgear(painter, look.headgear, x, y);
+    if (showsFace(look.headgear)) {
+      rect(INK, x + 5, y - 4, 1, 1);
+      rect(INK, x + 7, y - 4, 1, 1);
+    }
     for (let i = 0; i < 3; i++) {
       const angle = t * 4 + i * 2.1;
       rect(STAR, x + 7 + Math.cos(angle) * 6, y - 10 + Math.sin(angle) * 2, 1, 1);
@@ -102,10 +119,17 @@ function drawPerson(painter: Painter, look: PersonLook, state: SpriteState, x: n
   const wide = look.wide === true ? 1 : 0;
   const bob = (walking && step % 2 === 1) || (typing && state.frantic && tap === 1) ? 1 : 0;
   const body = y - bob;
+  const frame: Stance = { x, y, body, wide };
+
+  if (look.cape !== undefined) drawCape(painter, look.cape, frame, walking && step % 2 === 1 ? -state.facing : 0);
 
   // Legs and feet.
   rect(look.pants, x - 4, y - 6, 3, step === 1 ? 5 : 6);
   rect(look.pants, x + 1, y - 6, 3, step === 3 ? 5 : 6);
+  if (look.boots !== undefined) {
+    rect(look.boots, x - 4, y - (step === 1 ? 4 : 3), 3, 2);
+    rect(look.boots, x + 1, y - (step === 3 ? 4 : 3), 3, 2);
+  }
   rect(INK, x - 4, y - (step === 1 ? 2 : 1), 3, 1);
   rect(INK, x + 1, y - (step === 3 ? 2 : 1), 3, 1);
 
@@ -119,20 +143,23 @@ function drawPerson(painter: Painter, look: PersonLook, state: SpriteState, x: n
   }
   if (look.trim !== undefined) rect(look.trim, x - 2, body - 13, 4, 1);
   if (look.tie !== undefined) rect(look.tie, x - 1, body - 13, 2, 5);
+  if (look.emblem !== undefined) drawEmblem(painter, look.emblem, frame, t);
 
   // Arms: out at the keyboard, or swinging at the sides.
+  const sleeve = look.sleeves ?? look.shirt;
+  const hands = look.gloves ?? look.skin;
+  const right = walking && step >= 2 ? 1 : 0;
   if (typing) {
-    rect(look.shirt, x - 6 - wide, body - 13, 2, 3);
-    rect(look.shirt, x + 4 + wide, body - 13, 2, 3);
-    rect(look.skin, x - 5 - wide, body - 10 + tap, 2, 1);
-    rect(look.skin, x + 3 + wide, body - 9 - tap, 2, 1);
+    rect(sleeve, x - 6 - wide, body - 13, 2, 3);
+    rect(sleeve, x + 4 + wide, body - 13, 2, 3);
+    rect(hands, x - 5 - wide, body - 10 + tap, 2, 1);
+    rect(hands, x + 3 + wide, body - 9 - tap, 2, 1);
   } else {
     const left = walking && step < 2 ? 1 : 0;
-    const right = walking && step >= 2 ? 1 : 0;
-    rect(look.shirt, x - 6 - wide, body - 13 + left, 2, 5);
-    rect(look.skin, x - 6 - wide, body - 8 + left, 2, 1);
-    rect(look.shirt, x + 4 + wide, body - 13 + right, 2, 5);
-    rect(look.skin, x + 4 + wide, body - 8 + right, 2, 1);
+    rect(sleeve, x - 6 - wide, body - 13 + left, 2, 5);
+    rect(hands, x - 6 - wide, body - 8 + left, 2, 1);
+    rect(sleeve, x + 4 + wide, body - 13 + right, 2, 5);
+    rect(hands, x + 4 + wide, body - 8 + right, 2, 1);
     if (idle && state.seated) {
       rect(CUP, x + 5 + wide, body - 12, 3, 3);
       rect(COFFEE, x + 6 + wide, body - 12, 1, 1);
@@ -142,17 +169,23 @@ function drawPerson(painter: Painter, look: PersonLook, state: SpriteState, x: n
   // Head.
   const headY = body - 20 + (idle && Math.sin(t * 1.3) > 0.7 ? 1 : 0);
   const glance = walking ? state.facing : 0;
+  if (look.cape !== undefined) drawMantle(painter, look.cape, frame);
   rect(look.skin, x - 4, headY, 8, 7);
-  drawHair(rect, look, x, headY);
-  const blink = t % 3.7 < 0.12 || (idle && state.seated && Math.sin(t * 0.4) > 0.6);
-  rect(INK, x - 2 + glance, headY + (blink ? 4 : 3), 1, blink ? 1 : 2);
-  rect(INK, x + 1 + glance, headY + (blink ? 4 : 3), 1, blink ? 1 : 2);
-  if (look.glasses === true) rect(GLASSES, x - 3 + glance, headY + 2, 6, 1);
+  if (look.headgear === undefined) drawHair(rect, look, x, headY);
+  else drawHeadgear(painter, look.headgear, x, headY, glance);
+  const face = showsFace(look.headgear);
+  if (face) {
+    const blink = t % 3.7 < 0.12 || (idle && state.seated && Math.sin(t * 0.4) > 0.6);
+    rect(INK, x - 2 + glance, headY + (blink ? 4 : 3), 1, blink ? 1 : 2);
+    rect(INK, x + 1 + glance, headY + (blink ? 4 : 3), 1, blink ? 1 : 2);
+    if (look.glasses === true) rect(GLASSES, x - 3 + glance, headY + 2, 6, 1);
+    if (look.eyepatch === true) drawEyepatch(painter, x, headY, glance);
+  }
   if (look.headset === true) {
     rect(INK, x - 5, headY + 1, 1, 4);
     rect(INK, x - 5, headY + 5, 2, 1);
   }
-  if (state.talking && Math.floor(t * 6) % 2 === 1) rect(MOUTH, x - 1 + glance, headY + 5, 2, 1);
+  if (face && state.talking && Math.floor(t * 6) % 2 === 1) rect(MOUTH, x - 1 + glance, headY + 5, 2, 1);
 
   // Something in hand, or a trolley in front.
   if (state.trolley !== null) {
@@ -163,6 +196,8 @@ function drawPerson(painter: Painter, look: PersonLook, state: SpriteState, x: n
   } else if (look.carry === 'tablet') {
     rect('#2a2f3a', x + 4, body - 11, 4, 5);
     rect('#7df0c0', x + 5, body - 10, 2, 3);
+  } else if (look.carry !== undefined && !(idle && state.seated)) {
+    drawHeld(painter, look.carry, frame, body - 8 + right);
   }
 }
 
