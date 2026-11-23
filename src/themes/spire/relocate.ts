@@ -16,16 +16,20 @@ export interface Point {
 // Must match the pixel font's cap height (`CAP_HEIGHT`, 7); a Theme may not import the Engine.
 const ascent = 7;
 
-/** A Painter that draws the window `from` of another stage at `to` on this one. */
+/**
+ * A Painter that draws the window `from` of another stage at `to` on this one. Plain fields, not
+ * constructor parameter properties: the image build loads every Theme with Node's strip-only
+ * TypeScript (`pnpm voice-lines`), which rejects them.
+ */
 class WindowPainter implements Painter {
+  private readonly inner: Painter;
+  private readonly from: Rect;
   private readonly dx: number;
   private readonly dy: number;
 
-  constructor(
-    private readonly inner: Painter,
-    private readonly from: Rect,
-    to: Point,
-  ) {
+  constructor(inner: Painter, from: Rect, to: Point) {
+    this.inner = inner;
+    this.from = from;
     this.dx = to.x - from.x;
     this.dy = to.y - from.y;
   }
