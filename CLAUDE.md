@@ -28,6 +28,7 @@ pnpm typecheck          # tsc --noEmit
 pnpm test               # vitest run
 pnpm build              # vite build, then writes dist/schema/snapshot.v1.schema.json
 pnpm schema             # regenerate the JSON Schema from the Snapshot types
+pnpm shot <theme id>    # render a Theme in Node to PNGs in .shots/ (no browser)
 pnpm format             # apply Prettier to the repo
 pnpm format:check       # Prettier check (CI gate)
 ```
@@ -42,7 +43,8 @@ pnpm format:check       # Prettier check (CI gate)
   effects, the sprite renderer and tooltips. It imports only from `src/contract/` and itself, draws
   only through the `Painter`, and knows nothing about any Theme (a test enforces the imports).
 - **`src/themes/`** holds the Themes: `office/` (the prototype's world), `tower/` (the Office's
-  world as a phone-width high-rise) and `boxes/` (a plain test theme that proves the contract). A
+  world as a phone-width high-rise), `hq/` (the superhero HQ with JARVIS at the helm), `spire/` (the
+  HQ as a phone-width tower) and `boxes/` (a plain test theme that proves the contract). A
   Theme is data and pure drawing functions; it imports only from `src/contract/`, from
   `src/themes/shared/` (the drawing helpers every Theme may use: pen, hash, temps, sky) and, where it
   reuses a sibling Theme's world, from that sibling (the Tower imports the Office's cast, lines and

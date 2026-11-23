@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The HQ Theme (`?theme=hq`): the lab as a superhero headquarters with JARVIS at the helm (#4). An original team, the Nines, keeps watch on the ops floor; JARVIS's orb on the command deck glows, spins up for a deploy and turns red for an all-hands alarm, and its readout and its own lines react to the lab; the lab host is an arc-style power core with the worn NVMe as a sputtering cell; CI pods are a rookie squad; the nightly backup is a jet run to the R2 bunker. Its phone version is the HQ Spire (`?theme=spire`). The Office stays the default.
+- `pnpm shot <theme id>` renders a Theme to PNGs in Node, so its art can be checked without a browser.
 - The screen stays on while the Office is open (Screen Wake Lock), so a phone on a stand no longer dims or sleeps. It lets go when the feed goes stale or the tab is hidden, and is retaken when the tab comes back. Needs HTTPS (or localhost).
 
 ### Changed
