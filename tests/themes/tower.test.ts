@@ -108,7 +108,7 @@ const paintBack = (view: StageView): RecordingPainter => {
 
 describe('towerTheme', () => {
   it('is listed after the Office', () => {
-    expect(THEMES.map((t) => t.id)).toEqual(['office', 'tower', 'hq', 'boxes']);
+    expect(THEMES.map((t) => t.id)).toEqual(['office', 'tower', 'hq', 'spire', 'boxes']);
     expect(towerTheme.name).toBe('Tower');
   });
 
