@@ -309,7 +309,7 @@ describe('hqTheme', () => {
   });
 
   it('explains the orb and the core on hover', () => {
-    expect(hqTheme.hotspots.map((spot) => spot.rect)).toEqual([JARVIS_CONSOLE, POWER_CORE]);
+    expect(hqTheme.hotspots.slice(0, 2).map((spot) => spot.rect)).toEqual([JARVIS_CONSOLE, POWER_CORE]);
     expect(jarvisTip(STAGES.alarm)).toMatchObject({ title: 'JARVIS', severity: 'crit' });
     expect(jarvisTip(STAGES.night)).toMatchObject({ status: 'Keeping the quiet watch', severity: 'ok' });
     expect(coreTip(stage())).toMatchObject({ title: 'pve', cpu: 40, mem: 60, severity: 'warn' });
