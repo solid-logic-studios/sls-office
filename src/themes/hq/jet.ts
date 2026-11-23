@@ -373,7 +373,7 @@ export const JET_BACK: readonly DecorFn[] = [
 ];
 
 const BUNKER_DETAIL =
-  'The R2 bunker on the far ridge: the off-site Cloudflare R2 bucket. Each night at 02:30 the jet flies it the backup Ledger sealed in the strongroom. A 30-day bucket lock means no copy here can be changed or deleted before it ages out.';
+  'The R2 bunker on the far ridge: the off-site Cloudflare R2 bucket. Each night at 02:30 the jet flies it the backup Hulk sealed in the strongroom. A 30-day bucket lock means no copy here can be changed or deleted before it ages out.';
 
 /** The vault's honest status, as the Office's vault tip has it. The stage says whether a run is on, not how it ended. */
 export const bunkerTip = ({ vaultOpen }: StageView): Tip => ({

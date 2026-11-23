@@ -77,7 +77,7 @@ export const HQ_LAYOUT: Layout = {
   homes: {
     worker: watchStations,
     pod: [44, 76, 108].map((x) => station(rookieBenchArt, x, 24, 12, DECK.upper)),
-    // 28 wide, not the Office's 46, so Vitals's post at x 74 stands clear of it.
+    // 28 wide, not the Office's 46, so Black Widow's post at x 74 stands clear of it.
     greeter: [station(dispatchDeskArt, 40, 28, 16, DECK.ground)],
     guard: [post(padArt(ROOMS.ops.accent), 20, DECK.ground), post(padArt(ROOMS.ops.accent), 31, DECK.ground)],
     checker: [post(medicPostArt, 74, DECK.ground)],
