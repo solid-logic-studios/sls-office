@@ -3,7 +3,7 @@ import type { Findings, Temps, VmRole, Workload } from '../../contract/snapshot.
 import type { DecorFn, Prop, Rect, Severity, StageView } from '../../contract/theme.ts';
 import { sitesOf } from '../hq/ground-deck.ts';
 import { TAU, disc, dot, orbitPoint, wave, type Orbit } from '../hq/kit.ts';
-import { ALARM, AMBER, CYAN, HULL, INK, LAMP, ROOMS, STEEL, UNLIT } from '../hq/palette.ts';
+import { ALARM, AMBER, COUCH_COLOURS, CYAN, HULL, INK, LAMP, ROOMS, STEEL, UNLIT } from '../hq/palette.ts';
 import { clientStyle } from '../office/looks.ts';
 import { pen } from '../shared/pen.ts';
 import { SENSOR_ORDER, TEMP_COLOURS, TEMP_SENSORS, readingOf } from '../shared/temps.ts';
@@ -90,8 +90,7 @@ const paintHoloPedestal: DecorFn = (painter, stage) => {
 
 /* -------------------------------------------------------------------- couch */
 
-/** The HQ's rec room couch (`hq/index.ts`), at the Spire's gate. */
-const COUCH_COLOURS = { back: '#8a3f6a', front: '#753458', top: '#a04d7c', foot: '#5c2845' } as const;
+/** The HQ's rec room couch colours, at the Spire's gate. */
 
 const paintCouchBack: DecorFn = (painter) => {
   painter.rect(COUCH_COLOURS.back, COUCH.x, COUCH.base - 22, COUCH.w, 16);
@@ -99,7 +98,7 @@ const paintCouchBack: DecorFn = (painter) => {
 };
 
 const paintCouchFront: DecorFn = (painter) => {
-  painter.rect(COUCH_COLOURS.front, COUCH.x, COUCH.base - 8, COUCH.w, 8);
+  painter.rect(COUCH_COLOURS.seat, COUCH.x, COUCH.base - 8, COUCH.w, 8);
   painter.rect(COUCH_COLOURS.top, COUCH.x, COUCH.base - 8, COUCH.w, 2);
   painter.rect(COUCH_COLOURS.foot, COUCH.x, COUCH.base - 1, COUCH.w, 1);
 };

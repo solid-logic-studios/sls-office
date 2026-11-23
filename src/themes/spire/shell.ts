@@ -1,6 +1,6 @@
 import type { Painter } from '../../contract/painter.ts';
 import type { DecorFn } from '../../contract/theme.ts';
-import { jarvisState } from '../hq/jarvis-state.ts';
+import { isAlarm } from '../hq/jarvis-state.ts';
 import { wave } from '../hq/kit.ts';
 import { ALARM, AMBER, CYAN, HULL, INK, ROOMS, STEEL, type RoomColours } from '../hq/palette.ts';
 import { ALARM_WASH_SECONDS } from '../hq/shell.ts';
@@ -173,7 +173,7 @@ export const paintNightTint: DecorFn = (painter, { hour }) => {
 
 /** All hands: the HQ's red wash, swelling and fading over the whole Spire while JARVIS is in alarm. */
 export const paintAlarmWash: DecorFn = (painter, stage) => {
-  if (jarvisState(stage) !== 'alarm') return;
+  if (!isAlarm(stage)) return;
   const alpha = 0.04 + 0.1 * wave(stage.now, ALARM_WASH_SECONDS);
   painter.withAlpha(alpha, () => painter.rect(ALARM.base, BUILDING.x, BUILDING.y, BUILDING.w, BUILDING.h));
 };

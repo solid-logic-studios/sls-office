@@ -4,6 +4,7 @@ import { BANDS, DECK, GROUND_Y, SHAFT } from '../../src/themes/hq/geometry.ts';
 import { LIFT_BACK, carTopAt } from '../../src/themes/hq/lift.ts';
 import { AMBER, CYAN, HULL } from '../../src/themes/hq/palette.ts';
 import { RecordingPainter } from '../support/recording-painter.ts';
+import { stage as baseStage } from '../support/stage.ts';
 
 const SHAFT_TOP = BANDS[DECK.upper].ceil;
 const CAR_H = 32;
@@ -16,21 +17,15 @@ const carAt = (y: number, over: Partial<StageView['lift']> = {}): StageView['lif
   ...over,
 });
 
-function stage(lift: StageView['lift'], over: Partial<StageView> = {}): StageView {
-  return {
+const stage = (lift: StageView['lift'], over: Partial<StageView> = {}): StageView =>
+  baseStage({
     now: 3.1,
-    hour: 14,
     host: null,
     vms: [],
     findings: { ok: 0, warn: 0, crit: 0 },
-    liftInUse: false,
     lift,
-    vaultOpen: false,
-    openStores: new Set(),
-    busyBreakSpots: new Set(),
     ...over,
-  };
-}
+  });
 
 function paint(view: StageView): RecordingPainter {
   const painter = new RecordingPainter();

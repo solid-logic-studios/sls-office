@@ -1,5 +1,11 @@
 import type { DecorFn, Rect } from '../../contract/theme.ts';
-import { BEACON_XS, DISPATCH_SIGN, EMBLEM, GROUND_DECK_BACK, OPS_CLOCK } from '../hq/ground-deck.ts';
+import {
+  FIRST_BEACON_X as FIRST_GROUND_BEACON_X,
+  DISPATCH_SIGN,
+  EMBLEM,
+  GROUND_DECK_BACK,
+  OPS_CLOCK,
+} from '../hq/ground-deck.ts';
 import { BANDS, DECK } from '../hq/geometry.ts';
 import { JET_BACK } from '../hq/jet.ts';
 import { GATE } from '../hq/shell.ts';
@@ -10,7 +16,7 @@ import {
   PUNCHING_BAG,
   SUIT_UP_TUBE,
   TROPHY_SHELF,
-  UPPER_BEACONS,
+  FIRST_BEACON_X as FIRST_UPPER_BEACON_X,
   UPPER_DECK_BACK,
 } from '../hq/upper-deck.ts';
 import { paintSky } from '../shared/sky.ts';
@@ -98,6 +104,7 @@ const BAG_FROM: Rect = {
 };
 export const BAG = piece(UPPER_DECK_BACK, BAG_FROM, { x: 132, y: rookie.ceil });
 /** Where the hero stands to hit the bag: as far left of its chain as the HQ's. */
+// Two pixels in from the bag's left edge, as the HQ's hero stands (the chain hangs from its middle).
 export const BAG_SPOT_X = BAG.rect.x + 2;
 
 /* ------------------------------------------------------------ archive vault */
@@ -147,8 +154,8 @@ export const CLOCK = piece(GROUND_DECK_BACK, OPS_CLOCK, { x: INSIDE.left + 4, y:
 
 /** A beacon's window: its bracket and dome under the ceiling, and room for its beam either side. */
 const beaconWindow = (x: number, ceil: number, h: number): Rect => ({ x: x - 12, y: ceil, w: 25, h });
-const UPPER_BEACON = beaconWindow(UPPER_BEACONS[0] ?? 128, HQ_UPPER_CEIL, 8);
-const GROUND_BEACON = beaconWindow(BEACON_XS[0] ?? 142, HQ_GROUND_CEIL, 11);
+const UPPER_BEACON = beaconWindow(FIRST_UPPER_BEACON_X, HQ_UPPER_CEIL, 8);
+const GROUND_BEACON = beaconWindow(FIRST_GROUND_BEACON_X, HQ_GROUND_CEIL, 11);
 
 /** Where the Spire's alarm beacons hang: one per storey below the command deck, bar the gate's. */
 const BEACON_SPOTS: readonly (readonly [x: number, floor: number, art: readonly DecorFn[], from: Rect])[] = [

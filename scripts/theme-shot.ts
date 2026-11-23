@@ -18,12 +18,15 @@ type Rgb = readonly [number, number, number];
 type Crop = readonly [x: number, y: number, w: number, h: number];
 
 function parseColour(colour: string): Rgb {
-  if (colour.startsWith('#')) {
-    return [parseInt(colour.slice(1, 3), 16), parseInt(colour.slice(3, 5), 16), parseInt(colour.slice(5, 7), 16)];
+  const text = colour.trim();
+  const hex = text.match(/^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i)?.[1];
+  if (hex !== undefined) {
+    const full = hex.length === 3 ? [...hex].map((c) => c + c).join('') : hex;
+    return [parseInt(full.slice(0, 2), 16), parseInt(full.slice(2, 4), 16), parseInt(full.slice(4, 6), 16)];
   }
-  const match = colour.match(/(\d+)\D+(\d+)\D+(\d+)/);
-  if (match === null) throw new Error(`Unsupported colour: ${colour}`);
-  return [Number(match[1]), Number(match[2]), Number(match[3])];
+  const fn = text.match(/^rgba?\(\s*(\d+)\s*[,\s]\s*(\d+)\s*[,\s]\s*(\d+)\s*(?:[,/]\s*[\d.]+%?\s*)?\)$/i);
+  if (fn !== null) return [Number(fn[1]), Number(fn[2]), Number(fn[3])];
+  throw new Error(`Unsupported colour: ${colour}`);
 }
 
 /** A software Painter over an RGB buffer: nearest-pixel rects, alpha and clipping, no antialiasing. */

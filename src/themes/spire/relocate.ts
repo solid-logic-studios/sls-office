@@ -13,6 +13,7 @@ export interface Point {
   y: number;
 }
 
+// Must match the pixel font's cap height (`CAP_HEIGHT`, 7); a Theme may not import the Engine.
 const ascent = 7;
 
 /** A Painter that draws the window `from` of another stage at `to` on this one. */
@@ -56,6 +57,7 @@ class WindowPainter implements Painter {
     this.inner.withAlpha(alpha, draw);
   }
 
+  // No intersection with the window needed: `relocate` wraps every call in a clip to the window.
   withClip(x: number, y: number, w: number, h: number, draw: () => void): void {
     this.inner.withClip(x + this.dx, y + this.dy, w, h, draw);
   }

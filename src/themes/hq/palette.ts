@@ -62,6 +62,9 @@ export const LAMP = {
   warn: '#f0b840',
 } as const;
 
+/** The rec room couch's upholstery: back, seat, seat top and foot line. The Spire's gate couch shares it. */
+export const COUCH_COLOURS = { back: '#8a3f6a', seat: '#753458', top: '#a04d7c', foot: '#5c2845' } as const;
+
 /** One room's surfaces: the back wall, its lower shade, the floor and the floor's seams. */
 export interface RoomColours {
   wall: string;

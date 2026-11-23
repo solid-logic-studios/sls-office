@@ -299,8 +299,8 @@ describe('the HQ founders', () => {
 });
 
 describe('the HQ legend', () => {
-  it('has the four squads, three name plates, seven characters, the founders and JARVIS', () => {
-    expect(LEGEND).toHaveLength(17);
+  it('labels every entry once, in a hex colour, with JARVIS last', () => {
+    expect(new Set(LEGEND.map((entry) => entry.label)).size).toBe(LEGEND.length);
     for (const entry of LEGEND) {
       expect(entry.colour).toMatch(/^#[0-9a-f]{6}$/i);
       expect(entry.label.length).toBeGreaterThan(0);

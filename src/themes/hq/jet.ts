@@ -1,9 +1,9 @@
 import type { Painter } from '../../contract/painter.ts';
-import type { DecorFn, Hotspot, Prop, Rect, StageView, Tip } from '../../contract/theme.ts';
+import type { DecorFn, Hotspot, Rect, StageView, Tip } from '../../contract/theme.ts';
 import { pen } from '../shared/pen.ts';
 import { nightFactor, skyColour } from '../shared/sky.ts';
 import { APRON, GROUND_Y, WIDTH } from './geometry.ts';
-import { jarvisState } from './jarvis-state.ts';
+import { isAlarm } from './jarvis-state.ts';
 import { disc, wave } from './kit.ts';
 import { JET_RAMP_X } from './layout.ts';
 import { ALARM, AMBER, CYAN, HULL, INK, LAMP, PAPER, ROOMS, STEEL, UNLIT } from './palette.ts';
@@ -119,7 +119,7 @@ type BeaconState = 'dark' | 'lit' | 'alarm';
 /** All hands turns every beacon red; otherwise the bunker's beacon is lit while the jet is there. */
 function beaconState(stage: StageView): BeaconState {
   if (stage.host === null) return 'dark';
-  if (jarvisState(stage) === 'alarm') return 'alarm';
+  if (isAlarm(stage)) return 'alarm';
   return stage.vaultOpen ? 'lit' : 'dark';
 }
 
@@ -371,9 +371,6 @@ export const JET_BACK: readonly DecorFn[] = [
   paintParkedJet,
   paintEdgeLights,
 ];
-
-/** The jet and the bunker stand behind the walk line, so nothing needs depth-sorting. */
-export const JET_PROPS: readonly Prop[] = [];
 
 const BUNKER_DETAIL =
   'The R2 bunker on the far ridge: the off-site Cloudflare R2 bucket. Each night at 02:30 the jet flies it the backup Ledger sealed in the strongroom. A 30-day bucket lock means no copy here can be changed or deleted before it ages out.';

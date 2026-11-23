@@ -1,5 +1,5 @@
 import type { Painter } from '../../contract/painter.ts';
-import type { DecorFn, Hotspot, Prop } from '../../contract/theme.ts';
+import type { DecorFn } from '../../contract/theme.ts';
 import { pen } from '../shared/pen.ts';
 import { BANDS, DECK, SHAFT, type DeckBand } from './geometry.ts';
 import { wave } from './kit.ts';
@@ -111,8 +111,3 @@ export const paintLift: DecorFn = (painter, { now, liftInUse, lift }) => {
 
 /** Painted in the back layer, after the structure, in this order. */
 export const LIFT_BACK: readonly DecorFn[] = [paintLift];
-
-/** Depth-sorted with the places and characters by base line. */
-export const LIFT_PROPS: readonly Prop[] = [];
-
-export const LIFT_HOTSPOTS: readonly Hotspot[] = [];

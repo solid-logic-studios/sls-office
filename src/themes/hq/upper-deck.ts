@@ -4,10 +4,11 @@ import type { DecorFn, Hotspot, Prop, Rect, StageView, Tip } from '../../contrac
 import { mysqlTip, postgresTip } from '../office/hotspots.ts';
 import { nightFactor } from '../shared/sky.ts';
 import { pen, type Pen } from '../shared/pen.ts';
-import { jarvisState, podCount } from './jarvis-state.ts';
+import { isAlarm, podCount } from './jarvis-state.ts';
 import { TAU, disc, dot, orbitPoint, wave, type Orbit } from './kit.ts';
+import { COUCH } from './geometry.ts';
 import { HQ_LAYOUT } from './layout.ts';
-import { ALARM, AMBER, CYAN, HULL, INK, LAMP, PAPER, ROOMS, STEEL, UNLIT } from './palette.ts';
+import { ALARM, AMBER, COUCH_COLOURS, CYAN, HULL, INK, LAMP, PAPER, ROOMS, STEEL, UNLIT } from './palette.ts';
 
 /**
  * Slice 4: the upper deck's dressing (docs/design/hq-theme.md, sections 4, 6 and 10). Original pixel art,
@@ -334,7 +335,7 @@ function paintTelly(painter: Painter, stage: StageView): void {
   R(INK, x, y, w, h - 5);
   R(HULL.trim, x + 1, y + h - 7, w - 2, 1);
   const playing = spotBusy(stage, 'couch');
-  if (jarvisState(stage) === 'alarm') {
+  if (isAlarm(stage)) {
     R(ALARM.deep, sx, sy, sw, sh);
     painter.withAlpha(0.3 + 0.4 * wave(stage.now, 1.4), () => R(ALARM.dark, sx, sy, sw, sh));
     T(ALERT_TEXT, sx + sw / 2, sy + sh / 2 + 4, ALARM.white, 'centre');
@@ -418,12 +419,14 @@ function paintPunchingBag(painter: Painter, stage: StageView): void {
 /* -------------------------------------------------------------- alarm beacons */
 
 /** Beacons under the ceiling of the rooms without JARVIS's own red (the command deck has the readout and the orb). */
-export const UPPER_BEACONS: readonly number[] = [128, 258, 538];
+/** The first beacon's x, which the Spire's tower borrows. */
+export const FIRST_BEACON_X = 128;
+export const UPPER_BEACONS: readonly number[] = [FIRST_BEACON_X, 258, 538];
 
 /** All hands: each beacon's lens turns red and throws a short beam that sweeps side to side. Dark otherwise. */
 function paintBeacons(painter: Painter, stage: StageView): void {
   const { R } = pen(painter);
-  const alarm = jarvisState(stage) === 'alarm';
+  const alarm = isAlarm(stage);
   const sweep = Math.sin((stage.now / 1.2) * TAU);
   for (const x of UPPER_BEACONS) {
     // A bracket under the ceiling and a round dome on it.
@@ -439,8 +442,24 @@ function paintBeacons(painter: Painter, stage: StageView): void {
 
 /* ------------------------------------------------------------------- export */
 
+/** The rec room couch: its back is set dressing; its front sorts by base line, so sitters sit behind it. */
+export const paintCouchBack: DecorFn = (painter) => {
+  painter.rect(COUCH_COLOURS.back, COUCH.x, COUCH.base - 22, COUCH.w, 16);
+  painter.rect(ROOMS.rec.accent, COUCH.x, COUCH.base - 22, COUCH.w, 1);
+};
+
+const paintCouchFront: DecorFn = (painter) => {
+  painter.rect(COUCH_COLOURS.seat, COUCH.x, COUCH.base - 8, COUCH.w, 8);
+  painter.rect(COUCH_COLOURS.top, COUCH.x, COUCH.base - 8, COUCH.w, 2);
+  painter.rect(COUCH_COLOURS.foot, COUCH.x, COUCH.base - 1, COUCH.w, 1);
+};
+
+/** Depth-sorted with the places and characters by base line: sitters sit behind the couch front. */
+export const COUCH_PROP: Prop = { baseY: COUCH.base, draw: paintCouchFront };
+
 /** Painted in the back layer, after the structure, in this order. */
 export const UPPER_DECK_BACK: readonly DecorFn[] = [
+  paintCouchBack,
   paintSuitUpTube,
   paintMissionBoard,
   (painter, stage) => LOCKERS.forEach((locker, i) => paintLocker(painter, stage, locker, i)),
@@ -451,9 +470,6 @@ export const UPPER_DECK_BACK: readonly DecorFn[] = [
   paintPunchingBag,
   paintBeacons,
 ];
-
-/** Depth-sorted with the places and characters by base line. Everything upstairs hangs on a back wall, so none. */
-export const UPPER_DECK_PROPS: readonly Prop[] = [];
 
 /* ------------------------------------------------------------------ hotspots */
 
@@ -519,8 +535,7 @@ export const trophyTip = (): Tip =>
 export const tellyTip = (stage: StageView): Tip => {
   const detail =
     'The big screen over the couch: LAN nights for Paul and Dhruv, and a round for any hero on a break. It carries the alert when something is down or critical.';
-  if (jarvisState(stage) === 'alarm')
-    return { title: 'The big screen', detail, status: 'Showing the alert', severity: 'crit' };
+  if (isAlarm(stage)) return { title: 'The big screen', detail, status: 'Showing the alert', severity: 'crit' };
   const playing = spotBusy(stage, 'couch');
   const status = playing ? 'A race is on' : nightFactor(stage.hour) >= 1 ? 'Off for the night' : 'Demo lap';
   return decor('The big screen', detail, status);

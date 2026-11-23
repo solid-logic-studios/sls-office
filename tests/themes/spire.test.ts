@@ -21,7 +21,17 @@ import {
   TEMP_STRIP,
 } from '../../src/themes/spire/boards.ts';
 import { DRESSING_BACK, DRESSING_PROPS, LAMP_COLOURS, paintOverflow } from '../../src/themes/spire/dressing.ts';
-import { AXIS, DOOR_HEIGHT, FLOOR, ROOF, SHAFT_WALL, STOREYS, band } from '../../src/themes/spire/geometry.ts';
+import {
+  AXIS,
+  DOOR_HEIGHT,
+  FLOOR,
+  HEIGHT,
+  ROOF,
+  SHAFT_WALL,
+  STOREYS,
+  WIDTH,
+  band,
+} from '../../src/themes/spire/geometry.ts';
 import { spireTheme } from '../../src/themes/spire/index.ts';
 import { LIFT_COLOURS, carTopAt } from '../../src/themes/spire/lift.ts';
 import { confine } from '../../src/themes/spire/relocate.ts';
@@ -41,7 +51,9 @@ import {
   TUBE,
 } from '../../src/themes/spire/set.ts';
 import { DOORWAYS } from '../../src/themes/spire/shell.ts';
+import { inside, overlaps } from '../support/geometry.ts';
 import { RecordingPainter } from '../support/recording-painter.ts';
+import { stage as baseStage, vm } from '../support/stage.ts';
 
 /* ------------------------------------------------------------------ helpers */
 
@@ -63,13 +75,8 @@ function site(i = 0): SiteInstanceWorkload {
 
 const pod = (i = 0): CiPodWorkload => ({ kind: 'ci-pod', id: `pod-${i}`, cpu: 90, mem: 40 });
 
-function vm(role: VmRole, workloads: Workload[] = [], over: Partial<Vm> = {}): Vm {
-  return { id: role, role, name: `sls-${role}`, up: true, cpu: 20, mem: 60, workloads, ...over };
-}
-
-function stage(over: Partial<StageView> = {}): StageView {
-  return {
-    now: 12.3,
+const stage = (over: Partial<StageView> = {}): StageView =>
+  baseStage({
     hour: 12,
     host: {
       name: 'pve',
@@ -79,13 +86,13 @@ function stage(over: Partial<StageView> = {}): StageView {
       temps: { cpu: 71, chipset: 67, nvme: 56 },
     },
     vms: [
-      vm('data', [
+      vm('data', {}, [
         { kind: 'engine', id: 'postgres', name: 'postgres', cpu: 12, mem: 34, health: 'healthy' },
         { kind: 'engine', id: 'mysql', name: 'mysql', cpu: 56, mem: 78, health: 'unhealthy' },
       ]),
-      vm('compute', [site(0), site(1), site(2)]),
-      vm('deploy', [{ kind: 'runner', id: 'runner-1', name: 'runner-1', cpu: 40, mem: 30, health: 'healthy' }]),
-      vm('ci', [pod()]),
+      vm('compute', {}, [site(0), site(1), site(2)]),
+      vm('deploy', {}, [{ kind: 'runner', id: 'runner-1', name: 'runner-1', cpu: 40, mem: 30, health: 'healthy' }]),
+      vm('ci', {}, [pod()]),
     ],
     findings: { ok: 3, warn: 2, crit: 0 },
     liftInUse: true,
@@ -94,8 +101,7 @@ function stage(over: Partial<StageView> = {}): StageView {
     openStores: new Set([0, 1]),
     busyBreakSpots: new Set([0, 2, 5, 6, 7]),
     ...over,
-  };
-}
+  });
 
 /** The stages every drawing test sweeps: day, night, all hands, a backup, a deploy and before the first Snapshot. */
 const STAGES: readonly (readonly [string, StageView])[] = [
@@ -109,13 +115,6 @@ const STAGES: readonly (readonly [string, StageView])[] = [
 const { layout } = spireTheme;
 const allPlaces = (): Place[] => Object.values(layout.homes).flat();
 
-const overlaps = (a: Rect, b: Rect): boolean =>
-  a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
-const inside = (outer: Rect, inner: Rect): boolean =>
-  inner.x >= outer.x &&
-  inner.y >= outer.y &&
-  inner.x + inner.w <= outer.x + outer.w &&
-  inner.y + inner.h <= outer.y + outer.h;
 const hitBox = (p: Place): Rect => ({ x: p.x, y: p.baseY - p.h, w: p.w, h: p.h });
 
 /** The box a line of pixel-font text covers (6 px a character, 7 bold, 7 px above the baseline). */
@@ -134,7 +133,7 @@ function boxes(fn: DecorFn, view: StageView): Rect[] {
 
 function occupant(): Occupant {
   const workload = site();
-  return { subject: { kind: 'workload', vm: vm('compute', [workload]), workload }, mood: 'working', atSeat: true };
+  return { subject: { kind: 'workload', vm: vm('compute', {}, [workload]), workload }, mood: 'working', atSeat: true };
 }
 
 /** Every decor layer, every place's art (empty, occupied, a founder) and every hotspot tip. */
@@ -182,9 +181,9 @@ describe('spireTheme', () => {
 });
 
 describe('spireTheme layout', () => {
-  it('is 212 px wide and 404 tall, with seven storeys 52 px apart, bottom first', () => {
-    expect(layout.width).toBe(212);
-    expect(layout.height).toBe(404);
+  it('has the Spire size, with seven storeys 52 px apart, bottom first', () => {
+    expect(layout.width).toBe(WIDTH);
+    expect(layout.height).toBe(HEIGHT);
     expect(layout.floors).toHaveLength(STOREYS);
     for (let i = 1; i < layout.floors.length; i++) {
       expect((layout.floors[i - 1]?.walkY ?? 0) - (layout.floors[i]?.walkY ?? 0)).toBe(52);
@@ -421,11 +420,11 @@ describe('the Spire overflow signs', () => {
   const pods = (n: number): Workload[] => Array.from({ length: n }, (_, i) => pod(i));
 
   it('paints nothing at capacity', () => {
-    expect(signs([vm('compute', sites(12)), vm('ci', pods(3))])).toEqual([]);
+    expect(signs([vm('compute', {}, sites(12)), vm('ci', {}, pods(3))])).toEqual([]);
   });
 
   it('counts the 13th site instance and the 4th pod', () => {
-    expect(signs([vm('compute', sites(15)), vm('ci', pods(5))])).toEqual(['+3', '+2']);
+    expect(signs([vm('compute', {}, sites(15)), vm('ci', {}, pods(5))])).toEqual(['+3', '+2']);
   });
 });
 

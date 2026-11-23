@@ -54,3 +54,6 @@ export const BAYS = {
 
 /** The jet apron outside the hangar door, out to the edge of the stage. */
 export const APRON: Span = [568, WIDTH];
+
+/** The rec room couch. Its break spots in `layout.ts` and its art in `upper-deck.ts` both read it. */
+export const COUCH = { x: 484, base: 128, w: 50 } as const;

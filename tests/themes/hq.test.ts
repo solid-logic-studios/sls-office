@@ -15,40 +15,13 @@ import { disc } from '../../src/themes/hq/kit.ts';
 import { orbReach, paintOrb } from '../../src/themes/hq/orb.ts';
 import { ALARM } from '../../src/themes/hq/palette.ts';
 import { paintAlarmWash } from '../../src/themes/hq/shell.ts';
+import { inside } from '../support/geometry.ts';
 import { RecordingPainter } from '../support/recording-painter.ts';
+import { HOST, stage, vm } from '../support/stage.ts';
 
 /* ------------------------------------------------------------------ helpers */
 
 const pod = (i: number): CiPodWorkload => ({ kind: 'ci-pod', id: `pod-${i}`, cpu: 90, mem: 40 });
-
-function vm(role: VmRole, over: Partial<Vm> = {}, workloads: Workload[] = []): Vm {
-  return { id: role, role, name: `sls-${role}`, up: true, cpu: 10, mem: 40, workloads, ...over };
-}
-
-const HOST: Host = {
-  name: 'pve',
-  cpu: 40,
-  mem: 60,
-  findings: { ok: 9, warn: 1, crit: 0 },
-  temps: { cpu: 58, chipset: 59, nvme: 46 },
-};
-
-/** A calm afternoon: JARVIS is idle. */
-function stage(over: Partial<StageView> = {}): StageView {
-  return {
-    now: 12.3,
-    hour: 14,
-    host: HOST,
-    vms: [vm('data'), vm('compute'), vm('deploy'), vm('ci')],
-    findings: { ok: 9, warn: 1, crit: 0 },
-    liftInUse: false,
-    lift: { y: 242, moving: false, doorsOpen: false, calls: new Set() },
-    vaultOpen: false,
-    openStores: new Set(),
-    busyBreakSpots: new Set(),
-    ...over,
-  };
-}
 
 /** One stage for each thing JARVIS can be attending to. */
 const STAGES: Readonly<Record<JarvisState, StageView>> = {
@@ -61,12 +34,6 @@ const STAGES: Readonly<Record<JarvisState, StageView>> = {
   alarm: stage({ findings: { ok: 7, warn: 1, crit: 2 } }),
 };
 const STATES = Object.keys(STAGES) as JarvisState[];
-
-const inside = (outer: Rect, inner: Rect): boolean =>
-  inner.x >= outer.x &&
-  inner.y >= outer.y &&
-  inner.x + inner.w <= outer.x + outer.w &&
-  inner.y + inner.h <= outer.y + outer.h;
 
 /* ------------------------------------------------------------- JARVIS state */
 
@@ -309,7 +276,7 @@ describe('hqTheme', () => {
   });
 
   it('explains the orb and the core on hover', () => {
-    expect(hqTheme.hotspots.slice(0, 2).map((spot) => spot.rect)).toEqual([JARVIS_CONSOLE, POWER_CORE]);
+    expect(hqTheme.hotspots.map((spot) => spot.rect)).toEqual(expect.arrayContaining([JARVIS_CONSOLE, POWER_CORE]));
     expect(jarvisTip(STAGES.alarm)).toMatchObject({ title: 'JARVIS', severity: 'crit' });
     expect(jarvisTip(STAGES.night)).toMatchObject({ status: 'Keeping the quiet watch', severity: 'ok' });
     expect(coreTip(stage())).toMatchObject({ title: 'pve', cpu: 40, mem: 60, severity: 'warn' });

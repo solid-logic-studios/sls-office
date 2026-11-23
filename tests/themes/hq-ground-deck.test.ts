@@ -9,7 +9,6 @@ import {
   GEAR_RACKS,
   GROUND_DECK_BACK,
   GROUND_DECK_HOTSPOTS,
-  GROUND_DECK_PROPS,
   HEARTBEAT_MONITOR,
   HOLO_TABLE,
   OPS_CLOCK,
@@ -24,17 +23,11 @@ import { DEPLOY_BUSY_CPU } from '../../src/themes/hq/jarvis-state.ts';
 import { HQ_LAYOUT } from '../../src/themes/hq/layout.ts';
 import { ALARM, AMBER, CYAN, ROOMS, STEEL } from '../../src/themes/hq/palette.ts';
 import { GATE } from '../../src/themes/hq/shell.ts';
+import { inside, overlaps, rectsIn } from '../support/geometry.ts';
 import { RecordingPainter, type PaintCall } from '../support/recording-painter.ts';
+import { HOST, ROLES, stage as baseStage, vm } from '../support/stage.ts';
 
 /* ------------------------------------------------------------------ helpers */
-
-const HOST: Host = {
-  name: 'pve',
-  cpu: 40,
-  mem: 60,
-  findings: { ok: 9, warn: 1, crit: 0 },
-  temps: { cpu: 58, chipset: 59, nvme: 46 },
-};
 
 const site = (i: number, client = 'scrd'): SiteInstanceWorkload => ({
   kind: 'site-instance',
@@ -50,28 +43,13 @@ const site = (i: number, client = 'scrd'): SiteInstanceWorkload => ({
 
 const sites = (n: number): Workload[] => Array.from({ length: n }, (_, i) => site(i, i % 2 ? 'bsra' : 'scrd'));
 
-function vm(role: VmRole, over: Partial<Vm> = {}): Vm {
-  return { id: role, role, name: `sls-${role}`, up: true, cpu: 10, mem: 40, workloads: [], ...over };
-}
-
-const ROLES: readonly VmRole[] = ['data', 'compute', 'deploy', 'ci'];
-
 /** A calm afternoon with six heroes on watch. */
-function stage(over: Partial<StageView> = {}): StageView {
-  return {
+const stage = (over: Partial<StageView> = {}): StageView =>
+  baseStage({
     now: 0,
-    hour: 14,
-    host: HOST,
-    vms: ROLES.map((role) => vm(role, role === 'compute' ? { workloads: sites(6) } : {})),
-    findings: { ok: 9, warn: 1, crit: 0 },
-    liftInUse: false,
-    lift: { y: 242, moving: false, doorsOpen: false, calls: new Set() },
-    vaultOpen: false,
-    openStores: new Set(),
-    busyBreakSpots: new Set(),
+    vms: ROLES.map((role) => vm(role, { cpu: 10, mem: 40 }, role === 'compute' ? sites(6) : [])),
     ...over,
-  };
-}
+  });
 
 const withVm = (role: VmRole, over: Partial<Vm>): StageView =>
   stage({ vms: stage().vms.map((v) => (v.role === role ? { ...v, ...over } : v)) });
@@ -110,15 +88,6 @@ function extentOf(call: PaintCall, painter: RecordingPainter): Rect {
   return { x, y: call.y - 7, w, h: 7 };
 }
 
-const inside = (outer: Rect, inner: Rect): boolean =>
-  inner.x >= outer.x &&
-  inner.y >= outer.y &&
-  inner.x + inner.w <= outer.x + outer.w &&
-  inner.y + inner.h <= outer.y + outer.h;
-
-const overlaps = (a: Rect, b: Rect): boolean =>
-  a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
-
 const wallOf = ([x0, x1]: readonly [number, number]): Rect => {
   const { ceil, back } = BANDS[DECK.ground];
   return { x: x0, y: ceil, w: x1 - x0, h: back - ceil };
@@ -135,9 +104,6 @@ const hoverBox = (place: Place): Rect => ({ x: place.x, y: place.baseY - place.h
 const groundPlaces = Object.values(HQ_LAYOUT.homes)
   .flat()
   .filter((place) => place.floor === DECK.ground);
-
-const rectsIn = (painter: RecordingPainter, area: Rect, colour: string): number =>
-  painter.rects.filter((r) => r.colour === colour && inside(area, r)).length;
 
 /* -------------------------------------------------------------------- tests */
 
@@ -177,10 +143,6 @@ describe('the ground deck dressing', () => {
 
   it('is a pure function of the stage', () => {
     for (const view of STAGES) expect(paint(view).calls).toEqual(paint(view).calls);
-  });
-
-  it('needs no depth-sorted Props', () => {
-    expect(GROUND_DECK_PROPS).toEqual([]);
   });
 
   it('writes only capitals the pixel font can draw, with no em-dash', () => {
@@ -314,6 +276,19 @@ describe('the ground deck, reacting to the stage', () => {
     expect(new Set(lights(withVm('deploy', { up: false })))).toEqual(new Set(['#16202e']));
     // The chase moves on.
     expect(lights({ ...DEPLOY, now: 0 })).not.toEqual(lights({ ...DEPLOY, now: 0.12 }));
+  });
+
+  it('keeps the hangar lights chasing through a deploy even while an alarm outranks it', () => {
+    const lights = (view: StageView): string[] =>
+      paint(view)
+        .rects.filter((r) => r.w === 3 && r.h === 2 && r.y === 167)
+        .map((r) => r.colour);
+    const alarmedDeploy = stage({
+      findings: { ok: 1, warn: 0, crit: 2 },
+      vms: ROLES.map((role) => vm(role, role === 'deploy' ? { cpu: DEPLOY_BUSY_CPU } : {})),
+    });
+    expect(lights(alarmedDeploy)).toContain(ROOMS.hangar.accent);
+    expect(lights({ ...alarmedDeploy, now: 0 })).not.toEqual(lights({ ...alarmedDeploy, now: 0.12 }));
   });
 
   it('stacks a crate on the gear racks for every Site instance, up to the racks being full', () => {

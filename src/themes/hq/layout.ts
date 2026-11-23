@@ -1,6 +1,6 @@
 import type { VmRole } from '../../contract/snapshot.ts';
 import type { BreakSpot, Floor, Layout, Place, PlaceArt, Room } from '../../contract/theme.ts';
-import { BANDS, BAYS, DECK, HEIGHT, LIFT_X, WIDTH, type Span } from './geometry.ts';
+import { BANDS, BAYS, COUCH, DECK, HEIGHT, LIFT_X, WIDTH, type Span } from './geometry.ts';
 import { ROOMS } from './palette.ts';
 import {
   archiveDeskArt,
@@ -56,9 +56,7 @@ const watchStations = Array.from({ length: WATCH_STATIONS }, (_, i) =>
 const BREAK_SPOTS: readonly BreakSpot[] = [
   { x: 283, floor: DECK.upper, kind: 'brew' },
   { x: 295, floor: DECK.upper, kind: 'brew' },
-  { x: 496, floor: DECK.upper, kind: 'couch', sitY: 125 },
-  { x: 509, floor: DECK.upper, kind: 'couch', sitY: 125 },
-  { x: 522, floor: DECK.upper, kind: 'couch', sitY: 125 },
+  ...[12, 25, 38].map((dx): BreakSpot => ({ x: COUCH.x + dx, floor: DECK.upper, kind: 'couch', sitY: COUCH.base - 3 })),
   { x: 548, floor: DECK.upper, kind: 'bag' },
   { x: 422, floor: DECK.ground, kind: 'holo' },
   { x: 436, floor: DECK.upper, kind: 'trophy' },

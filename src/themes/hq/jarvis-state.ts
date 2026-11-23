@@ -29,7 +29,7 @@ export const podCount = (vms: readonly Vm[]): number =>
   vms.reduce((n, vm) => n + vm.workloads.filter((w) => w.kind === 'ci-pod').length, 0);
 
 /** The runner's own CPU where the Snapshot lists the runner, else the deploy VM's. */
-function deployBusy(vms: readonly Vm[]): boolean {
+export function deployBusy(vms: readonly Vm[]): boolean {
   const deploy = roleOf(vms, 'deploy');
   if (deploy === undefined || !deploy.up) return false;
   const runner = deploy.workloads.find((w): w is ServiceWorkload => w.kind === 'runner');
@@ -38,10 +38,15 @@ function deployBusy(vms: readonly Vm[]): boolean {
 
 const quietHour = (hour: number): boolean => hour >= QUIET_HOURS.from || hour < QUIET_HOURS.until;
 
+/** Is an alarm up? A critical finding is open or a VM is down. Not before the first Snapshot. */
+export const isAlarm = ({ host, findings, vms }: StageView): boolean =>
+  host !== null && (findings.crit > 0 || vms.some((vm) => !vm.up));
+
 /** The one thing JARVIS attends to: the most urgent state that holds. */
-export function jarvisState({ host, vms, findings, vaultOpen, hour }: StageView): JarvisState {
+export function jarvisState(stage: StageView): JarvisState {
+  const { host, vms, vaultOpen, hour } = stage;
   if (host === null) return 'waking';
-  if (findings.crit > 0 || vms.some((vm) => !vm.up)) return 'alarm';
+  if (isAlarm(stage)) return 'alarm';
   if (vaultOpen) return 'backup';
   if (deployBusy(vms)) return 'deploy';
   if (podCount(vms) > 0) return 'ci';

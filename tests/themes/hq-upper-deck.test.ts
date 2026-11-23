@@ -22,24 +22,18 @@ import {
   SUIT_UP_TUBE,
   TELLY,
   UPPER_BEACONS,
+  paintCouchBack,
   UPPER_DECK_BACK,
   UPPER_DECK_HOTSPOTS,
-  UPPER_DECK_PROPS,
   postgresLockerTip,
   suitUpTip,
   tellyTip,
 } from '../../src/themes/hq/upper-deck.ts';
+import { inside, overlaps, rectsIn } from '../support/geometry.ts';
 import { RecordingPainter, type PaintCall } from '../support/recording-painter.ts';
+import { HOST, stage as baseStage, vm } from '../support/stage.ts';
 
 /* ------------------------------------------------------------------ helpers */
-
-const HOST: Host = {
-  name: 'pve',
-  cpu: 40,
-  mem: 60,
-  findings: { ok: 9, warn: 1, crit: 0 },
-  temps: { cpu: 58, chipset: 59, nvme: 46 },
-};
 
 const pod = (i: number): CiPodWorkload => ({ kind: 'ci-pod', id: `pod-${i}`, cpu: 90, mem: 40 });
 const engine = (id: string, health: ServiceWorkload['health']): ServiceWorkload => ({
@@ -50,10 +44,6 @@ const engine = (id: string, health: ServiceWorkload['health']): ServiceWorkload 
   mem: 30,
   health,
 });
-
-function vm(role: VmRole, over: Partial<Vm> = {}, workloads: Workload[] = []): Vm {
-  return { id: role, role, name: `sls-${role}`, up: true, cpu: 20, mem: 50, workloads, ...over };
-}
 
 const ENGINES = [engine('postgres', 'healthy'), engine('mysql', 'healthy')];
 const vms = (pods = 0, up = true): Vm[] => [
@@ -67,21 +57,7 @@ const vms = (pods = 0, up = true): Vm[] => [
   ),
 ];
 
-function stage(over: Partial<StageView> = {}): StageView {
-  return {
-    now: 12.3,
-    hour: 14,
-    host: HOST,
-    vms: vms(),
-    findings: { ok: 9, warn: 1, crit: 0 },
-    liftInUse: false,
-    lift: { y: 242, moving: false, doorsOpen: false, calls: new Set() },
-    vaultOpen: false,
-    openStores: new Set(),
-    busyBreakSpots: new Set(),
-    ...over,
-  };
-}
+const stage = (over: Partial<StageView> = {}): StageView => baseStage({ vms: vms(), ...over });
 
 const spotsOf = (kind: string): number[] => HQ_LAYOUT.breakSpots.flatMap((spot, i) => (spot.kind === kind ? [i] : []));
 const ALL_SPOTS = new Set(HQ_LAYOUT.breakSpots.map((_, i) => i));
@@ -100,8 +76,8 @@ const TIMES = [0, 0.3, 1.7, 4.45, 12.3, 61.9];
 
 function paint(view: StageView): RecordingPainter {
   const painter = new RecordingPainter();
-  for (const decor of UPPER_DECK_BACK) decor(painter, view);
-  for (const prop of UPPER_DECK_PROPS) prop.draw(painter, view);
+  // The couch is furniture that sits on the floor line, not wall dressing, so the wall sweeps skip it.
+  for (const decor of UPPER_DECK_BACK) if (decor !== paintCouchBack) decor(painter, view);
   return painter;
 }
 
@@ -123,22 +99,10 @@ function extentOf(call: PaintCall, painter: RecordingPainter): Rect {
   return { x, y: call.y - 7, w, h: 7 };
 }
 
-const inside = (outer: Rect, inner: Rect): boolean =>
-  inner.x >= outer.x &&
-  inner.y >= outer.y &&
-  inner.x + inner.w <= outer.x + outer.w &&
-  inner.y + inner.h <= outer.y + outer.h;
-
-const overlaps = (a: Rect, b: Rect): boolean =>
-  a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
-
 const UPPER = BANDS[DECK.upper];
 const wallOf = ([x0, x1]: Span): Rect => ({ x: x0, y: UPPER.ceil, w: x1 - x0, h: BACK_WALL_FOOT - UPPER.ceil });
 const roomOf = ([x0, x1]: Span): Rect => ({ x: x0, y: UPPER.ceil, w: x1 - x0, h: UPPER.front - UPPER.ceil });
 const UPPER_BAYS: readonly Span[] = [BAYS.rookieBay, BAYS.archive, BAYS.command, BAYS.rec];
-
-const rectsIn = (painter: RecordingPainter, area: Rect, colour?: string): number =>
-  painter.rects.filter((r) => inside(area, r) && (colour === undefined || r.colour === colour)).length;
 
 const callsIn = (painter: RecordingPainter, area: Rect): string =>
   JSON.stringify(painter.calls.filter((call) => call.op === 'rect' && overlaps(area, call)));

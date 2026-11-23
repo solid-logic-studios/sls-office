@@ -1,6 +1,6 @@
 import type { Painter } from '../../contract/painter.ts';
 import type { ServiceWorkload, SiteInstanceWorkload, Vm, VmRole } from '../../contract/snapshot.ts';
-import type { DecorFn, Hotspot, Prop, Rect, StageView, Tip } from '../../contract/theme.ts';
+import type { DecorFn, Hotspot, Rect, StageView, Tip } from '../../contract/theme.ts';
 import { HEALTH_WORDS } from '../office/hotspots.ts';
 import { clientStyle } from '../office/looks.ts';
 import { SPORT_NAMES, scoreAt } from '../office/scoreboard.ts';
@@ -8,7 +8,7 @@ import { hashOf, mix } from '../shared/hash.ts';
 import { pen, type Pen } from '../shared/pen.ts';
 import { nightFactor } from '../shared/sky.ts';
 import { BANDS, DECK } from './geometry.ts';
-import { QUIET_HOURS, jarvisState } from './jarvis-state.ts';
+import { QUIET_HOURS, deployBusy, isAlarm, jarvisState } from './jarvis-state.ts';
 import { TAU, disc, dot, wave } from './kit.ts';
 import { HQ_LAYOUT } from './layout.ts';
 import { ALARM, AMBER, CYAN, HULL, INK, LAMP, PAPER, ROOMS, STEEL, UNLIT } from './palette.ts';
@@ -43,7 +43,9 @@ const HOLO_X = HQ_LAYOUT.breakSpots[HOLO_INDEX]?.x ?? 422;
 export const HOLO_TABLE: Rect = { x: HOLO_X - 18, y: 170, w: 36, h: 58 };
 
 /** Where each alarm beacon hangs from the ceiling: two over the ops floor, one in the hangar. */
-export const BEACON_XS: readonly number[] = [142, 384, 536];
+/** The first beacon's x, which the Spire's tower borrows. */
+export const FIRST_BEACON_X = 142;
+export const BEACON_XS: readonly number[] = [FIRST_BEACON_X, 384, 536];
 const BEACON_TOP = BANDS[DECK.ground].ceil + 1;
 /** A beacon's hover box: the dome and its bracket. */
 export const beaconRect = (x: number): Rect => ({ x: x - 4, y: BEACON_TOP, w: 9, h: 9 });
@@ -69,7 +71,6 @@ const MAST_LAMP = { x: 519, y: 7 } as const;
 
 const vmOf = (stage: StageView, role: VmRole): Vm | undefined => stage.vms.find((vm) => vm.role === role);
 const isUp = (stage: StageView, role: VmRole): boolean => vmOf(stage, role)?.up ?? false;
-const alarmOn = (stage: StageView): boolean => jarvisState(stage) === 'alarm';
 
 /** The Site instances on the compute VM, in Snapshot order: one hero, one blip, one crate each. */
 export const sitesOf = (stage: StageView): SiteInstanceWorkload[] =>
@@ -331,7 +332,7 @@ function paintBeacon(painter: Painter, cx: number, stage: StageView): void {
   R(STEEL.dark, cx - 2, top, 5, 1);
   R(STEEL.dark, cx, top + 1, 1, 1);
   R(STEEL.base, cx - 3, top + 2, 7, 1);
-  const turning = alarmOn(stage);
+  const turning = isAlarm(stage);
   R(turning ? ALARM.dark : ALARM.deep, cx - 1, top + 3, 3, 1);
   R(turning ? ALARM.dark : ALARM.deep, cx - 2, top + 4, 5, 3);
   if (!turning) {
@@ -424,8 +425,8 @@ const paintGearRacks: DecorFn = (painter, stage) => {
   }
 };
 
-/** Is the deploy runner at work? The orb's answer (D5), so the hangar and JARVIS never disagree. */
-export const deploying = (stage: StageView): boolean => jarvisState(stage) === 'deploy';
+/** Is the deploy runner at work? Independent of JARVIS's state, so an alarm or backup does not stop the hangar. */
+export const deploying = (stage: StageView): boolean => deployBusy(stage.vms);
 
 const CHASE_RATE = 9;
 
@@ -523,7 +524,7 @@ const MAST_SECONDS = 1.6;
 const paintMastBeacon: DecorFn = (painter, stage) => {
   const { R } = pen(painter);
   const { x, y } = MAST_LAMP;
-  const alarm = alarmOn(stage);
+  const alarm = isAlarm(stage);
   const period = alarm ? MAST_SECONDS / 2 : MAST_SECONDS;
   const lit = stage.host !== null && stage.now % period < period * 0.25;
   const colour = alarm ? ALARM.base : PAPER;
@@ -550,9 +551,6 @@ export const GROUND_DECK_BACK: readonly DecorFn[] = [
   paintBlastDoor,
   paintBeacons,
 ];
-
-/** Everything on the ground deck hangs on a wall or stands on the roof, so nothing needs depth-sorting. */
-export const GROUND_DECK_PROPS: readonly Prop[] = [];
 
 /* ------------------------------------------------------------------ hotspots */
 

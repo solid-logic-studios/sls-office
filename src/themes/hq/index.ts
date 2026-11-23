@@ -1,4 +1,4 @@
-import type { DecorFn, Prop, Theme } from '../../contract/theme.ts';
+import type { Theme } from '../../contract/theme.ts';
 import { paintSky } from '../shared/sky.ts';
 import { CORE, JARVIS } from './boards.ts';
 import { CITIZEN, castSubject } from './cast.ts';
@@ -6,38 +6,15 @@ import { powerCore } from './core.ts';
 import { HOTSPOTS } from './hotspots.ts';
 import { FOUNDERS } from './founders.ts';
 import { jarvisConsole } from './jarvis-console.ts';
-import { GROUND_DECK_BACK, GROUND_DECK_HOTSPOTS, GROUND_DECK_PROPS } from './ground-deck.ts';
-import { JET_BACK, JET_HOTSPOTS, JET_PROPS } from './jet.ts';
+import { GROUND_DECK_BACK, GROUND_DECK_HOTSPOTS } from './ground-deck.ts';
+import { JET_BACK, JET_HOTSPOTS } from './jet.ts';
 import { HQ_LAYOUT } from './layout.ts';
-import { LIFT_BACK, LIFT_HOTSPOTS, LIFT_PROPS } from './lift.ts';
+import { LIFT_BACK } from './lift.ts';
 import { LEGEND } from './legend.ts';
 import { LINES } from './lines.ts';
-import { ROOMS } from './palette.ts';
 import { paintAlarmWash, paintNightTint, paintSpine, paintStructure } from './shell.ts';
 import { SOUNDSCAPE } from './soundscape.ts';
-import { UPPER_DECK_BACK, UPPER_DECK_HOTSPOTS, UPPER_DECK_PROPS } from './upper-deck.ts';
-
-/** The rec room couch: its back is set dressing; its front sorts by base line, so sitters sit behind it. */
-const COUCH = { x: 484, base: 128, w: 50 } as const;
-
-const paintCouchBack: DecorFn = (painter) => {
-  painter.rect('#8a3f6a', COUCH.x, COUCH.base - 22, COUCH.w, 16);
-  painter.rect(ROOMS.rec.accent, COUCH.x, COUCH.base - 22, COUCH.w, 1);
-};
-
-const paintCouchFront: DecorFn = (painter) => {
-  painter.rect('#753458', COUCH.x, COUCH.base - 8, COUCH.w, 8);
-  painter.rect('#a04d7c', COUCH.x, COUCH.base - 8, COUCH.w, 2);
-  painter.rect('#5c2845', COUCH.x, COUCH.base - 1, COUCH.w, 1);
-};
-
-const PROPS: readonly Prop[] = [
-  { baseY: COUCH.base, draw: paintCouchFront },
-  ...UPPER_DECK_PROPS,
-  ...GROUND_DECK_PROPS,
-  ...JET_PROPS,
-  ...LIFT_PROPS,
-];
+import { COUCH_PROP, UPPER_DECK_BACK, UPPER_DECK_HOTSPOTS } from './upper-deck.ts';
 
 /**
  * The lab as a superhero HQ with JARVIS at the helm (issue #4): the Nines on watch, JARVIS as the HQ's
@@ -56,7 +33,6 @@ export const hqTheme: Theme = {
       paintSky,
       paintStructure,
       paintSpine,
-      paintCouchBack,
       ...UPPER_DECK_BACK,
       ...GROUND_DECK_BACK,
       ...JET_BACK,
@@ -64,10 +40,10 @@ export const hqTheme: Theme = {
       jarvisConsole(JARVIS),
       powerCore(CORE),
     ],
-    props: PROPS,
+    props: [COUCH_PROP],
     front: [paintNightTint, paintAlarmWash],
   },
-  hotspots: [...HOTSPOTS, ...UPPER_DECK_HOTSPOTS, ...GROUND_DECK_HOTSPOTS, ...JET_HOTSPOTS, ...LIFT_HOTSPOTS],
+  hotspots: [...HOTSPOTS, ...UPPER_DECK_HOTSPOTS, ...GROUND_DECK_HOTSPOTS, ...JET_HOTSPOTS],
   legend: LEGEND,
   soundscape: SOUNDSCAPE,
 };

@@ -11,7 +11,6 @@ import {
   JET_AND_BUNKER,
   JET_BACK,
   JET_HOTSPOTS,
-  JET_PROPS,
   JET_STAND,
   STAND_BOARD,
   bunkerTip,
@@ -20,40 +19,15 @@ import {
 import { HQ_LAYOUT, JET_RAMP_X } from '../../src/themes/hq/layout.ts';
 import { ALARM, AMBER, CYAN, LAMP, STEEL } from '../../src/themes/hq/palette.ts';
 import { HANGAR_DOOR } from '../../src/themes/hq/shell.ts';
+import { inside, overlaps, rectsIn } from '../support/geometry.ts';
 import { RecordingPainter, type PaintCall } from '../support/recording-painter.ts';
+import { HOST, ROLES, stage as baseStage, vm } from '../support/stage.ts';
 
 /* ------------------------------------------------------------------ helpers */
 
-const HOST: Host = {
-  name: 'pve',
-  cpu: 40,
-  mem: 60,
-  findings: { ok: 9, warn: 1, crit: 0 },
-  temps: { cpu: 58, chipset: 59, nvme: 46 },
-};
-
-function vm(role: VmRole, over: Partial<Vm> = {}): Vm {
-  return { id: role, role, name: `sls-${role}`, up: true, cpu: 10, mem: 40, workloads: [], ...over };
-}
-
-const ROLES: readonly VmRole[] = ['data', 'compute', 'deploy', 'ci'];
-
 /** A calm afternoon with the jet on its stand. */
-function stage(over: Partial<StageView> = {}): StageView {
-  return {
-    now: 0,
-    hour: 14,
-    host: HOST,
-    vms: ROLES.map((role) => vm(role)),
-    findings: { ok: 9, warn: 1, crit: 0 },
-    liftInUse: false,
-    lift: { y: 242, moving: false, doorsOpen: false, calls: new Set() },
-    vaultOpen: false,
-    openStores: new Set(),
-    busyBreakSpots: new Set(),
-    ...over,
-  };
-}
+const stage = (over: Partial<StageView> = {}): StageView =>
+  baseStage({ now: 0, vms: ROLES.map((role) => vm(role, { cpu: 10, mem: 40 })), ...over });
 
 const CALM = stage();
 const AWAY = stage({ vaultOpen: true });
@@ -88,24 +62,12 @@ function extentOf(call: PaintCall, painter: RecordingPainter): Rect {
   return { x, y: call.y - 7, w, h: 7 };
 }
 
-const inside = (outer: Rect, inner: Rect): boolean =>
-  inner.x >= outer.x &&
-  inner.y >= outer.y &&
-  inner.x + inner.w <= outer.x + outer.w &&
-  inner.y + inner.h <= outer.y + outer.h;
-
-const overlaps = (a: Rect, b: Rect): boolean =>
-  a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
-
 /** The sky over the apron and its strip of tarmac, below the night sky's moon and Southern Cross. */
 const APRON_AREA: Rect = { x: APRON[0], y: 140, w: APRON[1] - APRON[0], h: GROUND_Y + 4 - 140 };
 
 const FRAMES = 12;
 const frames = (view: StageView): StageView[] =>
   Array.from({ length: FRAMES }, (_, frame) => ({ ...view, now: frame * 0.37 }));
-
-const rectsIn = (painter: RecordingPainter, area: Rect, colour: string): number =>
-  painter.rects.filter((r) => r.colour === colour && inside(area, r)).length;
 
 /* -------------------------------------------------------------------- tests */
 
@@ -146,10 +108,6 @@ describe('the apron, the jet and the bunker', () => {
 
   it('is a pure function of the stage', () => {
     for (const view of STAGES) expect(paint(view).calls).toEqual(paint(view).calls);
-  });
-
-  it('stands behind the walk line, so it needs no depth-sorted Props', () => {
-    expect(JET_PROPS).toEqual([]);
   });
 
   it('writes only capitals the pixel font can draw, with no em-dash', () => {

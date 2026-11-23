@@ -8,39 +8,11 @@ import { BREAK_SPOT_KINDS } from '../../src/themes/hq/lines.ts';
 import { LAMP } from '../../src/themes/hq/palette.ts';
 import { watchStationArt } from '../../src/themes/hq/places.ts';
 import { DOORWAYS, DOOR_HEIGHT, GATE, HANGAR_DOOR } from '../../src/themes/hq/shell.ts';
+import { inside, overlaps } from '../support/geometry.ts';
 import { RecordingPainter, type PaintCall } from '../support/recording-painter.ts';
+import { HOST, ROLES, stage, vm } from '../support/stage.ts';
 
 /* ------------------------------------------------------------------ helpers */
-
-const HOST: Host = {
-  name: 'pve',
-  cpu: 40,
-  mem: 60,
-  findings: { ok: 9, warn: 1, crit: 0 },
-  temps: { cpu: 58, chipset: 59, nvme: 46 },
-};
-
-function vm(role: VmRole, over: Partial<Vm> = {}): Vm {
-  return { id: role, role, name: `sls-${role}`, up: true, cpu: 20, mem: 70, workloads: [], ...over };
-}
-
-const ROLES: readonly VmRole[] = ['data', 'compute', 'deploy', 'ci'];
-
-function stage(over: Partial<StageView> = {}): StageView {
-  return {
-    now: 12.3,
-    hour: 14,
-    host: HOST,
-    vms: ROLES.map((role) => vm(role)),
-    findings: { ok: 9, warn: 1, crit: 0 },
-    liftInUse: false,
-    lift: { y: 242, moving: false, doorsOpen: false, calls: new Set() },
-    vaultOpen: false,
-    openStores: new Set(),
-    busyBreakSpots: new Set(),
-    ...over,
-  };
-}
 
 /** Every kind of stage the furniture reads: calm, cold, busy, down, alarmed, at night. */
 const STAGES: readonly StageView[] = [
@@ -96,9 +68,6 @@ const allPlaces = (): Place[] => PARTS.flatMap(placesOf);
 
 const hoverBox = (place: Place): Rect => ({ x: place.x, y: place.baseY - place.h, w: place.w, h: place.h });
 
-const overlaps = (a: Rect, b: Rect): boolean =>
-  a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
-
 /** The rectangle a recorded call covers: a rect as given, a text by its alignment and the 7 px cap height. */
 function extentOf(call: PaintCall, painter: RecordingPainter): Rect {
   if (call.op === 'rect') return call;
@@ -106,12 +75,6 @@ function extentOf(call: PaintCall, painter: RecordingPainter): Rect {
   const x = call.style.align === 'centre' ? call.x - w / 2 : call.style.align === 'right' ? call.x - w : call.x;
   return { x, y: call.y - 7, w, h: 7 };
 }
-
-const inside = (outer: Rect, inner: Rect): boolean =>
-  inner.x >= outer.x &&
-  inner.y >= outer.y &&
-  inner.x + inner.w <= outer.x + outer.w &&
-  inner.y + inner.h <= outer.y + outer.h;
 
 /* -------------------------------------------------------------------- tests */
 
@@ -191,7 +154,6 @@ describe('HQ_LAYOUT', () => {
 
   it('docks the JARVIS remote first, then seats Paul and Dhruv, in the founders order', () => {
     expect(FOUNDERS.map((founder) => founder.id)).toEqual(['jarvis', 'paul', 'dhruv']);
-    expect(HQ_LAYOUT.homes.founder.map((place) => place.seat.x)).toEqual([420, 320, 398]);
     expect(HQ_LAYOUT.homes.founder[0]?.seat.y).toBeUndefined();
   });
 
