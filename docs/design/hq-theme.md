@@ -592,8 +592,8 @@ orb, the readout and the remote), the power core, the layouts and the sound are 
 | A6  | **The team's name on the roof.** `THE NINES` no longer names the cast. | The board reads `AVENGERS`. The shield beside it stays the nine-pip uptime shield, and its tip is retitled `Five nines`                                                                                                       |
 | A7  | **Rookie twins.** A rookie is picked by the hash of the pod's id.      | Accepted: two pods can be the same rookie, which suits Spider-Man                                                                                                                                                             |
 
-A1 is the one to check with the owner before slice 2: the alternative is to rename the founders
-(`Tony Stark`, `James Rhodes`), which loses the people and their rendered voice lines.
+A1 was confirmed by the owner on 23 November 2026. The alternative, renaming the founders
+(`Tony Stark`, `James Rhodes`), would have lost the people and their rendered voice lines.
 
 ### 14.2 Who plays each Part
 
