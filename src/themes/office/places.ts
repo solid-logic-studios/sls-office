@@ -1,9 +1,9 @@
 import type { SiteInstanceWorkload, Vm, VmRole } from '../../contract/snapshot.ts';
 import type { Occupant, Place, PlaceArt, StageView } from '../../contract/theme.ts';
-import { clamp, pen } from './pen.ts';
+import { clamp, pen } from '../shared/pen.ts';
 import { clientStyle } from './looks.ts';
 import { ENV_PLATE, INK, PAPER } from './palette.ts';
-import type { Pen } from './pen.ts';
+import type { Pen } from '../shared/pen.ts';
 
 /* ------------------------------------------------------------- shared furniture */
 

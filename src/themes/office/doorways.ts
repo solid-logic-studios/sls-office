@@ -1,6 +1,6 @@
 import type { Painter } from '../../contract/painter.ts';
 import { FLOOR_BANDS } from './floor-bands.ts';
-import { pen } from './pen.ts';
+import { pen } from '../shared/pen.ts';
 
 /**
  * A gap in a wall at the point where a floor's walk line crosses it. The Engine lets people walk

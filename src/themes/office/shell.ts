@@ -2,8 +2,8 @@ import type { Painter } from '../../contract/painter.ts';
 import type { StageView } from '../../contract/theme.ts';
 import { paintDoorways } from './doorways.ts';
 import { FLOOR_BANDS, SHELL } from './floor-bands.ts';
-import { pen } from './pen.ts';
-import { openToSky } from './sky.ts';
+import { pen } from '../shared/pen.ts';
+import { openToSky } from '../shared/sky.ts';
 
 const STAGE_WIDTH = 660;
 

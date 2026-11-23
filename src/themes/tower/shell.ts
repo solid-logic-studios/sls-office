@@ -1,8 +1,8 @@
 import type { Painter } from '../../contract/painter.ts';
 import type { DecorFn, StageView } from '../../contract/theme.ts';
-import type { Pen } from '../office/pen.ts';
-import { pen } from '../office/pen.ts';
-import { nightFactor } from '../office/sky.ts';
+import type { Pen } from '../shared/pen.ts';
+import { pen } from '../shared/pen.ts';
+import { nightFactor } from '../shared/sky.ts';
 import { CI_BOARD, COFFEE_COUNTER, MYSQL_CABINET, POSTGRES_CABINET, ROOF_SIGN, RUNNER_RACK } from './boards.ts';
 import { DOOR_HEIGHT, FLOOR, HEIGHT, INSIDE, ROOF, SHAFT, SHELL_X, STOREYS, WIDTH, band } from './geometry.ts';
 import { DESK_GAP_X, PARTITION_X } from './layout.ts';

@@ -1,6 +1,6 @@
 import type { DecorFn, Prop } from '../../contract/theme.ts';
-import { pen } from './pen.ts';
-import { nightFactor } from './sky.ts';
+import { pen } from '../shared/pen.ts';
+import { nightFactor } from '../shared/sky.ts';
 
 /** The couch front sorts by its base line, so walkers pass in front of it and sitters sit behind it. */
 const paintCouchFront: DecorFn = (painter) => {

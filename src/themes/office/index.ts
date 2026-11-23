@@ -10,7 +10,7 @@ import { LINES } from './lines.ts';
 import { visitorLook } from './looks.ts';
 import { PROPS, paintNightTint } from './props.ts';
 import { SOUNDSCAPE } from './soundscape.ts';
-import { paintCloudOffice, paintSky } from './sky.ts';
+import { paintCloudOffice, paintSky } from '../shared/sky.ts';
 
 /** The Solid Logic Studios lab as an office: a pixel-art cutaway with a basement and a cloud. */
 export const officeTheme: Theme = {

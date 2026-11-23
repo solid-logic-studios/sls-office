@@ -4,7 +4,7 @@ import type { Occupant, Place, Rect, Spot, StageView, Tip } from '../../src/cont
 import { stageScale } from '../../src/page/stage-canvas.ts';
 import { THEMES } from '../../src/themes/index.ts';
 import { officeTheme } from '../../src/themes/office/index.ts';
-import { TEMP_COLOURS } from '../../src/themes/office/temps.ts';
+import { TEMP_COLOURS } from '../../src/themes/shared/temps.ts';
 import { FINDINGS_LAMP } from '../../src/themes/tower/boards.ts';
 import { LAMP_COLOURS, findingsLamp, paintOverflow } from '../../src/themes/tower/dressing.ts';
 import { FLOOR, STOREYS, band } from '../../src/themes/tower/geometry.ts';
@@ -108,7 +108,7 @@ const paintBack = (view: StageView): RecordingPainter => {
 
 describe('towerTheme', () => {
   it('is listed after the Office', () => {
-    expect(THEMES.map((t) => t.id)).toEqual(['office', 'tower', 'boxes']);
+    expect(THEMES.map((t) => t.id)).toEqual(['office', 'tower', 'hq', 'spire', 'boxes']);
     expect(towerTheme.name).toBe('Tower');
   });
 

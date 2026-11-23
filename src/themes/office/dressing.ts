@@ -2,9 +2,9 @@ import type { Painter } from '../../contract/painter.ts';
 import type { Temps } from '../../contract/snapshot.ts';
 import type { DecorFn, StageView } from '../../contract/theme.ts';
 import { indexesOf } from './break-spots.ts';
-import { clamp, lerp, pen } from './pen.ts';
+import { clamp, lerp, pen } from '../shared/pen.ts';
 import { scoreAt } from './scoreboard.ts';
-import { SENSOR_ORDER, TEMP_COLOURS, TEMP_SENSORS, readingOf } from './temps.ts';
+import { SENSOR_ORDER, TEMP_COLOURS, TEMP_SENSORS, readingOf } from '../shared/temps.ts';
 
 /**
  * The animated set dressing: everything on the walls that moves or lights up. Each piece is a pure

@@ -1,6 +1,6 @@
 import type { HairStyle, PersonLook } from '../../contract/theme.ts';
 import type { SiteEnv } from '../../contract/snapshot.ts';
-import { hashOf, pick } from './hash.ts';
+import { hashOf, pick } from '../shared/hash.ts';
 import { CLIENT_COLOURS, HAIRS, PANTS, PAPER, PRODUCTION_SHIRT, SKINS, SPARE_CLIENT_COLOURS } from './palette.ts';
 
 /** Display name and desk colour for the clients the lab knows. */
@@ -20,11 +20,20 @@ export function clientStyle(client: string): ClientStyle {
   return KNOWN_CLIENTS.get(client) ?? { name: client, colour: pick(SPARE_CLIENT_COLOURS, hashOf(client)) };
 }
 
-const FACE_STYLES = ['short', 'long', 'bun', 'spiky', 'short', 'long', 'bald'] as const satisfies readonly HairStyle[];
+/** The hair styles a face can have. */
+export const FACE_STYLES = [
+  'short',
+  'long',
+  'bun',
+  'spiky',
+  'short',
+  'long',
+  'bald',
+] as const satisfies readonly HairStyle[];
 const POD_STYLES = ['spiky', 'short', 'long', 'bun'] as const satisfies readonly HairStyle[];
 
 /** The features that change when a workload is replaced: skin, hair and hair style. */
-function face(h: number): Pick<PersonLook, 'skin' | 'hair' | 'hairStyle'> {
+export function face(h: number): Pick<PersonLook, 'skin' | 'hair' | 'hairStyle'> {
   return { skin: pick(SKINS, h, 1), hair: pick(HAIRS, h, 2), hairStyle: pick(FACE_STYLES, h, 3) };
 }
 

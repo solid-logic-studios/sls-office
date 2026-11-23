@@ -1,8 +1,8 @@
 import type { Painter } from '../../contract/painter.ts';
 import type { Rect, StageView } from '../../contract/theme.ts';
 import { LAN_BOARD, MYSQL_CABINET, POSTGRES_CABINET } from './boards.ts';
-import { pen } from './pen.ts';
-import type { Pen } from './pen.ts';
+import { pen } from '../shared/pen.ts';
+import type { Pen } from '../shared/pen.ts';
 import { paintWindow } from './shell.ts';
 
 /** Static art for the first floor: the intern pool, the archive, the founders' office and the LAN corner. */
