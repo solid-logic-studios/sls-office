@@ -2,6 +2,7 @@ import type { Hotspot, StageView, Tip } from '../../contract/theme.ts';
 import { beaconTip, clockTip, emblemTip, gateTip, holoTip, rackTip } from '../hq/ground-deck.ts';
 import { coreTip, jarvisTip } from '../hq/hotspots.ts';
 import { bunkerTip } from '../hq/jet.ts';
+import { plural } from '../hq/lab.ts';
 import { bagTip, brewTip, mysqlLockerTip, postgresLockerTip, suitUpTip, trophyTip } from '../hq/upper-deck.ts';
 import { CORE, FINDINGS_LAMP, GEAR_RACK, HOLO_PEDESTAL, JARVIS, JARVIS_ORB, SILO } from './boards.ts';
 import { findingsSeverity } from './dressing.ts';
@@ -22,8 +23,6 @@ import {
 } from './set.ts';
 
 /** Hover text for the Spire's set pieces: the HQ's words, on the Spire's rectangles. The Engine does rooms and people. */
-
-const plural = (n: number, word: string): string => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 function lampTip({ findings }: StageView): Tip {
   return {

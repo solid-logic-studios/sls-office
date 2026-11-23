@@ -1,13 +1,14 @@
 import type { Painter } from '../../contract/painter.ts';
-import type { Health, ServiceWorkload, Vm, VmRole } from '../../contract/snapshot.ts';
+import type { Health, ServiceWorkload } from '../../contract/snapshot.ts';
 import type { DecorFn, Hotspot, Prop, Rect, StageView, Tip } from '../../contract/theme.ts';
 import { mysqlTip, postgresTip } from '../office/hotspots.ts';
 import { nightFactor } from '../shared/sky.ts';
 import { pen, type Pen } from '../shared/pen.ts';
 import { isAlarm, podCount } from './jarvis-state.ts';
 import { TAU, disc, dot, orbitPoint, wave, type Orbit } from './kit.ts';
-import { COUCH } from './geometry.ts';
+import { BANDS, COUCH, DECK } from './geometry.ts';
 import { HQ_LAYOUT } from './layout.ts';
+import { ciDown, isUp, plural, vmOf } from './lab.ts';
 import { ALARM, AMBER, COUCH_COLOURS, CYAN, HULL, INK, LAMP, PAPER, ROOMS, STEEL, UNLIT } from './palette.ts';
 
 /**
@@ -56,9 +57,6 @@ export const BREW_TEXT = 'BREW';
 
 /* ------------------------------------------------------------------ reading */
 
-const vmOf = (stage: StageView, role: VmRole): Vm | undefined => stage.vms.find((vm) => vm.role === role);
-const isUp = (stage: StageView, role: VmRole): boolean => vmOf(stage, role)?.up ?? false;
-
 /** Whether anyone has arrived at a break spot of `kind` (the stage reports busy spots by index). */
 export const spotBusy = (stage: StageView, kind: string): boolean =>
   HQ_LAYOUT.breakSpots.some((spot, i) => spot.kind === kind && stage.busyBreakSpots.has(i));
@@ -84,7 +82,7 @@ const ROOKIE_ROWS = 3;
 const MINT = ROOMS.rookieBay.accent;
 
 /** The suit-up tube in the left wall: rings of light rise through it while any rookie is out on a mission. */
-function paintSuitUpTube(painter: Painter, stage: StageView): void {
+export function paintSuitUpTube(painter: Painter, stage: StageView): void {
   const { R } = pen(painter);
   const { x, y, w, h } = SUIT_UP_TUBE;
   const up = isUp(stage, 'ci');
@@ -189,6 +187,10 @@ function paintLocker(
   if (open) paintPulledDrawer(pn, lx, top + 6 + PULLED_DRAWER * 11, lw, stage.now);
 }
 
+/** Both lockers, in store order. */
+export const paintLockers: DecorFn = (painter, stage) =>
+  LOCKERS.forEach((locker, i) => paintLocker(painter, stage, locker, i));
+
 /** A drawer pulled out towards the viewer: a dark slot behind it, its records lit along the top. */
 function paintPulledDrawer({ R }: Pen, lx: number, dy: number, lw: number, now: number): void {
   R(INK, lx + 2, dy, lw - 4, 9);
@@ -250,7 +252,7 @@ function paintStrongroom(painter: Painter, stage: StageView): void {
 /* -------------------------------------------------------------- command deck */
 
 /** The brew station: a machine and two mugs on a counter, steaming while someone is on a coffee break. */
-function paintBrewStation(painter: Painter, stage: StageView): void {
+export function paintBrewStation(painter: Painter, stage: StageView): void {
   const { R, T } = pen(painter);
   const { x, y, w } = BREW_STATION;
   const busy = spotBusy(stage, 'brew');
@@ -284,7 +286,7 @@ function paintBrewStation(painter: Painter, stage: StageView): void {
 }
 
 /** The trophy shelf: the cup from the first client, and a medal. Gold, so it catches JARVIS's light. */
-function paintTrophyShelf(painter: Painter, stage: StageView): void {
+export function paintTrophyShelf(painter: Painter, stage: StageView): void {
   const { R } = pen(painter);
   const { x, y, w, h } = TROPHY_SHELF;
   const shelf = y + h - 4;
@@ -386,7 +388,7 @@ function paintRace(
 }
 
 /** The punching bag on its chain. It swings while someone is at its break spot, and hangs still otherwise. */
-function paintPunchingBag(painter: Painter, stage: StageView): void {
+export function paintPunchingBag(painter: Painter, stage: StageView): void {
   const { R } = pen(painter);
   const pivotX = PUNCHING_BAG.x + 8;
   const pivotY = PUNCHING_BAG.y;
@@ -419,26 +421,30 @@ function paintPunchingBag(painter: Painter, stage: StageView): void {
 /* -------------------------------------------------------------- alarm beacons */
 
 /** Beacons under the ceiling of the rooms without JARVIS's own red (the command deck has the readout and the orb). */
-/** The first beacon's x, which the Spire's tower borrows. */
-export const FIRST_BEACON_X = 128;
-export const UPPER_BEACONS: readonly number[] = [FIRST_BEACON_X, 258, 538];
+export const UPPER_BEACONS: readonly number[] = [128, 258, 538];
 
-/** All hands: each beacon's lens turns red and throws a short beam that sweeps side to side. Dark otherwise. */
-function paintBeacons(painter: Painter, stage: StageView): void {
-  const { R } = pen(painter);
-  const alarm = isAlarm(stage);
-  const sweep = Math.sin((stage.now / 1.2) * TAU);
-  for (const x of UPPER_BEACONS) {
+/**
+ * One beacon, hung at `x` under the ceiling line `ceil`. All hands: its lens turns red and throws a
+ * short beam that sweeps side to side, at most 11 px either way. Dark otherwise.
+ */
+export const domeBeacon =
+  (x: number, ceil: number): DecorFn =>
+  (painter, stage) => {
+    const { R } = pen(painter);
+    const alarm = isAlarm(stage);
     // A bracket under the ceiling and a round dome on it.
-    R(STEEL.dark, x - 3, 45, 7, 1);
-    disc(painter, STEEL.dark, x, 48, 2);
-    disc(painter, alarm ? (wave(stage.now, 0.6) > 0.5 ? ALARM.light : ALARM.base) : UNLIT, x, 48, 1);
-    if (!alarm) continue;
-    R(ALARM.white, x, 47, 1, 1);
+    R(STEEL.dark, x - 3, ceil + 1, 7, 1);
+    disc(painter, STEEL.dark, x, ceil + 4, 2);
+    disc(painter, alarm ? (wave(stage.now, 0.6) > 0.5 ? ALARM.light : ALARM.base) : UNLIT, x, ceil + 4, 1);
+    if (!alarm) return;
+    R(ALARM.white, x, ceil + 3, 1, 1);
+    const sweep = Math.sin((stage.now / 1.2) * TAU);
     const reach = Math.round(Math.abs(sweep) * 8);
-    if (reach > 0) painter.withAlpha(0.35, () => R(ALARM.base, sweep > 0 ? x + 3 : x - 2 - reach, 47, reach, 3));
-  }
-}
+    if (reach > 0) painter.withAlpha(0.35, () => R(ALARM.base, sweep > 0 ? x + 3 : x - 2 - reach, ceil + 3, reach, 3));
+  };
+
+const UPPER_CEIL = BANDS[DECK.upper].ceil;
+const beacons: readonly DecorFn[] = UPPER_BEACONS.map((x) => domeBeacon(x, UPPER_CEIL));
 
 /* ------------------------------------------------------------------- export */
 
@@ -462,20 +468,16 @@ export const UPPER_DECK_BACK: readonly DecorFn[] = [
   paintCouchBack,
   paintSuitUpTube,
   paintMissionBoard,
-  (painter, stage) => LOCKERS.forEach((locker, i) => paintLocker(painter, stage, locker, i)),
+  paintLockers,
   paintStrongroom,
   paintBrewStation,
   paintTrophyShelf,
   paintTelly,
   paintPunchingBag,
-  paintBeacons,
+  ...beacons,
 ];
 
 /* ------------------------------------------------------------------ hotspots */
-
-const ciDown = (stage: StageView): boolean => vmOf(stage, 'ci')?.up === false;
-
-const rookies = (n: number): string => (n === 1 ? '1 rookie' : `${n} rookies`);
 
 export const suitUpTip = (stage: StageView): Tip => {
   const pods = podCount(stage.vms);
@@ -483,7 +485,11 @@ export const suitUpTip = (stage: StageView): Tip => {
     title: 'Suit-up tube',
     detail:
       'Where the rookies step out. Each rookie is a single-use CI pod on the runner VM: it suits up for one job, runs it, then is gone. The tube glows while any pod runs.',
-    status: ciDown(stage) ? 'CI runner is down' : pods > 0 ? `${rookies(pods)} suited up` : 'Empty: no CI jobs',
+    status: ciDown(stage)
+      ? 'CI runner is down'
+      : pods > 0
+        ? `${plural(pods, 'rookie')} suited up`
+        : 'Empty: no CI jobs',
     severity: ciDown(stage) ? 'crit' : 'ok',
   };
 };

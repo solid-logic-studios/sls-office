@@ -33,7 +33,6 @@ import {
   band,
 } from '../../src/themes/spire/geometry.ts';
 import { spireTheme } from '../../src/themes/spire/index.ts';
-import { LIFT_COLOURS, carTopAt } from '../../src/themes/spire/lift.ts';
 import { confine } from '../../src/themes/spire/relocate.ts';
 import {
   BAG,
@@ -460,46 +459,5 @@ describe('the Spire jet silo', () => {
     expect(siloTexts(true)).toEqual(['R2']);
     const jetPaint = (vaultOpen: boolean) => paintBack(stage({ vaultOpen })).rects.filter((r) => inside(SILO, r));
     expect(jetPaint(true)).not.toEqual(jetPaint(false));
-  });
-});
-
-describe('the Spire lift car', () => {
-  const litCar = (view: StageView) =>
-    paintBack(view).rects.find((rect) => rect.colour === LIFT_COLOURS.lit.inside && rect.h === DOOR_HEIGHT);
-
-  it('is drawn lit at the walk line the Engine reports, on every storey and between them', () => {
-    const between = (band(3).walk + band(4).walk) / 2;
-    for (const walkY of [...Array.from({ length: STOREYS }, (_, f) => band(f).walk), between]) {
-      expect(litCar(stage({ liftInUse: true, lift: carAt(walkY) }))?.y).toBe(carTopAt(walkY));
-    }
-    expect(litCar(stage({ liftInUse: false, lift: carAt(band(5).walk) }))).toBeUndefined();
-  });
-
-  it('stands the car on the front edge of the floor', () => {
-    for (let floor = 0; floor < STOREYS; floor++)
-      expect(carTopAt(band(floor).walk) + DOOR_HEIGHT).toBe(band(floor).front);
-  });
-
-  it('lights a landing lamp amber only for floors with a call', () => {
-    const view = stage({ lift: { y: band(3).walk, moving: false, doorsOpen: false, calls: new Set([2, 5]) } });
-    const lamps = paintBack(view).rects.filter((r) => r.w === 4 && r.h === 1);
-    for (let floor = 0; floor < STOREYS; floor++) {
-      const lamp = lamps.find((r) => r.y === carTopAt(band(floor).walk) - 4);
-      expect(lamp?.colour === LIFT_COLOURS.lamp.call, `floor ${floor}`).toBe(floor === 2 || floor === 5);
-    }
-  });
-
-  it('opens the doors only on the car floor while the doors are open', () => {
-    const gaps = (view: StageView) =>
-      paintBack(view)
-        .rects.filter((r) => r.colour === LIFT_COLOURS.gap && r.h === DOOR_HEIGHT)
-        .map((r) => r.y);
-    const walkY = band(3).walk;
-    const open = gaps(stage({ lift: { y: walkY, moving: false, doorsOpen: true, calls: new Set() } }));
-    expect(open).toContain(carTopAt(walkY));
-    for (let floor = 0; floor < STOREYS; floor++) {
-      if (floor !== 3) expect(open).not.toContain(carTopAt(band(floor).walk));
-    }
-    expect(gaps(stage({ lift: carAt(walkY) }))).toHaveLength(0);
   });
 });

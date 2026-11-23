@@ -360,12 +360,12 @@ const paintStandBoard: DecorFn = (painter, stage) => {
 
 /* ------------------------------------------------------------------ exports */
 
+/** The far ridge and the R2 bunker on it, with the jet's visit and its contrail: everything on the horizon. */
+export const BUNKER_BACK: readonly DecorFn[] = [paintFarRidge, paintBunkerLights, paintJetAtBunker, paintContrail];
+
 /** Painted in the back layer, after the structure, in this order: far to near. */
 export const JET_BACK: readonly DecorFn[] = [
-  paintFarRidge,
-  paintBunkerLights,
-  paintJetAtBunker,
-  paintContrail,
+  ...BUNKER_BACK,
   paintWindsock,
   paintStandBoard,
   paintParkedJet,

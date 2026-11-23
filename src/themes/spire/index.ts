@@ -6,7 +6,7 @@ import { CORE, JARVIS } from './boards.ts';
 import { DRESSING_BACK, DRESSING_PROPS } from './dressing.ts';
 import { HOTSPOTS } from './hotspots.ts';
 import { SPIRE_LAYOUT } from './layout.ts';
-import { paintLift } from './lift.ts';
+import { SPIRE_LIFT } from './lift.ts';
 import { confine } from './relocate.ts';
 import { SET_BACK, SKY_BACK } from './set.ts';
 import { paintAlarmWash, paintNightTint, paintSpine, paintStructure } from './shell.ts';
@@ -32,7 +32,7 @@ export const spireTheme: Theme = {
       paintSpine,
       ...SET_BACK,
       ...DRESSING_BACK,
-      paintLift,
+      SPIRE_LIFT.paint,
       jarvisConsole(JARVIS),
       // The core's drive labels hang below its chamber, where the Spire has its floor: they are left out.
       confine(powerCore(CORE), CORE.chamber),

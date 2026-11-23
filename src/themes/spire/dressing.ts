@@ -1,8 +1,9 @@
 import type { Painter } from '../../contract/painter.ts';
-import type { Findings, Temps, VmRole, Workload } from '../../contract/snapshot.ts';
+import type { Findings, Temps, Workload } from '../../contract/snapshot.ts';
 import type { DecorFn, Prop, Rect, Severity, StageView } from '../../contract/theme.ts';
 import { sitesOf } from '../hq/ground-deck.ts';
 import { TAU, disc, dot, orbitPoint, wave, type Orbit } from '../hq/kit.ts';
+import { isUp } from '../hq/lab.ts';
 import { ALARM, AMBER, COUCH_COLOURS, CYAN, HULL, INK, LAMP, ROOMS, STEEL, UNLIT } from '../hq/palette.ts';
 import { clientStyle } from '../office/looks.ts';
 import { pen } from '../shared/pen.ts';
@@ -24,8 +25,6 @@ import { SPIRE_LAYOUT } from './layout.ts';
  * pedestal, the couch, a gear rack, the jet silo, a temperature strip and the "+N" overflow signs.
  * HQ colours and HQ kit throughout, so they read as the same HQ. Each is a pure function of the stage.
  */
-
-const isUp = ({ vms }: StageView, role: VmRole): boolean => vms.find((vm) => vm.role === role)?.up ?? false;
 
 /* ------------------------------------------------------------ findings lamp */
 

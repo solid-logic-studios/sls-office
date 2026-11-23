@@ -13,6 +13,7 @@ import {
   SHAFT,
   SUBLEVEL,
   WIDTH,
+  type DeckBand,
   type Span,
 } from './geometry.ts';
 import { jarvisState } from './jarvis-state.ts';
@@ -47,7 +48,8 @@ const WALL = 4;
 
 const ROCK = { top: '#3a4252', base: '#2a303d', seam: '#232833' } as const;
 const TARMAC = { base: '#4a5260', edge: '#5d6675', paint: '#f2c230' } as const;
-const SHAFT_COLOURS = { well: '#0d111b', rail: '#1d2536', landing: '#55617a', lip: '#8fa0b8' } as const;
+/** The lift shaft's well, its rails, the landings across it and their lit lip. */
+export const SHAFT_COLOURS = { well: '#0d111b', rail: '#1d2536', landing: '#55617a', lip: '#8fa0b8' } as const;
 
 /** The headland the HQ stands on, and the jet apron outside the hangar door. */
 function paintGround(painter: Painter): void {
@@ -81,10 +83,13 @@ function paintHull(painter: Painter): void {
   painter.rect(HULL.dark, x, GROUND_Y, w, SUBLEVEL.y - GROUND_Y);
 }
 
-/** One room: back wall, its lower shade, the accent strip under the ceiling, the floor and its seams. */
-function paintRoom(painter: Painter, [x0, x1]: Span, deck: number, c: RoomColours): void {
-  const band = BANDS[deck];
-  if (!band) return;
+/** One room from `x0` to `x1` on a floor whose lines are `band`: back wall, its lower shade, the accent strip under the ceiling, the floor and its seams. */
+export function paintRoom(
+  painter: Painter,
+  [x0, x1]: Span,
+  band: Pick<DeckBand, 'ceil' | 'back' | 'front'>,
+  c: RoomColours,
+): void {
   const w = x1 - x0;
   painter.rect(c.wall, x0, band.ceil, w, band.back - band.ceil);
   painter.rect(c.shade, x0, band.back - 9, w, 8);
@@ -96,12 +101,13 @@ function paintRoom(painter: Painter, [x0, x1]: Span, deck: number, c: RoomColour
 }
 
 function paintRooms(painter: Painter): void {
-  paintRoom(painter, BAYS.rookieBay, DECK.upper, ROOMS.rookieBay);
-  paintRoom(painter, BAYS.archive, DECK.upper, ROOMS.archive);
-  paintRoom(painter, BAYS.command, DECK.upper, ROOMS.command);
-  paintRoom(painter, BAYS.rec, DECK.upper, ROOMS.rec);
-  paintRoom(painter, BAYS.ops, DECK.ground, ROOMS.ops);
-  paintRoom(painter, BAYS.hangar, DECK.ground, ROOMS.hangar);
+  const [ground, upper] = BANDS;
+  paintRoom(painter, BAYS.rookieBay, upper, ROOMS.rookieBay);
+  paintRoom(painter, BAYS.archive, upper, ROOMS.archive);
+  paintRoom(painter, BAYS.command, upper, ROOMS.command);
+  paintRoom(painter, BAYS.rec, upper, ROOMS.rec);
+  paintRoom(painter, BAYS.ops, ground, ROOMS.ops);
+  paintRoom(painter, BAYS.hangar, ground, ROOMS.hangar);
 }
 
 function paintLabels(painter: Painter): void {
@@ -203,19 +209,29 @@ export const paintStructure: DecorFn = (painter, stage) => {
 
 const LIT_AREA: Rect = { x: HULL_RECT.x, y: HULL_RECT.y, w: HULL_RECT.w, h: SUBLEVEL.y + SUBLEVEL.h - HULL_RECT.y };
 
-/** A blue wash over the building after dark. */
-export const paintNightTint: DecorFn = (painter, { hour }) => {
-  const night = nightFactor(hour);
-  if (night <= 0) return;
-  painter.withAlpha(0.16 * night, () => painter.rect('#050818', LIT_AREA.x, LIT_AREA.y, LIT_AREA.w, LIT_AREA.h));
-};
+/** A blue wash over `area` after dark. */
+export const nightTint =
+  ({ x, y, w, h }: Rect): DecorFn =>
+  (painter, { hour }) => {
+    const night = nightFactor(hour);
+    if (night <= 0) return;
+    painter.withAlpha(0.16 * night, () => painter.rect('#050818', x, y, w, h));
+  };
+
+/** The night tint over the whole HQ. */
+export const paintNightTint = nightTint(LIT_AREA);
 
 /** How long one swell of the all-hands wash takes. Slow on purpose: a whole-stage light must never strobe. */
 export const ALARM_WASH_SECONDS = 1.2;
 
-/** All hands: a red wash that swells and fades over the whole HQ while JARVIS is in alarm. */
-export const paintAlarmWash: DecorFn = (painter, stage) => {
-  if (jarvisState(stage) !== 'alarm') return;
-  const alpha = 0.04 + 0.1 * wave(stage.now, ALARM_WASH_SECONDS);
-  painter.withAlpha(alpha, () => painter.rect(ALARM.base, LIT_AREA.x, LIT_AREA.y, LIT_AREA.w, LIT_AREA.h));
-};
+/** All hands: a red wash that swells and fades over `area` while JARVIS is in alarm. */
+export const alarmWash =
+  ({ x, y, w, h }: Rect): DecorFn =>
+  (painter, stage) => {
+    if (jarvisState(stage) !== 'alarm') return;
+    const alpha = 0.04 + 0.1 * wave(stage.now, ALARM_WASH_SECONDS);
+    painter.withAlpha(alpha, () => painter.rect(ALARM.base, x, y, w, h));
+  };
+
+/** The all-hands wash over the whole HQ. */
+export const paintAlarmWash = alarmWash(LIT_AREA);

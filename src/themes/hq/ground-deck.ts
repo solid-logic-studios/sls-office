@@ -1,5 +1,5 @@
 import type { Painter } from '../../contract/painter.ts';
-import type { ServiceWorkload, SiteInstanceWorkload, Vm, VmRole } from '../../contract/snapshot.ts';
+import type { SiteInstanceWorkload, VmRole } from '../../contract/snapshot.ts';
 import type { DecorFn, Hotspot, Rect, StageView, Tip } from '../../contract/theme.ts';
 import { HEALTH_WORDS } from '../office/hotspots.ts';
 import { clientStyle } from '../office/looks.ts';
@@ -11,6 +11,7 @@ import { BANDS, DECK } from './geometry.ts';
 import { QUIET_HOURS, deployBusy, isAlarm, jarvisState } from './jarvis-state.ts';
 import { TAU, disc, dot, wave } from './kit.ts';
 import { HQ_LAYOUT } from './layout.ts';
+import { isUp, plural, runnerOf, vmOf } from './lab.ts';
 import { ALARM, AMBER, CYAN, HULL, INK, LAMP, PAPER, ROOMS, STEEL, UNLIT } from './palette.ts';
 import { GATE } from './shell.ts';
 
@@ -43,9 +44,7 @@ const HOLO_X = HQ_LAYOUT.breakSpots[HOLO_INDEX]?.x ?? 422;
 export const HOLO_TABLE: Rect = { x: HOLO_X - 18, y: 170, w: 36, h: 58 };
 
 /** Where each alarm beacon hangs from the ceiling: two over the ops floor, one in the hangar. */
-/** The first beacon's x, which the Spire's tower borrows. */
-export const FIRST_BEACON_X = 142;
-export const BEACON_XS: readonly number[] = [FIRST_BEACON_X, 384, 536];
+export const BEACON_XS: readonly number[] = [142, 384, 536];
 const BEACON_TOP = BANDS[DECK.ground].ceil + 1;
 /** A beacon's hover box: the dome and its bracket. */
 export const beaconRect = (x: number): Rect => ({ x: x - 4, y: BEACON_TOP, w: 9, h: 9 });
@@ -69,15 +68,9 @@ const MAST_LAMP = { x: 519, y: 7 } as const;
 
 /* ------------------------------------------------------------------ readings */
 
-const vmOf = (stage: StageView, role: VmRole): Vm | undefined => stage.vms.find((vm) => vm.role === role);
-const isUp = (stage: StageView, role: VmRole): boolean => vmOf(stage, role)?.up ?? false;
-
 /** The Site instances on the compute VM, in Snapshot order: one hero, one blip, one crate each. */
 export const sitesOf = (stage: StageView): SiteInstanceWorkload[] =>
   vmOf(stage, 'compute')?.workloads.filter((w): w is SiteInstanceWorkload => w.kind === 'site-instance') ?? [];
-
-const runnerOf = (stage: StageView): ServiceWorkload | undefined =>
-  vmOf(stage, 'deploy')?.workloads.find((w): w is ServiceWorkload => w.kind === 'runner');
 
 const two = (n: number): string => String(n).padStart(2, '0');
 
@@ -99,7 +92,7 @@ function screenFrame({ R }: Pen, { x, y, w, h }: Rect, glass: string): Rect {
 
 /* -------------------------------------------------------------- the ops clock */
 
-const paintOpsClock: DecorFn = (painter, { now, hour, host }) => {
+export const paintOpsClock: DecorFn = (painter, { now, hour, host }) => {
   const pn = pen(painter);
   const glass = screenFrame(pn, OPS_CLOCK, INK);
   // Bolted to the wall: two steel lugs.
@@ -111,7 +104,7 @@ const paintOpsClock: DecorFn = (painter, { now, hour, host }) => {
   pn.T(shown, glass.x + glass.w / 2, glass.y + 9, host ? CYAN.bright : STEEL.dark, 'centre');
 };
 
-const paintDispatchSign: DecorFn = (painter, { host }) => {
+export const paintDispatchSign: DecorFn = (painter, { host }) => {
   const { R, T } = pen(painter);
   const { x, y, w, h } = DISPATCH_SIGN;
   R(INK, x, y, w, h);
@@ -325,46 +318,48 @@ const paintHoloTable: DecorFn = (painter, stage) => {
 
 const BEACON_SECONDS = 0.9;
 
-/** One alarm beacon: a dark red lens at rest; on all hands it turns, throwing its beam across the wall. */
-function paintBeacon(painter: Painter, cx: number, stage: StageView): void {
-  const { R } = pen(painter);
-  const top = BEACON_TOP;
-  R(STEEL.dark, cx - 2, top, 5, 1);
-  R(STEEL.dark, cx, top + 1, 1, 1);
-  R(STEEL.base, cx - 3, top + 2, 7, 1);
-  const turning = isAlarm(stage);
-  R(turning ? ALARM.dark : ALARM.deep, cx - 1, top + 3, 3, 1);
-  R(turning ? ALARM.dark : ALARM.deep, cx - 2, top + 4, 5, 3);
-  if (!turning) {
-    R(STEEL.light, cx - 1, top + 4, 1, 1);
-    return;
-  }
-  const a = (stage.now / BEACON_SECONDS) * TAU;
-  const across = Math.cos(a);
-  const facing = Math.sin(a);
-  // The lamp inside the lens, travelling round with the mirror.
-  R(ALARM.base, cx - 2, top + 4, 5, 3);
-  R(ALARM.white, cx + Math.round(across * 2), top + 3, 1, 4);
-  // Facing us, the dome blazes; side on, the beam lies along the wall.
-  if (facing > 0.6) painter.withAlpha(0.35 * facing, () => disc(painter, ALARM.light, cx, top + 5, 4));
-  const side = across > 0 ? 1 : -1;
-  painter.withAlpha(0.4 * Math.abs(across), () => {
-    for (let step = 0; step < 4; step++) {
-      const len = 5;
-      const bx = side > 0 ? cx + 3 + step * len : cx - 2 - (step + 1) * len;
-      R(ALARM.light, bx, top + 4 - Math.floor(step / 2), len, 3 + Math.floor(step / 2) * 2);
+/**
+ * One alarm beacon, its bracket's top at `top`: a dark red lens at rest; on all hands it turns,
+ * throwing its beam across the wall, up to 22 px either side of `cx`.
+ */
+export const lensBeacon =
+  (cx: number, top: number): DecorFn =>
+  (painter, stage) => {
+    const { R } = pen(painter);
+    R(STEEL.dark, cx - 2, top, 5, 1);
+    R(STEEL.dark, cx, top + 1, 1, 1);
+    R(STEEL.base, cx - 3, top + 2, 7, 1);
+    const turning = isAlarm(stage);
+    R(turning ? ALARM.dark : ALARM.deep, cx - 1, top + 3, 3, 1);
+    R(turning ? ALARM.dark : ALARM.deep, cx - 2, top + 4, 5, 3);
+    if (!turning) {
+      R(STEEL.light, cx - 1, top + 4, 1, 1);
+      return;
     }
-  });
-}
+    const a = (stage.now / BEACON_SECONDS) * TAU;
+    const across = Math.cos(a);
+    const facing = Math.sin(a);
+    // The lamp inside the lens, travelling round with the mirror.
+    R(ALARM.base, cx - 2, top + 4, 5, 3);
+    R(ALARM.white, cx + Math.round(across * 2), top + 3, 1, 4);
+    // Facing us, the dome blazes; side on, the beam lies along the wall.
+    if (facing > 0.6) painter.withAlpha(0.35 * facing, () => disc(painter, ALARM.light, cx, top + 5, 4));
+    const side = across > 0 ? 1 : -1;
+    painter.withAlpha(0.4 * Math.abs(across), () => {
+      for (let step = 0; step < 4; step++) {
+        const len = 5;
+        const bx = side > 0 ? cx + 3 + step * len : cx - 2 - (step + 1) * len;
+        R(ALARM.light, bx, top + 4 - Math.floor(step / 2), len, 3 + Math.floor(step / 2) * 2);
+      }
+    });
+  };
 
-const paintBeacons: DecorFn = (painter, stage) => {
-  for (const x of BEACON_XS) paintBeacon(painter, x, stage);
-};
+const beacons: readonly DecorFn[] = BEACON_XS.map((x) => lensBeacon(x, BEACON_TOP));
 
 /* ------------------------------------------------------------ the gate field */
 
 /** The field across the gate: a soft cyan sheet with sparks climbing it, down while the ops floor is. */
-const paintGateField: DecorFn = (painter, stage) => {
+export const paintGateField: DecorFn = (painter, stage) => {
   const { R } = pen(painter);
   const { x, y, w, h } = GATE;
   const on = isUp(stage, 'compute');
@@ -434,7 +429,7 @@ const CHASE_RATE = 9;
  * The runner lights along the top of the hangar wall: dark while the hangar is down, a steady green
  * ready lamp while the runner idles, and a chase running to the door while it deploys.
  */
-const paintRunnerLights: DecorFn = (painter, stage) => {
+export const paintRunnerLights: DecorFn = (painter, stage) => {
   const { R } = pen(painter);
   const { x, y, count, step } = RUNNER_LIGHTS;
   const up = isUp(stage, 'deploy');
@@ -483,7 +478,7 @@ const paintBlastDoor: DecorFn = (painter, stage) => {
 const shieldHalf = (dy: number): number => (dy < 17 ? 10 : 10 - Math.round((dy - 16) * 1.1));
 
 /** The Nines' emblem: a steel shield with a gold 9 and five pips, one for each nine of uptime. Lit after dark. */
-const paintEmblem: DecorFn = (painter, { hour }) => {
+export const paintEmblem: DecorFn = (painter, { hour }) => {
   const { R, T } = pen(painter);
   const cx = EMBLEM.x + 11;
   const top = EMBLEM.y;
@@ -549,12 +544,10 @@ export const GROUND_DECK_BACK: readonly DecorFn[] = [
   paintGearRacks,
   paintRunnerLights,
   paintBlastDoor,
-  paintBeacons,
+  ...beacons,
 ];
 
 /* ------------------------------------------------------------------ hotspots */
-
-const plural = (n: number, word: string): string => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 export function tacticalTip(stage: StageView): Tip {
   const detail =

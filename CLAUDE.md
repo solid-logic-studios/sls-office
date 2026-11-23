@@ -46,7 +46,7 @@ pnpm format:check       # Prettier check (CI gate)
   world as a phone-width high-rise), `hq/` (the superhero HQ with JARVIS at the helm), `spire/` (the
   HQ as a phone-width tower) and `boxes/` (a plain test theme that proves the contract). A
   Theme is data and pure drawing functions; it imports only from `src/contract/`, from
-  `src/themes/shared/` (the drawing helpers every Theme may use: pen, hash, temps, sky) and, where it
+  `src/themes/shared/` (the drawing helpers every Theme may use: pen, hash, temps, sky, storeys) and, where it
   reuses a sibling Theme's world, from that sibling (the Tower imports the Office's cast, lines and
   sound; see the ADR 0003 amendment). A new Theme never needs an Engine change.
   `src/themes/index.ts` lists the shipped Themes.

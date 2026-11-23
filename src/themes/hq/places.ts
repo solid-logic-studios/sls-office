@@ -1,9 +1,10 @@
-import type { SiteInstanceWorkload, Vm, VmRole } from '../../contract/snapshot.ts';
-import type { Occupant, Place, PlaceArt, StageView } from '../../contract/theme.ts';
+import type { SiteInstanceWorkload } from '../../contract/snapshot.ts';
+import type { Occupant, Place, PlaceArt } from '../../contract/theme.ts';
 import { ENV_PLATE } from '../office/palette.ts';
 import { clientStyle } from '../office/looks.ts';
 import { clamp, pen, type Pen } from '../shared/pen.ts';
 import { wave } from './kit.ts';
+import { vmOf } from './lab.ts';
 import { ALARM, AMBER, CYAN, HULL, INK, LAMP, ROOMS, STEEL, UNLIT } from './palette.ts';
 
 /**
@@ -15,8 +16,6 @@ import { ALARM, AMBER, CYAN, HULL, INK, LAMP, ROOMS, STEEL, UNLIT } from './pale
  */
 
 /* ------------------------------------------------------------------- shared */
-
-const vmOf = (stage: StageView, role: VmRole): Vm | undefined => stage.vms.find((vm) => vm.role === role);
 
 /** Alert cards (or record cartridges) grow with memory: none under 55%, one more for every 8 points, five at most. */
 export const alertCards = (mem: number): number => clamp(Math.floor((mem - 55) / 8), 0, 5);

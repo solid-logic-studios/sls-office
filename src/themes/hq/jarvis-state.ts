@@ -1,5 +1,6 @@
 import type { ServiceWorkload, Vm } from '../../contract/snapshot.ts';
 import type { StageView } from '../../contract/theme.ts';
+import { vmOf } from './lab.ts';
 
 /**
  * What JARVIS is attending to, read from the stage alone. The orb, the readout and the console all
@@ -22,15 +23,13 @@ export const QUIET_HOST_CPU = 20;
 /** The quiet hours, local time: from 22:00 until 06:00. */
 export const QUIET_HOURS = { from: 22, until: 6 } as const;
 
-const roleOf = (vms: readonly Vm[], role: Vm['role']): Vm | undefined => vms.find((vm) => vm.role === role);
-
 /** How many CI pods are running right now. */
 export const podCount = (vms: readonly Vm[]): number =>
   vms.reduce((n, vm) => n + vm.workloads.filter((w) => w.kind === 'ci-pod').length, 0);
 
 /** The runner's own CPU where the Snapshot lists the runner, else the deploy VM's. */
 export function deployBusy(vms: readonly Vm[]): boolean {
-  const deploy = roleOf(vms, 'deploy');
+  const deploy = vmOf({ vms }, 'deploy');
   if (deploy === undefined || !deploy.up) return false;
   const runner = deploy.workloads.find((w): w is ServiceWorkload => w.kind === 'runner');
   return (runner?.cpu ?? deploy.cpu) >= DEPLOY_BUSY_CPU;

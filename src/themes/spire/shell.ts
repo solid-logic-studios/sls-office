@@ -1,10 +1,7 @@
 import type { Painter } from '../../contract/painter.ts';
 import type { DecorFn } from '../../contract/theme.ts';
-import { isAlarm } from '../hq/jarvis-state.ts';
-import { wave } from '../hq/kit.ts';
-import { ALARM, AMBER, CYAN, HULL, INK, ROOMS, STEEL, type RoomColours } from '../hq/palette.ts';
-import { ALARM_WASH_SECONDS } from '../hq/shell.ts';
-import { nightFactor } from '../shared/sky.ts';
+import { AMBER, CYAN, HULL, INK, ROOMS, STEEL, type RoomColours } from '../hq/palette.ts';
+import { SHAFT_COLOURS, alarmWash, nightTint, paintRoom } from '../hq/shell.ts';
 import { JARVIS, MOTOR_ROOM, ROOF_DECK } from './boards.ts';
 import {
   AXIS,
@@ -33,21 +30,6 @@ export const DOORWAYS: readonly { x: number; w: number; floor: number }[] = [
   { x: PARTITION_X - 2, w: 4, floor: FLOOR.hangar },
 ];
 
-const SHAFT_COLOURS = { well: '#0d111b', rail: '#1d2536', landing: '#55617a', lip: STEEL.light } as const;
-
-/** One room: back wall, its lower shade, the accent strip under the ceiling, the floor and its seams. */
-function paintRoom(painter: Painter, x0: number, x1: number, floor: number, c: RoomColours): void {
-  const b = band(floor);
-  const w = x1 - x0;
-  painter.rect(c.wall, x0, b.ceil, w, b.back - b.ceil);
-  painter.rect(c.shade, x0, b.back - 9, w, 8);
-  painter.rect(INK, x0, b.back - 1, w, 1);
-  painter.rect(c.accent, x0, b.ceil, w, 1);
-  painter.rect(c.floor, x0, b.back, w, b.front - b.back);
-  for (let x = x0 + 6; x < x1; x += 16) painter.rect(c.line, x, b.back + 1, 1, b.front - b.back - 1);
-  painter.rect(c.line, x0, b.back + 8, w, 1);
-}
-
 function paintHull(painter: Painter): void {
   painter.rect(HULL.base, 0, ROOF, WIDTH, HEIGHT - ROOF);
   for (let x = 40; x < WIDTH; x += 40) painter.rect(HULL.dark, x, ROOF, 1, HEIGHT - ROOF);
@@ -75,13 +57,13 @@ function paintRoof(painter: Painter): void {
 }
 
 function paintRooms(painter: Painter): void {
-  const { left } = INSIDE;
-  paintRoom(painter, left, SHAFT_WALL, FLOOR.command, ROOMS.command);
-  paintRoom(painter, left, SHAFT_WALL, FLOOR.rookieBay, ROOMS.rookieBay);
-  paintRoom(painter, left, PARTITION_X, FLOOR.hangar, ROOMS.archive);
-  paintRoom(painter, PARTITION_X, SHAFT_WALL, FLOOR.hangar, ROOMS.hangar);
-  for (const floor of [FLOOR.ops2, FLOOR.ops1, FLOOR.gate]) paintRoom(painter, left, SHAFT_WALL, floor, ROOMS.ops);
-  paintRoom(painter, left, SHAFT_WALL, FLOOR.sublevel, ROOMS.sublevel);
+  const wide = [INSIDE.left, SHAFT_WALL] as const;
+  paintRoom(painter, wide, band(FLOOR.command), ROOMS.command);
+  paintRoom(painter, wide, band(FLOOR.rookieBay), ROOMS.rookieBay);
+  paintRoom(painter, [INSIDE.left, PARTITION_X], band(FLOOR.hangar), ROOMS.archive);
+  paintRoom(painter, [PARTITION_X, SHAFT_WALL], band(FLOOR.hangar), ROOMS.hangar);
+  for (const floor of [FLOOR.ops2, FLOOR.ops1, FLOOR.gate]) paintRoom(painter, wide, band(floor), ROOMS.ops);
+  paintRoom(painter, wide, band(FLOOR.sublevel), ROOMS.sublevel);
 }
 
 /** The shaft, a landing in it on every storey, and a doorway wherever a wall crosses a walk line. */
@@ -164,16 +146,8 @@ export const paintSpine: DecorFn = (painter, { now, host }) => {
 /** Everything under the roof: the night tint and the all-hands wash cover it, and leave the orb in the open sky. */
 const BUILDING = { x: 0, y: ROOF, w: WIDTH, h: HEIGHT - ROOF } as const;
 
-/** A blue wash over the building after dark. */
-export const paintNightTint: DecorFn = (painter, { hour }) => {
-  const night = nightFactor(hour);
-  if (night <= 0) return;
-  painter.withAlpha(0.16 * night, () => painter.rect('#050818', BUILDING.x, BUILDING.y, BUILDING.w, BUILDING.h));
-};
+/** The HQ's blue wash over the building after dark. */
+export const paintNightTint = nightTint(BUILDING);
 
 /** All hands: the HQ's red wash, swelling and fading over the whole Spire while JARVIS is in alarm. */
-export const paintAlarmWash: DecorFn = (painter, stage) => {
-  if (!isAlarm(stage)) return;
-  const alpha = 0.04 + 0.1 * wave(stage.now, ALARM_WASH_SECONDS);
-  painter.withAlpha(alpha, () => painter.rect(ALARM.base, BUILDING.x, BUILDING.y, BUILDING.w, BUILDING.h));
-};
+export const paintAlarmWash = alarmWash(BUILDING);

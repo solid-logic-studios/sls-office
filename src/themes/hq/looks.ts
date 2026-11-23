@@ -1,6 +1,6 @@
 import type { HairStyle, PersonLook, BoxLook } from '../../contract/theme.ts';
 import type { SiteEnv } from '../../contract/snapshot.ts';
-import { PAUL_LOOK as OFFICE_PAUL_LOOK, clientStyle } from '../office/looks.ts';
+import { PAUL_LOOK as OFFICE_PAUL_LOOK, clientStyle, face } from '../office/looks.ts';
 import { HAIRS, SKINS } from '../office/palette.ts';
 import { hashOf, pick } from '../shared/hash.ts';
 import { AMBER, PAPER, STEEL } from './palette.ts';
@@ -14,8 +14,7 @@ const SUIT_PANTS = '#232a3d';
 const VETERAN_SUIT = '#1d2740';
 const GOLD = '#e2b84a';
 
-/** The faces a hero or a rookie can wear. */
-const FACE_STYLES = ['short', 'long', 'bun', 'spiky', 'short', 'long', 'bald'] as const satisfies readonly HairStyle[];
+/** The hair styles a rookie can wear (a hero's face is the Office's `face`). */
 const ROOKIE_STYLES = ['spiky', 'short', 'long', 'bun'] as const satisfies readonly HairStyle[];
 
 /**
@@ -43,11 +42,6 @@ export const CODENAMES = [
 
 export function codename(workloadId: string): string {
   return pick(CODENAMES, hashOf(workloadId));
-}
-
-/** The features that change when a workload is replaced: skin, hair and hair style. */
-function face(h: number): Pick<PersonLook, 'skin' | 'hair' | 'hairStyle'> {
-  return { skin: pick(SKINS, h, 1), hair: pick(HAIRS, h, 2), hairStyle: pick(FACE_STYLES, h, 3) };
 }
 
 /**
