@@ -122,14 +122,15 @@ describe('the ground deck dressing', () => {
   });
 
   it('leaves every ground deck Place clear, so the furniture and its people stay in view', () => {
-    for (const view of STAGES.flatMap(frames)) {
+    // Collect the offenders and assert once: an expect (and its message) per call per Place is slow on CI.
+    const offenders = STAGES.flatMap(frames).flatMap((view) => {
       const painter = paint(view);
-      for (const call of painter.calls) {
-        for (const place of groundPlaces) {
-          expect(overlaps(hoverBox(place), extentOf(call, painter)), JSON.stringify(call)).toBe(false);
-        }
-      }
-    }
+      return painter.calls.filter((call) => {
+        const extent = extentOf(call, painter);
+        return groundPlaces.some((place) => overlaps(hoverBox(place), extent));
+      });
+    });
+    expect(offenders).toEqual([]);
   });
 
   it('keeps clear of the spine that runs up the middle of the ops floor', () => {

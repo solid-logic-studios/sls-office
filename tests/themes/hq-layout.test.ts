@@ -87,9 +87,8 @@ describe('the HQ furniture', () => {
           for (let frame = 0; frame < 6; frame++) {
             const painter = new RecordingPainter();
             place.art(painter, { place, occupant, stage: { ...view, now: frame * 0.37 } });
-            for (const call of painter.calls) {
-              expect(inside(box, extentOf(call, painter)), `${part} at ${place.x}: ${JSON.stringify(call)}`).toBe(true);
-            }
+            const strays = painter.calls.filter((call) => !inside(box, extentOf(call, painter)));
+            expect(strays, `${part} at ${place.x}`).toEqual([]);
           }
         }
       }
