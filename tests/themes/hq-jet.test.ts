@@ -87,14 +87,15 @@ describe('the apron, the jet and the bunker', () => {
     const places = Object.values(HQ_LAYOUT.homes)
       .flat()
       .map((place: Place): Rect => ({ x: place.x, y: place.baseY - place.h, w: place.w, h: place.h }));
-    for (const view of STAGES.flatMap(frames)) {
+    // Collect the offenders and assert once: an expect (and its message) per call per Place is slow on CI.
+    const offenders = STAGES.flatMap(frames).flatMap((view) => {
       const painter = paint(view);
-      for (const call of painter.calls) {
+      return painter.calls.filter((call) => {
         const extent = extentOf(call, painter);
-        expect(overlaps(hangar, extent), JSON.stringify(call)).toBe(false);
-        for (const place of places) expect(overlaps(place, extent), JSON.stringify(call)).toBe(false);
-      }
-    }
+        return overlaps(hangar, extent) || places.some((place) => overlaps(place, extent));
+      });
+    });
+    expect(offenders).toEqual([]);
   });
 
   it('parks the jet over the keeper loading spot, on the tarmac', () => {
